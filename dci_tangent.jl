@@ -4,7 +4,7 @@ min ¹/₂dᵀBd + dᵀg
 s.t Ad = 0
     ‖d‖ ≦ Δ
 """
-function tangent_step(nlp, x, λ, B, g, A, ℓzλ, ρ;
+function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
                       Δ=1.0,
                       η₁ = 0.25,
                       η₂ = 0.75,
@@ -13,6 +13,8 @@ function tangent_step(nlp, x, λ, B, g, A, ℓzλ, ρ;
                       verbose = false
                      )
   m, n = size(A)
+
+  status = :success
 
   Z = LinearOperator(nullspace(full(A)))
   normct = 1.0
@@ -23,23 +25,40 @@ function tangent_step(nlp, x, λ, B, g, A, ℓzλ, ρ;
   while !(normct <= 2ρ && r >= η₁)
     d = cg(Z' * B * Z, -Z' * g, radius=Δ)[1]
     d = Z * d
-    xt = x + d
+    if norm(d) > Δ
+      d = d * (norm(d) / Δ)
+    end
+    if norm(d) < 1e-20
+      status = :small_horizontal_step
+      break
+    end
+    xt = z + d
     ct = cons(nlp, xt)
     normct = norm(ct)
-    print("  ‖c(xt)‖ = $normct")
 
     if normct <= 2ρ
       ft = obj(nlp, xt)
       ℓxtλ = ft + dot(λ, ct)
       qd = dot(d, B * d)/2 + dot(g, d)
+      if qd >= 0
+        println("iter = $iter")
+        println("qd = $qd")
+        println("‖d‖ = $(norm(d))")
+        println("Δ = $Δ")
+      end
       @assert qd < 0
 
-      r = (ℓxtλ - ℓzλ)/qd
-      println(", r = $r, ft = $ft")
+      Δℓ = ℓxtλ - ℓzλ + max(1.0, abs(ℓzλ)) * 10 * eps()
+      # roundoff error correction from Optimize.jl
+      if abs(qd) < 1e4 * eps() || abs(Δℓ) < 1e4 * eps() * abs(ℓzλ)
+        gt = grad(nlp, xt)
+        Δℓ = (dot(g, d) + dot(gt, d)) / 2
+      end
+      r = Δℓ / qd
       if r < η₁
         Δ *= σ₁
       else
-        x = xt
+        z = xt
         cx = ct
         ℓxλ = ℓxtλ
         if r > η₂ && norm(d) >= 0.99
@@ -48,11 +67,9 @@ function tangent_step(nlp, x, λ, B, g, A, ℓzλ, ρ;
       end
     else
       Δ *= σ₁
-      println("")
     end
     iter += 1
-
   end
 
-  return x
+  return z, status
 end

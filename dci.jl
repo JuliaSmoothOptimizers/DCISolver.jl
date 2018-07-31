@@ -52,10 +52,10 @@ function dci(nlp :: AbstractNLPModel;
   iter = 0
 
   if verbose
-    @printf("NT %5s  %8s  %8s  %8s\n",
-            "Iter", "‖∇ℓxλ‖", "‖c(x)‖", "ρ")
-    @printf("   %5d  %8.2e  %8.2e  %8.2e\n",
-            iter, dualnorm, primalnorm, ρ)
+    @printf("NT %5s  %6s  %8s  %8s  %8s\n",
+            "Iter", "#f", "‖∇ℓxλ‖", "‖c(x)‖", "ρ")
+    @printf("   %5d  %6d  %8.2e  %8.2e  %8.2e\n",
+            iter, sum_counters(nlp), dualnorm, primalnorm, ρ)
   end
 
   ngp = dualnorm/(norm(∇fx) + 1)
@@ -71,7 +71,13 @@ function dci(nlp :: AbstractNLPModel;
   tired = sum_counters(nlp) > max_f || eltime > max_time
 
   while !(solved || tired)
-    x = tangent_step(nlp, z, λ, Bx, ∇ℓxλ, Jx, ℓzλ, ρ)
+    x, tg_status = tangent_step(nlp, z, λ, Bx, ∇ℓxλ, Jx, ℓzλ, ρ, verbose=verbose)
+    #=
+    if tg_status != :success
+      tired = true
+      continue
+    end
+    =#
     fx = obj(nlp, x)
     cx = c(x)
     ∇fx = ∇f(x)
@@ -82,8 +88,10 @@ function dci(nlp :: AbstractNLPModel;
     Bx = hess_op(nlp, x, y=λ)
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
-    verbose && @printf("T  %5d  %8.2e  %8.2e  %8.2e\n",
-                       iter, dualnorm, primalnorm, ρ)
+    if verbose
+      @printf("   %5d  %6d  %8.2e  %8.2e  %8.2e\n",
+              iter, sum_counters(nlp), dualnorm, primalnorm, ρ)
+    end
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     tired = sum_counters(nlp) > max_f || eltime > max_time
@@ -91,16 +99,32 @@ function dci(nlp :: AbstractNLPModel;
     ngp = dualnorm/(norm(∇fx) + 1)
     z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp)
     @assert cons(nlp, z) == cz
-    fx = f(x)
-    ℓzλ = fx + dot(λ, cz)
+    fz = f(z)
+    ℓzλ = fz + dot(λ, cz)
     primalnorm = norm(cz)
     dualnorm = norm(∇ℓxλ)
-    verbose && @printf("N  %5d  %8.2e  %8.2e  %8.2e\n",
-                       iter, dualnorm, primalnorm, ρ)
+    if verbose
+      @printf("   %5d  %6d  %8.2e  %8.2e  %8.2e\n",
+              iter, sum_counters(nlp), dualnorm, primalnorm, ρ)
+    end
 
     solved = primalnorm < ϵp && dualnorm < ϵd
     tired = sum_counters(nlp) > max_f || eltime > max_time
   end
 
-  return z, fx, dualnorm, primalnorm, eltime, solved, tired
+  status = if solved
+    :first_order
+  elseif tired
+    if sum_counters(nlp) > max_f
+      :max_eval
+    elseif eltime > max_time
+      :max_time
+    else
+      :tired
+    end
+  else
+    :unknown
+  end
+
+  return z, fx, dualnorm, primalnorm, eltime, status
 end
