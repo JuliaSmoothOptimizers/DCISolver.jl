@@ -1,4 +1,10 @@
-using NLPModels, LinearOperators, Krylov
+module DCI
+
+using LinearAlgebra, Logging
+
+using Krylov, LinearOperators, NLPModels, SolverTools
+
+export dci
 
 include("dci_normal.jl")
 include("dci_tangent.jl")
@@ -7,9 +13,8 @@ function dci(nlp :: AbstractNLPModel;
              atol = 1e-8,
              rtol = 1e-6,
              ctol = 1e-6,
-             max_f = 1000,
-             max_time = 60,
-             verbose = false
+             max_evals = 1000,
+             max_time = 60
             )
   if !equality_constrained(nlp)
     error("DCI only works for equality constrained problems")
@@ -22,7 +27,7 @@ function dci(nlp :: AbstractNLPModel;
   J(x) = jac_op(nlp, x)
 
   x = nlp.meta.x0
-  fx = f(x)
+  fz = fx = f(x)
   ∇fx = ∇f(x)
   cx = c(x)
   Jx = J(x)
@@ -47,16 +52,15 @@ function dci(nlp :: AbstractNLPModel;
   ϵp = atol + rtol * primalnorm
 
   solved = primalnorm < ϵp && dualnorm < ϵd
-  tired = sum_counters(nlp) > max_f || eltime > max_time
+  tired = sum_counters(nlp) > max_evals || eltime > max_time
 
   iter = 0
 
-  if verbose
-    @printf("NT %5s  %6s  %8s  %8s  %8s\n",
-            "Iter", "#f", "‖∇ℓxλ‖", "‖c(x)‖", "ρ")
-    @printf("   %5d  %6d  %8.2e  %8.2e  %8.2e\n",
-            iter, sum_counters(nlp), dualnorm, primalnorm, ρ)
-  end
+  @info log_header([:S, :iter, :nf, :dual, :primal, :ρ],
+                   [String, Int, Int, Float64, Float64, Float64],
+                   hdr_override=Dict(:nf => "#f", :dual => "‖∇L(x,y)‖", :primal => "‖c(x)‖")
+                  )
+  @info log_row(Any["NT", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
 
   ngp = dualnorm/(norm(∇fx) + 1)
   z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp)
@@ -64,14 +68,13 @@ function dci(nlp :: AbstractNLPModel;
   ℓzλ = f(z) + dot(λ, cz)
   primalnorm = norm(cz)
   dualnorm = norm(∇ℓxλ)
-  verbose && @printf("N  %5d  %8.2e  %8.2e  %8.2e\n",
-                     iter, dualnorm, primalnorm, ρ)
+  @info log_row(Any["N", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
 
   solved = primalnorm < ϵp && dualnorm < ϵd
-  tired = sum_counters(nlp) > max_f || eltime > max_time
+  tired = sum_counters(nlp) > max_evals || eltime > max_time
 
   while !(solved || tired)
-    x, tg_status = tangent_step(nlp, z, λ, Bx, ∇ℓxλ, Jx, ℓzλ, ρ, verbose=verbose)
+    x, tg_status = tangent_step(nlp, z, λ, Bx, ∇ℓxλ, Jx, ℓzλ, ρ)
     #=
     if tg_status != :success
       tired = true
@@ -88,13 +91,10 @@ function dci(nlp :: AbstractNLPModel;
     Bx = hess_op(nlp, x, y=λ)
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
-    if verbose
-      @printf("   %5d  %6d  %8.2e  %8.2e  %8.2e\n",
-              iter, sum_counters(nlp), dualnorm, primalnorm, ρ)
-    end
+    @info log_row(Any["", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
-    tired = sum_counters(nlp) > max_f || eltime > max_time
+    tired = sum_counters(nlp) > max_evals || eltime > max_time
 
     ngp = dualnorm/(norm(∇fx) + 1)
     z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp)
@@ -103,19 +103,16 @@ function dci(nlp :: AbstractNLPModel;
     ℓzλ = fz + dot(λ, cz)
     primalnorm = norm(cz)
     dualnorm = norm(∇ℓxλ)
-    if verbose
-      @printf("   %5d  %6d  %8.2e  %8.2e  %8.2e\n",
-              iter, sum_counters(nlp), dualnorm, primalnorm, ρ)
-    end
+    @info log_row(Any["", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
 
     solved = primalnorm < ϵp && dualnorm < ϵd
-    tired = sum_counters(nlp) > max_f || eltime > max_time
+    tired = sum_counters(nlp) > max_evals || eltime > max_time
   end
 
   status = if solved
     :first_order
   elseif tired
-    if sum_counters(nlp) > max_f
+    if sum_counters(nlp) > max_evals
       :max_eval
     elseif eltime > max_time
       :max_time
@@ -126,5 +123,7 @@ function dci(nlp :: AbstractNLPModel;
     :unknown
   end
 
-  return z, fx, dualnorm, primalnorm, eltime, status
+  return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
 end
+
+end # module

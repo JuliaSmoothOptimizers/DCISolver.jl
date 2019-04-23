@@ -5,18 +5,17 @@ s.t Ad = 0
     ‖d‖ ≦ Δ
 """
 function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
-                      Δ=1.0,
+                      Δ = 1.0,
                       η₁ = 0.25,
                       η₂ = 0.75,
                       σ₁ = 0.25,
                       σ₂ = 2.0,
-                      verbose = false
                      )
   m, n = size(A)
 
   status = :success
 
-  Z = LinearOperator(nullspace(full(A)))
+  Z = LinearOperator(nullspace(Matrix(A)))
   normct = 1.0
   r = -1.0
 
@@ -41,10 +40,7 @@ function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
       ℓxtλ = ft + dot(λ, ct)
       qd = dot(d, B * d)/2 + dot(g, d)
       if qd >= 0
-        println("iter = $iter")
-        println("qd = $qd")
-        println("‖d‖ = $(norm(d))")
-        println("Δ = $Δ")
+        @error("iter = $iter", "qd = $qd", "‖d‖ = $(norm(d))", "Δ = $Δ")
       end
       @assert qd < 0
 
