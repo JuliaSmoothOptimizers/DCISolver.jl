@@ -5,7 +5,9 @@ Approximately solves min ‖c(x)‖.
 Given xₖ, finds min ‖cₖ + Jₖd‖
 """
 function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
-                     η₁ = 1e-2, η₂ = 0.66, σ₁ = 0.25, σ₂ = 4.0)
+                     η₁ = 1e-2, η₂ = 0.66, σ₁ = 0.25, σ₂ = 4.0,
+                     max_eval = 1_000, max_time = 60,
+                    )
 
   c(x) = cons(nlp, x)
   z = copy(x)
@@ -17,7 +19,10 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
   ρ = max(min(ρmax * ngp, 0.75ρmax), ctol)
   normal_iter = 0
 
-  while normcz > ρ
+  start_time = time()
+  el_time = 0.0
+  tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
+  while !(normcz ≤ ρ || tired)
     d = -Jx'*cz
     Jd = Jx * d
     t = dot(d,d)/dot(Jd,Jd)
@@ -52,6 +57,8 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
       end
     end
 
+    el_time = time() - start_time
+    tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   end
 
   return z, cz, ρ

@@ -10,6 +10,8 @@ function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
                       η₂ = 0.75,
                       σ₁ = 0.25,
                       σ₂ = 2.0,
+                      max_eval = 1_000,
+                      max_time = 1_000,
                      )
   m, n = size(A)
 
@@ -21,7 +23,10 @@ function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
 
   iter = 0
 
-  while !(normct <= 2ρ && r >= η₁)
+  start_time = time()
+  el_time = 0.0
+  tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
+  while !((normct <= 2ρ && r >= η₁) || tired)
     d = cg(Z' * B * Z, -Z' * g, radius=Δ)[1]
     d = Z * d
     if norm(d) > Δ
@@ -65,6 +70,9 @@ function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
       Δ *= σ₁
     end
     iter += 1
+
+    el_time = time() - start_time
+    tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   end
 
   return z, status

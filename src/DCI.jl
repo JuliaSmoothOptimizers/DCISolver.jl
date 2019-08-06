@@ -13,7 +13,7 @@ function dci(nlp :: AbstractNLPModel;
              atol = 1e-8,
              rtol = 1e-6,
              ctol = 1e-6,
-             max_evals = 1000,
+             max_eval = 1000,
              max_time = 60
             )
   if !equality_constrained(nlp)
@@ -52,7 +52,7 @@ function dci(nlp :: AbstractNLPModel;
   ϵp = atol + rtol * primalnorm
 
   solved = primalnorm < ϵp && dualnorm < ϵd
-  tired = sum_counters(nlp) > max_evals || eltime > max_time
+  tired = neval_obj(nlp) > max_eval || eltime > max_time
 
   iter = 0
 
@@ -63,7 +63,7 @@ function dci(nlp :: AbstractNLPModel;
   @info log_row(Any["NT", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
 
   ngp = dualnorm/(norm(∇fx) + 1)
-  z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp)
+  z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp, max_eval=max_eval, max_time=max_time-eltime)
   @assert cons(nlp, z) == cz
   ℓzλ = f(z) + dot(λ, cz)
   primalnorm = norm(cz)
@@ -71,10 +71,10 @@ function dci(nlp :: AbstractNLPModel;
   @info log_row(Any["N", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
 
   solved = primalnorm < ϵp && dualnorm < ϵd
-  tired = sum_counters(nlp) > max_evals || eltime > max_time
+  tired = neval_obj(nlp) > max_eval || eltime > max_time
 
   while !(solved || tired)
-    x, tg_status = tangent_step(nlp, z, λ, Bx, ∇ℓxλ, Jx, ℓzλ, ρ)
+    x, tg_status = tangent_step(nlp, z, λ, Bx, ∇ℓxλ, Jx, ℓzλ, ρ, max_eval=max_eval, max_time=max_time-eltime)
     #=
     if tg_status != :success
       tired = true
@@ -94,10 +94,11 @@ function dci(nlp :: AbstractNLPModel;
     @info log_row(Any["", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
-    tired = sum_counters(nlp) > max_evals || eltime > max_time
+    tired = neval_obj(nlp) > max_eval || eltime > max_time
 
+    # Normal step
     ngp = dualnorm/(norm(∇fx) + 1)
-    z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp)
+    z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp, max_eval=max_eval, max_time=max_time-eltime)
     @assert cons(nlp, z) == cz
     fz = f(z)
     ℓzλ = fz + dot(λ, cz)
@@ -105,14 +106,15 @@ function dci(nlp :: AbstractNLPModel;
     dualnorm = norm(∇ℓxλ)
     @info log_row(Any["", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
 
+    eltime = time() - start_time
     solved = primalnorm < ϵp && dualnorm < ϵd
-    tired = sum_counters(nlp) > max_evals || eltime > max_time
+    tired = neval_obj(nlp) > max_eval || eltime > max_time
   end
 
   status = if solved
     :first_order
   elseif tired
-    if sum_counters(nlp) > max_evals
+    if neval_obj(nlp) > max_eval
       :max_eval
     elseif eltime > max_time
       :max_time
