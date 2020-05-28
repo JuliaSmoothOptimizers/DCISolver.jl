@@ -22,7 +22,7 @@ function dci(nlp :: AbstractNLPModel;
 
   f(x) = obj(nlp, x)
   ∇f(x) = grad(nlp, x)
-  H(x,y) = hess_op(nlp, x, y=y)
+  H(x,y) = hess_op(nlp, x, y)
   c(x) = cons(nlp, x)
   J(x) = jac_op(nlp, x)
 
@@ -37,7 +37,7 @@ function dci(nlp :: AbstractNLPModel;
   #ℓ(x,λ) = f(x) + λᵀc(x)
   ℓxλ = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
-  Bx = hess_op(nlp, x, y=λ)
+  Bx = hess_op(nlp, x, λ)
 
   ρmax = 1.0
   ρ = 1.0
@@ -56,24 +56,25 @@ function dci(nlp :: AbstractNLPModel;
 
   iter = 0
 
-  @info log_header([:S, :iter, :nf, :dual, :primal, :ρ],
-                   [String, Int, Int, Float64, Float64, Float64],
-                   hdr_override=Dict(:nf => "#f", :dual => "‖∇L(x,y)‖", :primal => "‖c(x)‖")
+  @info log_header([:stage, :iter, :nf, :dual, :primal, :ρ, :status],
+                   [String, Int, Int, Float64, Float64, Float64, String],
+                   hdr_override=Dict(:nf => "#f", :dual => "‖∇L‖", :primal => "‖c(x)‖")
                   )
-  @info log_row(Any["NT", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
+  @info log_row(Any["init", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
 
   ngp = dualnorm/(norm(∇fx) + 1)
-  z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp, max_eval=max_eval, max_time=max_time-eltime)
+  z, cz, ρ, normal_status = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp, max_eval=max_eval, max_time=max_time-eltime)
   @assert cons(nlp, z) == cz
   ℓzλ = f(z) + dot(λ, cz)
   primalnorm = norm(cz)
   dualnorm = norm(∇ℓxλ)
-  @info log_row(Any["N", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
+  @info log_row(Any["N0", iter, neval_obj(nlp), dualnorm, primalnorm, ρ, normal_status])
 
   solved = primalnorm < ϵp && dualnorm < ϵd
   tired = neval_obj(nlp) > max_eval || eltime > max_time
+  infeasible = normal_status == :infeasible
 
-  while !(solved || tired)
+  while !(solved || tired || infeasible)
     x, tg_status = tangent_step(nlp, z, λ, Bx, ∇ℓxλ, Jx, ℓzλ, ρ, max_eval=max_eval, max_time=max_time-eltime)
     #=
     if tg_status != :success
@@ -88,27 +89,30 @@ function dci(nlp :: AbstractNLPModel;
     λ = cgls(Jx', -∇fx)[1]
     ℓxλ = fx + dot(λ, cx)
     ∇ℓxλ = ∇fx + Jx'*λ
-    Bx = hess_op(nlp, x, y=λ)
+    Bx = hess_op(nlp, x, λ)
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
-    @info log_row(Any["", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
+    @info log_row(Any["T", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     tired = neval_obj(nlp) > max_eval || eltime > max_time
 
     # Normal step
     ngp = dualnorm/(norm(∇fx) + 1)
-    z, cz, ρ = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp, max_eval=max_eval, max_time=max_time-eltime)
+    z, cz, ρ, normal_status = normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp, max_eval=max_eval, max_time=max_time-eltime)
+    println("z = $z, ‖cz‖ = $(norm(cz)), ρ = $ρ")
+    println("ϵp = $ϵp, ϵd = $ϵd")
     @assert cons(nlp, z) == cz
     fz = f(z)
     ℓzλ = fz + dot(λ, cz)
     primalnorm = norm(cz)
     dualnorm = norm(∇ℓxλ)
-    @info log_row(Any["", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
+    @info log_row(Any["N", iter, neval_obj(nlp), dualnorm, primalnorm, ρ, normal_status])
 
     eltime = time() - start_time
     solved = primalnorm < ϵp && dualnorm < ϵd
     tired = neval_obj(nlp) > max_eval || eltime > max_time
+    infeasible = normal_status == :infeasible
   end
 
   status = if solved
@@ -121,6 +125,8 @@ function dci(nlp :: AbstractNLPModel;
     else
       :tired
     end
+  elseif infeasible
+    :infeasible
   else
     :unknown
   end

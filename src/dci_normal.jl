@@ -6,6 +6,7 @@ Given xₖ, finds min ‖cₖ + Jₖd‖
 """
 function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
                      η₁ = 1e-2, η₂ = 0.66, σ₁ = 0.25, σ₂ = 4.0,
+                     infeas_tol = 1e-6,
                      max_eval = 1_000, max_time = 60,
                     )
 
@@ -22,15 +23,20 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
   start_time = time()
   el_time = 0.0
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
-  while !(normcz ≤ ρ || tired)
+  infeasible = false
+  while !(normcz ≤ ρ || tired || infeasible)
     d = -Jx'*cz
+    if norm(d) < infeas_tol
+      infeasible = true
+      break
+    end
     Jd = Jx * d
     t = dot(d,d)/dot(Jd,Jd)
     dcp = t * d
     if norm(dcp) > Δ
       d = dcp * Δ / norm(dcp)
     else
-      dn  = cgls(Jx, -cz)[1]
+      dn  = lsmr(Jx, -cz)[1]
       if norm(dn) <= Δ
         d = dn
       else
@@ -53,7 +59,7 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
       cz = czp
       normcz = norm(czp)
       if Ared/Pred > η₂ && norm(d) >= 0.99Δ
-        Δ *= σ₂
+        Δ *= σ
       end
     end
 
@@ -61,5 +67,15 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
     tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   end
 
-  return z, cz, ρ
+  status = if normcz ≤ ρ
+    :success
+  elseif tired
+    :tired
+  elseif infeasible
+    :infeasible
+  else
+    :unknown
+  end
+
+  return z, cz, ρ, status
 end
