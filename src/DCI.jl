@@ -74,6 +74,8 @@ function dci(nlp :: AbstractNLPModel;
       λ = cgls(Jx', -∇fx)[1]
       ℓzλ = f(z) + dot(λ, cz)
       primalnorm = norm(cz)
+      ∇fx = ∇f(x)
+      ∇ℓxλ = ∇fx + Jx'*λ
       dualnorm = norm(∇ℓxλ)
       @info log_row(Any["N", iter, neval_obj(nlp), dualnorm, primalnorm, ρ, normal_status])
       tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
