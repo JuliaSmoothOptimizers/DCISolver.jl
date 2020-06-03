@@ -4,9 +4,8 @@ Approximately solves min ‖c(x)‖.
 
 Given xₖ, finds min ‖cₖ + Jₖd‖
 """
-function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
-                     η₁ = 1e-2, η₂ = 0.66, σ₁ = 0.25, σ₂ = 4.0,
-                     infeas_tol = 1e-6,
+function normal_step(nlp, ctol, x, cx, Jx, ρ, ρmax, ngp;
+                     η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 4.0,
                      max_eval = 1_000, max_time = 60,
                     )
 
@@ -17,8 +16,12 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
 
   Δ = 1.0
 
-  ρ = max(min(ρmax * ngp, 0.75ρmax), ctol)
+  if !(1e-4ρmax * ngp ≤ ρ ≤ ρmax * ngp)
+    ρ = max(min(ρmax * ngp, 0.75ρmax), 1e-2ρ, ctol)
+  end
   normal_iter = 0
+  consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
+  normcx = normcz           # c(x) = normcx = normcz for the first z
 
   start_time = time()
   el_time = 0.0
@@ -26,12 +29,12 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
   infeasible = false
   while !(normcz ≤ ρ || tired || infeasible)
     d = -Jx'*cz
-    if norm(d) < infeas_tol
+    if norm(d) < ctol * normcz
       infeasible = true
       break
     end
     Jd = Jx * d
-    t = dot(d,d)/dot(Jd,Jd)
+    t = dot(d, d) / dot(Jd, Jd)
     dcp = t * d
     if norm(dcp) > Δ
       d = dcp * Δ / norm(dcp)
@@ -41,7 +44,7 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
         d = dn
       else
         v = dn - dcp
-        τ = (-dot(dcp, v) + sqrt(dot(dcp, v)^2 + 4*dot(v, v)*(Δ^2 - dot(dcp, dcp))))/dot(v, v)
+        τ = (-dot(dcp, v) + sqrt(dot(dcp, v)^2 + 4 * dot(v, v) * (Δ^2 - dot(dcp, dcp)))) / dot(v, v)
         d = dcp + τ * v
       end
     end
@@ -52,15 +55,29 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
     Ared = 0.5*(normcz^2 - norm(czp)^2)
 
     if Ared/Pred < η₁
-      Δ *= σ₁
+      Δ = max(1e-8, Δ * σ₁)
     else
       z = zp
       Jx = jac_op(nlp, z)
       cz = czp
       normcz = norm(czp)
       if Ared/Pred > η₂ && norm(d) >= 0.99Δ
-        Δ *= σ
+        Δ *= σ₂
       end
+    end
+
+    if normcz / normcx > 0.95
+      consecutive_bad_steps += 1
+    else
+      consecutive_bad_steps = 0
+    end
+
+    # Safeguard AKA agressive normal step
+    if normcz > ρ && consecutive_bad_steps ≥ 3
+      d = cg(hess_op(nlp, z, cz, obj_weight=0.0), Jx' * cz)[1]
+      z -= d
+      cz = c(z)
+      normcz = norm(cz)
     end
 
     el_time = time() - start_time
@@ -70,7 +87,13 @@ function normal_step(nlp, ctol, x, cx, Jx, ρmax, ngp;
   status = if normcz ≤ ρ
     :success
   elseif tired
-    :tired
+    if neval_obj(nlp) + neval_cons(nlp) > max_eval
+      :max_eval
+    elseif el_time > max_time
+      :max_time
+    else
+      :unknown_tired
+    end
   elseif infeasible
     :infeasible
   else
