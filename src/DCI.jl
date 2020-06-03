@@ -2,13 +2,25 @@ module DCI
 
 using LinearAlgebra, Logging
 
-using Krylov, LinearOperators, NLPModels, SolverTools
+using Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays
 
 export dci
 
 include("dci_normal.jl")
 include("dci_tangent.jl")
 
+"""
+    dci(nlp; kwargs...)
+
+This method implements the Dynamic Control of Infeasibility for equality-constrained
+problems described in
+
+    Dynamic Control of Infeasibility in Equality Constrained Optimization
+    Roberto H. Bielschowsky and Francisco A. M. Gomes
+    SIAM J. Optim., 19(3), 1299–1325.
+    https://doi.org/10.1137/070679557
+
+"""
 function dci(nlp :: AbstractNLPModel;
              atol = 1e-8,
              rtol = 1e-6,
@@ -22,7 +34,6 @@ function dci(nlp :: AbstractNLPModel;
 
   f(x) = obj(nlp, x)
   ∇f(x) = grad(nlp, x)
-  H(x,y) = hess_op(nlp, x, y)
   c(x) = cons(nlp, x)
   J(x) = jac_op(nlp, x)
 
@@ -35,10 +46,28 @@ function dci(nlp :: AbstractNLPModel;
   # λ = argmin ‖∇f + Jᵀλ‖
   λ = cgls(Jx', -∇fx)[1]
 
+  # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
+  nnz = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon # H, J, γI, -δI
+  rows = zeros(Int, nnz)
+  cols = zeros(Int, nnz)
+  vals = zeros(nnz)
+  nnz_idx = 1:nlp.meta.nnzh
+  @views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+  nnz_idx = nlp.meta.nnzh .+ (1:nlp.meta.nnzj)
+  @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+  @views jac_coord!(nlp, x, vals[nnz_idx])
+  nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
+  rows[nnz_idx] .= 1:nlp.meta.nvar
+  cols[nnz_idx] .= 1:nlp.meta.nvar
+  vals[nnz_idx] .= 1e-8
+  nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
+  rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
+  cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
+  vals[nnz_idx] .= -1e-8
+
   #ℓ(x,λ) = f(x) + λᵀc(x)
   ℓxλ = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
-  Bx = hess_op(nlp, x, λ)
 
   ρmax = 1.0
   ρ = 1.0
@@ -58,11 +87,11 @@ function dci(nlp :: AbstractNLPModel;
 
   iter = 0
 
-  @info log_header([:stage, :iter, :nf, :dual, :primal, :ρ, :status],
-                   [String, Int, Int, Float64, Float64, Float64, String],
-                   hdr_override=Dict(:nf => "#f", :dual => "‖∇L‖", :primal => "‖c(x)‖")
+  @info log_header([:stage, :iter, :nf, :fx, :dual, :primal, :ρ, :status],
+                   [String, Int, Int, Float64, Float64, Float64, Float64, String],
+                   hdr_override=Dict(:nf => "#f", :fx => "f(x)", :dual => "‖∇L‖", :primal => "‖c(x)‖")
                   )
-  @info log_row(Any["init", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
+  @info log_row(Any["init", iter, neval_obj(nlp), fx, dualnorm, primalnorm, ρ])
 
   while !(solved || tired || infeasible)
     # Normal step
@@ -72,12 +101,14 @@ function dci(nlp :: AbstractNLPModel;
       ngp = dualnorm/(norm(∇fx) + 1)
       z, cz, ρ, normal_status = normal_step(nlp, ϵp, x, cx, Jx, ρ, ρmax, ngp, max_eval=max_eval, max_time=max_time-eltime)
       λ = cgls(Jx', -∇fx)[1]
-      ℓzλ = f(z) + dot(λ, cz)
+      fz = f(z)
+      ℓzλ = fz + dot(λ, cz)
+      ∇ℓxλ = ∇fx + Jx'*λ
       primalnorm = norm(cz)
       ∇fx = ∇f(x)
       ∇ℓxλ = ∇fx + Jx'*λ
       dualnorm = norm(∇ℓxλ)
-      @info log_row(Any["N", iter, neval_obj(nlp), dualnorm, primalnorm, ρ, normal_status])
+      @info log_row(Any["N", iter, neval_obj(nlp), fz, dualnorm, primalnorm, ρ, normal_status])
       tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
       infeasible = normal_status == :infeasible
       done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
@@ -90,7 +121,11 @@ function dci(nlp :: AbstractNLPModel;
       break
     end
 
-    x, tg_status = tangent_step(nlp, z, λ, Bx, ∇ℓxλ, Jx, ℓzλ, ρ, max_eval=max_eval, max_time=max_time-eltime)
+    @views hess_coord!(nlp, x, λ, vals[1:nlp.meta.nnzh])
+    # TODO: Don't compute every time
+    @views jac_coord!(nlp, x, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
+    # TODO: Update γ and δ here
+    x, tg_status = tangent_step(nlp, z, λ, rows, cols, vals, ∇ℓxλ, Jx, ℓzλ, ρ, max_eval=max_eval, max_time=max_time-eltime)
     #=
     if tg_status != :success
       tired = true
@@ -104,10 +139,9 @@ function dci(nlp :: AbstractNLPModel;
     # λ = cgls(Jx', -∇fx)[1]
     ℓxλ = fx + dot(λ, cx)
     ∇ℓxλ = ∇fx + Jx'*λ
-    Bx = hess_op(nlp, x, λ)
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
-    @info log_row(Any["T", iter, neval_obj(nlp), dualnorm, primalnorm, ρ])
+    @info log_row(Any["T", iter, neval_obj(nlp), fx, dualnorm, primalnorm, ρ])
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time

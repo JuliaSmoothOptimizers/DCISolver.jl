@@ -4,7 +4,7 @@ min ¹/₂dᵀBd + dᵀg
 s.t Ad = 0
     ‖d‖ ≦ Δ
 """
-function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
+function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ;
                       Δ = 1.0,
                       η₁ = 0.25,
                       η₂ = 0.75,
@@ -17,7 +17,7 @@ function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
 
   status = :success
 
-  Z = LinearOperator(nullspace(Matrix(A)))
+
   normct = 1.0
   r = -1.0
 
@@ -27,8 +27,9 @@ function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
   el_time = 0.0
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   while !((normct <= 2ρ && r >= η₁) || tired)
-    d = cg(Z' * B * Z, -Z' * g, radius=Δ)[1]
-    d = Z * d
+    H = Symmetric(sparse(rows, cols, vals, m + n, m + n), :L) # TODO: !!!
+    dζ = H \ [-g; zeros(m)]
+    d = dζ[1:n]
     if norm(d) > Δ
       d = d * (norm(d) / Δ)
     end
@@ -43,6 +44,8 @@ function tangent_step(nlp, z, λ, B, g, A, ℓzλ, ρ;
     if normct <= 2ρ
       ft = obj(nlp, xt)
       ℓxtλ = ft + dot(λ, ct)
+      nnzh = nlp.meta.nnzh
+      B = Symmetric(sparse(rows[1:nnzh], cols[1:nnzh], vals[1:nnzh], n, n), :L) # TODO: !!!
       qd = dot(d, B * d)/2 + dot(g, d)
       if qd >= 0
         @error("iter = $iter", "qd = $qd", "‖d‖ = $(norm(d))", "Δ = $Δ")
