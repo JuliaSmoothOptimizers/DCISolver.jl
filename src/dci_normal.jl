@@ -72,13 +72,13 @@ function normal_step(nlp, ctol, x, cx, Jx, ρ, ρmax, ngp;
       consecutive_bad_steps = 0
     end
 
-    # Safeguard AKA agressive normal step
-    if normcz > ρ && consecutive_bad_steps ≥ 3
-      d = cg(hess_op(nlp, z, cz, obj_weight=0.0), Jx' * cz)[1]
-      z -= d
-      cz = c(z)
-      normcz = norm(cz)
-    end
+    # Safeguard AKA agressive normal step - Loses robustness, doesn't seem to fix any problem
+    # if normcz > ρ && consecutive_bad_steps ≥ 3
+    #   d = cg(hess_op(nlp, z, cz, obj_weight=0.0), Jx' * cz)[1]
+    #   z -= d
+    #   cz = c(z)
+    #   normcz = norm(cz)
+    # end
 
     el_time = time() - start_time
     tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
