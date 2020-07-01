@@ -17,7 +17,8 @@ function normal_step(nlp, ctol, x, cx, Jx, ρ, ρmax, ngp;
   Δ = 1.0
 
   if !(1e-4ρmax * ngp ≤ ρ ≤ ρmax * ngp)
-    ρ = max(min(ρmax * ngp, 0.75ρmax), 1e-2ρ, ctol)
+    # ρ = max(min(ρmax * ngp, 0.75ρmax), 1e-2ρ, ctol)
+    ρ = max(min(ρmax * ngp, 0.75ρmax), ctol)
   end
   normal_iter = 0
   consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
@@ -72,7 +73,7 @@ function normal_step(nlp, ctol, x, cx, Jx, ρ, ρmax, ngp;
       consecutive_bad_steps = 0
     end
 
-    # Safeguard AKA agressive normal step - Loses robustness, doesn't seem to fix any problem
+    # Safeguard AKA agressive normal step - Loses robustness, doesn't seem to fix any
     # if normcz > ρ && consecutive_bad_steps ≥ 3
     #   d = cg(hess_op(nlp, z, cz, obj_weight=0.0), Jx' * cz)[1]
     #   z -= d

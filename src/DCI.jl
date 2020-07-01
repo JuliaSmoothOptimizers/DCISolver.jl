@@ -46,20 +46,28 @@ function dci(nlp :: AbstractNLPModel;
   # λ = argmin ‖∇f + Jᵀλ‖
   λ = cgls(Jx', -∇fx)[1]
 
+  # Regularization
+  γ = 0.0
+
   # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
   nnz = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon # H, J, γI, -δI
   rows = zeros(Int, nnz)
   cols = zeros(Int, nnz)
   vals = zeros(nnz)
+  # H (1:nvar, 1:nvar)
   nnz_idx = 1:nlp.meta.nnzh
   @views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+  # J (nvar .+ 1:ncon, 1:nvar)
   nnz_idx = nlp.meta.nnzh .+ (1:nlp.meta.nnzj)
   @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
   @views jac_coord!(nlp, x, vals[nnz_idx])
+  rows[nnz_idx] .+= nlp.meta.nvar
+  # γI (1:nvar, 1:nvar)
   nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
   rows[nnz_idx] .= 1:nlp.meta.nvar
   cols[nnz_idx] .= 1:nlp.meta.nvar
-  vals[nnz_idx] .= 1e-8
+  vals[nnz_idx] .= 0.0
+  # -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
   nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
   rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
   cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
@@ -80,6 +88,8 @@ function dci(nlp :: AbstractNLPModel;
 
   ϵd = atol + rtol * dualnorm
   ϵp = atol + rtol * primalnorm
+
+  Δtangent = 1.0
 
   solved = primalnorm < ϵp && dualnorm < ϵd
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
@@ -109,6 +119,7 @@ function dci(nlp :: AbstractNLPModel;
       ∇ℓxλ = ∇fx + Jx'*λ
       dualnorm = norm(∇ℓxλ)
       @info log_row(Any["N", iter, neval_obj(nlp), fz, dualnorm, primalnorm, ρ, normal_status])
+      eltime = time() - start_time
       tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
       infeasible = normal_status == :infeasible
       done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
@@ -121,17 +132,22 @@ function dci(nlp :: AbstractNLPModel;
       break
     end
 
-    @views hess_coord!(nlp, x, λ, vals[1:nlp.meta.nnzh])
+    @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     # TODO: Don't compute every time
-    @views jac_coord!(nlp, x, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
+    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
     # TODO: Update γ and δ here
-    x, tg_status = tangent_step(nlp, z, λ, rows, cols, vals, ∇ℓxλ, Jx, ℓzλ, ρ, max_eval=max_eval, max_time=max_time-eltime)
+    x, tg_status, Δtangent, γ = tangent_step(nlp, z, λ, rows, cols, vals, ∇ℓxλ, Jx, ℓzλ, ρ, γ,
+                                             Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
     #=
     if tg_status != :success
       tired = true
       continue
     end
     =#
+    
+    γ = γ / 10
+    Δtangent *= 10
+
     fx = obj(nlp, x)
     cx = c(x)
     ∇fx = ∇f(x)
@@ -141,9 +157,10 @@ function dci(nlp :: AbstractNLPModel;
     ∇ℓxλ = ∇fx + Jx'*λ
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
-    @info log_row(Any["T", iter, neval_obj(nlp), fx, dualnorm, primalnorm, ρ])
+    @info log_row(Any["T", iter, neval_obj(nlp), fx, dualnorm, primalnorm, ρ, tg_status])
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
+    eltime = time() - start_time
     tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
   end
 
