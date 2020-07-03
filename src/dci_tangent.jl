@@ -4,7 +4,7 @@ min ¹/₂dᵀBd + dᵀg
 s.t Ad = 0
     ‖d‖ ≦ Δ
 """
-function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ, γ;
+function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
                       Δ = 1.0,
                       η₁ = 0.25,
                       η₂ = 0.75,
@@ -13,25 +13,25 @@ function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ, γ;
                       max_eval = 1_000,
                       max_time = 1_000,
                      )
-  m, n = size(A)
+  m, n = nlp.meta.ncon, nlp.meta.nvar
   status = :unknown
 
   nnzh = nlp.meta.nnzh
 
-  B = Symmetric(sparse(rows[1:nnzh], cols[1:nnzh], vals[1:nnzh], n, n), :L) # TODO: !!!
-
   normct = 1.0
   r = -1.0
+  dζ = zeros(m + n)
+  rhs = [-g; zeros(m)]
 
   iter = 0
+
+  δmin = 1e-8
 
   start_time = time()
   el_time = 0.0
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   while !((normct <= 2ρ && r >= η₁) || tired)
-
     dcp_on_boundary = false
-    gBg = dot(g, B * g)
     if gBg ≤ 1e-12 * dot(g,g)
       α = Δ / norm(g)
       dcp_on_boundary = true
@@ -43,10 +43,13 @@ function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ, γ;
       end
     end
     dcp = -α * g
+    dcpBdcp = α^2 * gBg
+    dnBdn = dBd = dcpBdn = 0.0
 
     d = if dcp_on_boundary
       # When the Cauchy step is in the boundary, we use it
       status = :cauchy_step
+      dBd = dcpBdcp
       dcp
     else
       # When there is room for improvement, we try a dogleg step
@@ -54,27 +57,32 @@ function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ, γ;
       descent = false
       local dn
       while !descent
-        # TODO: Use MA57 and LDLFactorization to solve the system
-        H = Symmetric(sparse(rows, cols, vals, m + n, m + n), :L)
-        try
-          dζ = H \ [-g; zeros(m)]
+        factorize!(LDL)
+        if success(LDL) && num_neg_eig(LDL) == m
+          solve!(dζ, LDL, rhs)
           dn = dζ[1:n]
-        catch
-          dn = zeros(n)
+          dλ = view(dζ, n+1:n+m)
+          dnBdn = -dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
+          dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
         end
-        if dot(dn, g) ≥ -1e-4 * norm(g)^2
+
+        if !success(LDL) || dot(dn, g) ≥ -1e-4 * norm(g)^2 # Can I change to while !success(LDL)?
           γ = max(10γ, 1e-8)
           if γ > 1e8
             error("γ too large. TODO: Fix here")
           end
           nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
           vals[nnz_idx] .= γ
-          H = Symmetric(sparse(rows, cols, vals, m + n, m + n), :L)
-          try
-            dζ = H \ [-g; zeros(m)]
+          nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
+          δ = δmin * ρ
+          vals[nnz_idx] .= -δ
+          factorize!(LDL)
+          if success(LDL) && num_neg_eig(LDL) == m
+            solve!(dζ, LDL, rhs)
             dn = dζ[1:n]
-          catch
-            dn = zeros(n)
+            dλ = view(dζ, n+1:n+m)
+            dnBdn = -dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
+            dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
           end
         else
           descent = true
@@ -83,6 +91,7 @@ function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ, γ;
 
       if norm(dn) < Δ # Both Newton and Cauchy are inside the TR.
         status = :newton
+        dBd = dnBdn
         dn
       else
         # d = τ dcp + (1 - τ) * dn = dn + τ * (dcp - dn)
@@ -96,6 +105,7 @@ function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ, γ;
         τ = length(roots) == 0 ? 1.0 : min(1.0, roots...)
 
         d = dn + τ * (dcp - dn)
+        dBd = τ^2 * dcpBdcp + 2 * τ * (1 - τ) * dcpBdn + (1 - τ)^2 * dnBdn
         status = :dogleg
         d
       end
@@ -114,7 +124,7 @@ function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ, γ;
     if normct <= 2ρ
       ft = obj(nlp, xt)
       ℓxtλ = ft + dot(λ, ct)
-      qd = dot(d, B * d)/2 + dot(g, d)
+      qd = dBd / 2 + dot(g, d)
       if qd >= 0
         @error "status = $status"
         @error("iter = $iter", "qd = $qd", "‖d‖ = $(norm(d))", "Δ = $Δ")
@@ -147,5 +157,5 @@ function tangent_step(nlp, z, λ, rows, cols, vals, g, A, ℓzλ, ρ, γ;
     tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   end
 
-  return z, status, Δ, γ
+  return z, status, Δ, γ, δ
 end

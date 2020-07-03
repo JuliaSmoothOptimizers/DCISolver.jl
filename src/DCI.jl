@@ -2,13 +2,15 @@ module DCI
 
 using LinearAlgebra, Logging
 
-using Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays
+using Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
 
 export dci
 
 include("dci_normal.jl")
 include("dci_tangent.jl")
 
+const solver_correspondence = Dict(:ma57 => MA57Struct, 
+                                   :ldlfact => LDLFactorizationStruct)
 """
     dci(nlp; kwargs...)
 
@@ -25,11 +27,16 @@ function dci(nlp :: AbstractNLPModel;
              atol = 1e-8,
              rtol = 1e-6,
              ctol = 1e-6,
+             linear_solver = :ma57,
              max_eval = 1000,
              max_time = 60
             )
   if !equality_constrained(nlp)
     error("DCI only works for equality constrained problems")
+  end
+  if !(linear_solver ∈ keys(solver_correspondence))
+    @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
+    linear_solver = :ldlfact
   end
 
   f(x) = obj(nlp, x)
@@ -48,6 +55,8 @@ function dci(nlp :: AbstractNLPModel;
 
   # Regularization
   γ = 0.0
+  δmin = 1e-8
+  δ = 0.0
 
   # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
   nnz = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon # H, J, γI, -δI
@@ -71,7 +80,9 @@ function dci(nlp :: AbstractNLPModel;
   nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
   rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
   cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  vals[nnz_idx] .= -1e-8
+  vals[nnz_idx] .= -δ
+
+  LDL = solver_correspondence[linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
 
   #ℓ(x,λ) = f(x) + λᵀc(x)
   ℓxλ = fx + dot(λ, cx)
@@ -87,7 +98,7 @@ function dci(nlp :: AbstractNLPModel;
   eltime = 0.0
 
   ϵd = atol + rtol * dualnorm
-  ϵp = atol + rtol * primalnorm
+  ϵp = ctol
 
   Δtangent = 1.0
 
@@ -132,12 +143,18 @@ function dci(nlp :: AbstractNLPModel;
       break
     end
 
+    gBg = 0.0
+    for k = 1:nlp.meta.nnzh
+      i, j, v = rows[k], cols[k], vals[k]
+      gBg += v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+    end
+
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     # TODO: Don't compute every time
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
     # TODO: Update γ and δ here
-    x, tg_status, Δtangent, γ = tangent_step(nlp, z, λ, rows, cols, vals, ∇ℓxλ, Jx, ℓzλ, ρ, γ,
-                                             Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
+    x, tg_status, Δtangent, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓxλ, ℓzλ, gBg, ρ, γ, δ,
+                                                Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
     #=
     if tg_status != :success
       tired = true
