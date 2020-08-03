@@ -4,7 +4,7 @@ Approximately solves min ‖c(x)‖.
 
 Given xₖ, finds min ‖cₖ + Jₖd‖
 """
-function normal_step(nlp, ctol, x, cx, Jx, ρ, ρmax, ngp;
+function normal_step(nlp, ctol, x, cx, Jx, ρ;
                      η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 4.0,
                      max_eval = 1_000, max_time = 60,
                     )
@@ -16,10 +16,6 @@ function normal_step(nlp, ctol, x, cx, Jx, ρ, ρmax, ngp;
 
   Δ = 1.0
 
-  if !(1e-4ρmax * ngp ≤ ρ ≤ ρmax * ngp)
-    # ρ = max(min(ρmax * ngp, 0.75ρmax), 1e-2ρ, ctol)
-    ρ = max(min(ρmax * ngp, 0.75ρmax), ctol)
-  end
   normal_iter = 0
   consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
   normcx = normcz           # c(x) = normcx = normcz for the first z
@@ -101,5 +97,5 @@ function normal_step(nlp, ctol, x, cx, Jx, ρ, ρmax, ngp;
     :unknown
   end
 
-  return z, cz, ρ, status
+  return z, cz, status
 end

@@ -24,11 +24,11 @@ problems described in
 
 """
 function dci(nlp :: AbstractNLPModel;
-             atol = 1e-8,
+             atol = 1e-6,
              rtol = 1e-6,
              ctol = 1e-6,
              linear_solver = :ma57,
-             max_eval = 1000,
+             max_eval = 50000,
              max_time = 60
             )
   if !equality_constrained(nlp)
@@ -38,6 +38,8 @@ function dci(nlp :: AbstractNLPModel;
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
     linear_solver = :ldlfact
   end
+
+  evals(nlp) = neval_obj(nlp) + neval_cons(nlp)
 
   f(x) = obj(nlp, x)
   ∇f(x) = grad(nlp, x)
@@ -88,11 +90,15 @@ function dci(nlp :: AbstractNLPModel;
   ℓxλ = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
 
-  ρmax = 1.0
-  ρ = 1.0
+  Δℓₜ = Inf
+  Δℓₙ = 0.0
+  ℓᵣ = Inf
 
   dualnorm = norm(∇ℓxλ)
   primalnorm = norm(cx)
+
+  ρmax = max(ctol, 5primalnorm, 50dualnorm)
+  ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol)
 
   start_time = time()
   eltime = 0.0
@@ -103,35 +109,36 @@ function dci(nlp :: AbstractNLPModel;
   Δtangent = 1.0
 
   solved = primalnorm < ϵp && dualnorm < ϵd
-  tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
+  tired = evals(nlp) > max_eval || eltime > max_time
   infeasible = false
 
   iter = 0
 
-  @info log_header([:stage, :iter, :nf, :fx, :dual, :primal, :ρ, :status],
-                   [String, Int, Int, Float64, Float64, Float64, Float64, String],
-                   hdr_override=Dict(:nf => "#f", :fx => "f(x)", :dual => "‖∇L‖", :primal => "‖c(x)‖")
+  @info log_header([:stage, :iter, :nf, :fx, :dual, :primal, :ρmax, :ρ, :status],
+                   [String, Int, Int, Float64, Float64, Float64, Float64, Float64, String],
+                   hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)", :dual => "‖∇L‖", :primal => "‖c(x)‖")
                   )
-  @info log_row(Any["init", iter, neval_obj(nlp), fx, dualnorm, primalnorm, ρ])
+  @info log_row(Any["init", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ])
 
   while !(solved || tired || infeasible)
     # Normal step
     done_with_normal_step = false
     local ℓzλ
     while !done_with_normal_step
-      ngp = dualnorm/(norm(∇fx) + 1)
-      z, cz, ρ, normal_status = normal_step(nlp, ϵp, x, cx, Jx, ρ, ρmax, ngp, max_eval=max_eval, max_time=max_time-eltime)
-      λ = cgls(Jx', -∇fx)[1]
+      # ngp = dualnorm/(norm(∇fx) + 1)
+      ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol)
+      z, cz, normal_status = normal_step(nlp, ϵp, x, cx, Jx, ρ, max_eval=max_eval, max_time=max_time-eltime)
+      ∇fz = ∇f(z)
+      λ = cgls(Jx', -∇fz)[1]
       fz = f(z)
       ℓzλ = fz + dot(λ, cz)
-      ∇ℓxλ = ∇fx + Jx'*λ
       primalnorm = norm(cz)
-      ∇fx = ∇f(x)
+      # ∇fx = ∇f(x)
       ∇ℓxλ = ∇fx + Jx'*λ
       dualnorm = norm(∇ℓxλ)
-      @info log_row(Any["N", iter, neval_obj(nlp), fz, dualnorm, primalnorm, ρ, normal_status])
+      @info log_row(Any["N", iter, evals(nlp), fz, dualnorm, primalnorm, ρmax, ρ, normal_status])
       eltime = time() - start_time
-      tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
+      tired = evals(nlp) > max_eval || eltime > max_time
       infeasible = normal_status == :infeasible
       done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
     end
@@ -141,6 +148,20 @@ function dci(nlp :: AbstractNLPModel;
 
     if solved || tired || infeasible
       break
+    end
+
+    # @info("",
+    #   fx,
+    #   fz,
+    #   ℓxλ,
+    #   ℓzλ
+    # )
+    Δℓₙ = ℓzλ - ℓxλ
+    if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
+      ρmax /= 2
+    end
+    if Δℓₙ > -Δℓₜ / 2
+      ℓᵣ = ℓzλ
     end
 
     gBg = 0.0
@@ -153,7 +174,7 @@ function dci(nlp :: AbstractNLPModel;
     # TODO: Don't compute every time
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
     # TODO: Update γ and δ here
-    x, tg_status, Δtangent, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓxλ, ℓzλ, gBg, ρ, γ, δ,
+    x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓxλ, ℓzλ, gBg, ρ, γ, δ,
                                                 Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
     #=
     if tg_status != :success
@@ -174,17 +195,17 @@ function dci(nlp :: AbstractNLPModel;
     ∇ℓxλ = ∇fx + Jx'*λ
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
-    @info log_row(Any["T", iter, neval_obj(nlp), fx, dualnorm, primalnorm, ρ, tg_status])
+    @info log_row(Any["T", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ, tg_status])
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time
-    tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
+    tired = evals(nlp) > max_eval || eltime > max_time
   end
 
   status = if solved
     :first_order
   elseif tired
-    if neval_obj(nlp) + neval_cons(nlp) > max_eval
+    if evals(nlp) > max_eval
       :max_eval
     elseif eltime > max_time
       :max_time
@@ -198,6 +219,17 @@ function dci(nlp :: AbstractNLPModel;
   end
 
   return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
+end
+
+function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ)
+  ngp = dualnorm / (norm(∇fx) + 1)
+  ρ = max(ngp, 0.75) * ρmax
+  if ρ < ϵ && primalnorm > 100ctol
+    ρ = primalnorm / 10
+  elseif ngp ≤ 5ϵ
+    ρ = ϵ
+  end
+  return ρ
 end
 
 end # module

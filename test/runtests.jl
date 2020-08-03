@@ -104,7 +104,7 @@ function test_dci()
     nlp = ADNLPModel(x->0.01 * (x[1] - 1)^2 + (x[2] - x[1]^2)^2, [2.0; 2.0; 2.0],
                      x->[x[1] + x[3]^2 + 1.0], [0.0], [0.0])
     stats = with_logger(NullLogger()) do
-      dci(nlp)
+      dci(nlp, max_eval=10_000)
     end
     dual, primal, status = stats.dual_feas, stats.primal_feas, stats.status
     @test dual < 1e-4

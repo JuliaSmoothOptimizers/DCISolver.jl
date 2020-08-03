@@ -6,7 +6,7 @@ s.t Ad = 0
 """
 function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
                       Δ = 1.0,
-                      η₁ = 0.25,
+                      η₁ = 1e-2,
                       η₂ = 0.75,
                       σ₁ = 0.25,
                       σ₂ = 2.0,
@@ -21,11 +21,13 @@ function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
   normct = 1.0
   r = -1.0
   dζ = zeros(m + n)
+  dn = zeros(n)
   rhs = [-g; zeros(m)]
 
   iter = 0
 
   δmin = 1e-8
+  Δℓ = 0.0
 
   start_time = time()
   el_time = 0.0
@@ -54,8 +56,8 @@ function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
     else
       # When there is room for improvement, we try a dogleg step
       # A CG variant can be implemented, but it needs the nullspace matrix.
+      dn .= 0
       descent = false
-      local dn
       while !descent
         factorize!(LDL)
         if success(LDL) && num_neg_eig(LDL) == m
@@ -66,15 +68,18 @@ function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
           dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
         end
 
-        if !success(LDL) || dot(dn, g) ≥ -1e-4 * norm(g)^2 # Can I change to while !success(LDL)?
+        while !(success(LDL) && num_neg_eig(LDL) == m)
           γ = max(10γ, 1e-8)
-          if γ > 1e8
+          if γ > 1e16
+            # dn .= dcp
+            # dnBdn = dcpBdcp
+            # break
             error("γ too large. TODO: Fix here")
           end
           nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
           vals[nnz_idx] .= γ
           nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
-          δ = δmin * ρ
+          δ = δmin
           vals[nnz_idx] .= -δ
           factorize!(LDL)
           if success(LDL) && num_neg_eig(LDL) == m
@@ -84,9 +89,8 @@ function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
             dnBdn = -dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
             dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
           end
-        else
-          descent = true
         end
+        descent = true
       end
 
       if norm(dn) < Δ # Both Newton and Cauchy are inside the TR.
@@ -138,13 +142,24 @@ function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
         Δℓ = (dot(g, d) + dot(gt, d)) / 2
       end
       r = Δℓ / qd
+      # @info("",
+      #   Δℓ,
+      #   qd,
+      #   ft,
+      #   ℓzλ,
+      #   ℓxtλ,
+      #   r,
+      #   Δℓ - η₁ * qd,
+      #   (Δℓ - η₁ * qd) / max(1, abs(ft))
+      # )
+      # r < η₁
       if r < η₁
         Δ *= σ₁
       else
         z = xt
         cx = ct
         ℓxλ = ℓxtλ
-        if r > η₂ && norm(d) >= 0.99 Δ
+        if r ≥ η₂ && norm(d) >= 0.99 Δ
           Δ *= σ₂
         end
       end
@@ -157,5 +172,5 @@ function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
     tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   end
 
-  return z, status, Δ, γ, δ
+  return z, status, Δ, Δℓ, γ, δ
 end
