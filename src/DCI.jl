@@ -9,7 +9,7 @@ export dci
 include("dci_normal.jl")
 include("dci_tangent.jl")
 
-const solver_correspondence = Dict(:ma57 => MA57Struct, 
+const solver_correspondence = Dict(#:ma57 => MA57Struct, 
                                    :ldlfact => LDLFactorizationStruct)
 """
     dci(nlp; kwargs...)
@@ -27,7 +27,7 @@ function dci(nlp :: AbstractNLPModel;
              atol = 1e-6,
              rtol = 1e-6,
              ctol = 1e-6,
-             linear_solver = :ma57,
+             linear_solver = :ldlfact,#:ma57,
              max_eval = 50000,
              max_time = 60
             )
@@ -221,10 +221,12 @@ function dci(nlp :: AbstractNLPModel;
   return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
 end
 
+#Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
+#Should really check whether 3/4ρmax < ngp ρmax 10^-4 ?
 function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ)
   ngp = dualnorm / (norm(∇fx) + 1)
-  ρ = max(ngp, 0.75) * ρmax
-  if ρ < ϵ && primalnorm > 100ctol
+  ρ = min(ngp, 0.75) * ρmax #max(ngp, 0.75) * ρmax #in the 2008 paper, it is a min
+  if ρ < ϵ && primalnorm > 100ϵ
     ρ = primalnorm / 10
   elseif ngp ≤ 5ϵ
     ρ = ϵ
