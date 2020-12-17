@@ -43,18 +43,18 @@ ctol = 1e-6
 
     z, cz, status = normal_step(nlp, ctol, x, cx, Jx, ρ;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60,
+                                max_eval = 1_000, max_time = 60.,
                                 )
     @test status == :infeasible
 
     xϵ = [0.; 1.; 0.] + rand(3)*ctol/norm(x)
-    cx = cons(nlp, xϵ)
-    Jx = jac(nlp, xϵ)
-    z, cz, status = normal_step(nlp, ctol, xϵ, cx, Jx, ρ;
+    cxϵ = cons(nlp, xϵ)
+    Jxϵ = jac(nlp, xϵ)
+    zϵ, czϵ, statusϵ = normal_step(nlp, ctol, xϵ, cxϵ, Jxϵ, ρ;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60,
+                                max_eval = 1_000, max_time = 60.,
                                 )
-    @test status == :success
+    @test statusϵ == :success
 end
 
 ##
@@ -76,7 +76,7 @@ end
 
     z, cz, status = normal_step(nlp, ctol, x, cx, Jx, ρ;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60,
+                                max_eval = 1_000, max_time = 60.,
                                 )
     @test status == :infeasible
 
@@ -85,7 +85,7 @@ end
     Jx = jac(nlp, xϵ)
     z, cz, status = normal_step(nlp, ctol, xϵ, cx, Jx, ρ;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60,
+                                max_eval = 1_000, max_time = 60.,
                                 )
     @test status == :success
 end
@@ -103,7 +103,7 @@ end
 
     z, cz, status = normal_step(nlp, ctol, x, cx, Jx, ρ;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60,
+                                max_eval = 1_000, max_time = 60.,
                                 )
     @test norm(z - x) == 0.
     d = -Jx'*cz
@@ -116,9 +116,8 @@ end
     Jx = jac(nlp, xϵ)
     z, cz, status = normal_step(nlp, ctol, xϵ, cx, Jx, ρ;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60,
+                                max_eval = 1_000, max_time = 60.,
                                 )
-    @show status, norm(x-z), norm(cz)
     @test status == :success
     finalize(nlp)
 end
