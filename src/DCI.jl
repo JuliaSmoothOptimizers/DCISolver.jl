@@ -24,9 +24,9 @@ problems described in
 
 """
 function dci(nlp :: AbstractNLPModel;
-             atol = 1e-6,
-             rtol = 1e-6,
-             ctol = 1e-6,
+             atol = 1e-5,
+             rtol = 1e-5,
+             ctol = 1e-5,
              linear_solver = :ldlfact,#:ma57,
              max_eval = 50000,
              max_time = 60
@@ -103,7 +103,7 @@ function dci(nlp :: AbstractNLPModel;
   start_time = time()
   eltime = 0.0
 
-  ϵd = atol + rtol * dualnorm
+  ϵd = atol# + rtol * dualnorm
   ϵp = ctol
 
   Δtangent = 1.0
@@ -123,19 +123,21 @@ function dci(nlp :: AbstractNLPModel;
   while !(solved || tired || infeasible)
     # Normal step
     done_with_normal_step = false
-    local ℓzλ
+    local ℓzλ, ∇ℓzλ
     while !done_with_normal_step
       # ngp = dualnorm/(norm(∇fx) + 1)
       ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol)
       z, cz, normal_status = normal_step(nlp, ϵp, x, cx, Jx, ρ, max_eval=max_eval, max_time=max_time-eltime)
       ∇fz = ∇f(z)
-      λ = cgls(Jx', -∇fz)[1]
+      Jz = J(z)
+      λ = cgls(Jz', -∇fz)[1] #cgls(Jx', -∇fz)[1] #T.M.: Jx?
       fz = f(z)
       ℓzλ = fz + dot(λ, cz)
       primalnorm = norm(cz)
       # ∇fx = ∇f(x)
-      ∇ℓxλ = ∇fx + Jx'*λ
-      dualnorm = norm(∇ℓxλ)
+      #∇ℓxλ = ∇fx + Jx'*λ
+      ∇ℓzλ = ∇fz + Jz'*λ
+      dualnorm = norm(∇ℓzλ) #norm(∇ℓxλ)
       @info log_row(Any["N", iter, evals(nlp), fz, dualnorm, primalnorm, ρmax, ρ, normal_status])
       eltime = time() - start_time
       tired = evals(nlp) > max_eval || eltime > max_time
@@ -164,29 +166,34 @@ function dci(nlp :: AbstractNLPModel;
       ℓᵣ = ℓzλ
     end
 
-    gBg = 0.0
+    gBg = 0.0 #T.M.: ∇ℓxλ' * B * ∇ℓxλ (recall the only the lower triangular is in vals)
     for k = 1:nlp.meta.nnzh
       i, j, v = rows[k], cols[k], vals[k]
-      gBg += v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+      gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2) #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
     end
 
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     # TODO: Don't compute every time
-    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
+    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)]) #T.M.: redundant with previous loop
     # TODO: Update γ and δ here
-    x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓxλ, ℓzλ, gBg, ρ, γ, δ,
-                                                Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
-    #=
-    if tg_status != :success
+    #T.M.: Should'nt it be ∇ℓzλ ?
+    x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓzλ, ℓzλ, gBg, ρ, γ, δ, # ∇ℓxλ
+                                                     Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
+    #γ
+    if tg_status == :tired
       tired = true
+      #now it depends whether we are feasibility or not.
       continue
+    elseif tg_status == :small_horizontal_step
+        #Try something ?
+    else
+        #success :)
     end
-    =#
     
     γ = γ / 10
     Δtangent *= 10
 
-    fx = obj(nlp, x)
+    fx = f(x)
     cx = c(x)
     ∇fx = ∇f(x)
     Jx = J(x)
