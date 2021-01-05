@@ -5,7 +5,7 @@ using LinearAlgebra, Logging, Test
 using NLPModels
 
 # This package
-using Main.DCI
+using DCI
 
 function test_dci(;tol = 1e-5)
   @testset "Simple problem" begin
