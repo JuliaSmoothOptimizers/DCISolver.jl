@@ -665,7 +665,9 @@ uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [[SolverTools]]
 deps = ["DataFrames", "JLD2", "LinearAlgebra", "LinearOperators", "Logging", "NLPModels", "Printf"]
-git-tree-sha1 = "8216c91c968e0df3702015777e0c8167f240c09c"
+git-tree-sha1 = "8af11051e9665def0850ce7706911199fca620dd"
+repo-rev = "master"
+repo-url = "https://github.com/JuliaSmoothOptimizers/SolverTools.jl"
 uuid = "b5612192-2639-5dc1-abfe-fbedd65fab29"
 version = "0.3.0"
 

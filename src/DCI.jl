@@ -54,8 +54,7 @@ function dci(nlp :: AbstractNLPModel;
   
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
   Jx = J(x)
-  # λ = argmin ‖∇f + Jᵀλ‖
-  λ = cgls(Jx', -∇fx)[1]
+  λ = compute_lx(Jx, ∇fx)#cgls(Jx', -∇fx)[1] # λ = argmin ‖∇f + Jᵀλ‖
 
   # Regularization
   γ = 0.0
@@ -84,7 +83,7 @@ function dci(nlp :: AbstractNLPModel;
   nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
   rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
   cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  vals[nnz_idx] .= -δ
+  vals[nnz_idx] .= - δ
 
   LDL = solver_correspondence[linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
 
@@ -100,12 +99,12 @@ function dci(nlp :: AbstractNLPModel;
   primalnorm = norm(cx)
 
   ρmax = max(ctol, 5primalnorm, 50dualnorm)
-  ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
+  ρ = NaN #not needed #compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
 
   start_time = time()
   eltime = 0.0
 
-  ϵd = atol# + rtol * dualnorm
+  ϵd = atol + rtol * dualnorm
   ϵp = ctol
 
   Δtangent = 1.0
@@ -130,11 +129,11 @@ function dci(nlp :: AbstractNLPModel;
     ℓzλ, ∇ℓzλ              = ℓxλ, ∇ℓxλ
     
     #Initialize ρ at x
-    #ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
+    ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
     
-    done_with_normal_step = false#primalnorm ≤ ρ
+    done_with_normal_step = primalnorm ≤ ρ
     iter_normal_step      = 0
-    @show  ρ, primalnorm ≤ ρ
+
     #T.M.: the drawback here is the evaluation of Jz and λ for potential unnecessary steps.
     while !done_with_normal_step
         
@@ -142,7 +141,7 @@ function dci(nlp :: AbstractNLPModel;
       
       ∇fz        = ∇f(z)
       Jz         = J(z)
-      λ          = cgls(Jz', -∇fz)[1] #cgls(Jx', -∇fz)[1] #T.M.: Jx?
+      compute_lx!(Jz, ∇fz, λ) #cgls(Jx', -∇fx)[1] #T.M.: Jx?
       fz         = f(z)
       ℓzλ        = fz + dot(λ, cz)
       primalnorm = norm(cz)
@@ -161,8 +160,7 @@ function dci(nlp :: AbstractNLPModel;
       
       done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
     end
-    @show  ρ, iter_normal_step
-    #T.M.: outside the loop, we need z, ℓzλ,  ∇ℓzλ, primalnorm, dualnorm, ρ
+    #T.M.: outside the loop, we need z, ℓzλ,  ∇ℓzλ, primalnorm, dualnorm, ρ, tired, infeasible, solved
 
     # Convergence test
     solved = primalnorm < ϵp && dualnorm < ϵd
@@ -195,7 +193,6 @@ function dci(nlp :: AbstractNLPModel;
     # TODO: Don't compute every time
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)]) #T.M.: redundant with previous loop
     # TODO: Update γ and δ here
-    #T.M.: Should'nt it be ∇ℓzλ ?
     x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓzλ, ℓzλ, gBg, ρ, γ, δ, # ∇ℓxλ
                                                      Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
     #γ
@@ -216,11 +213,13 @@ function dci(nlp :: AbstractNLPModel;
     cx = c(x)
     ∇fx = ∇f(x)
     Jx = J(x)
-    # λ = cgls(Jx', -∇fx)[1]
+    compute_lx!(Jx, ∇fx, λ) #cgls(Jx', -∇fx)[1]
     ℓxλ = fx + dot(λ, cx)
     ∇ℓxλ = ∇fx + Jx'*λ
+    
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
+    
     @info log_row(Any["T", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ, tg_status])
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
@@ -263,6 +262,27 @@ function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ, iter)
   return ρ
 end
 
-include("dciv2.jl")
+"""
+Compute the solution of || Jx' λ - ∇fx ||
+"""
+function compute_lx(Jx :: LinearOperator, ∇fx)
+    return cgls(Jx', -∇fx)[1]
+end
+
+function compute_lx(Jx, ∇fx)
+    return Jx' \ ( - ∇fx)
+end
+
+function compute_lx!(Jx :: LinearOperator, ∇fx, λ)
+    λ .= cgls(Jx', -∇fx)[1]
+    return λ
+end
+
+function compute_lx!(Jx, ∇fx, λ)
+    λ .= Jx' \ ( - ∇fx)
+    return λ
+end
+
+#include("dciv2.jl")
 
 end # module
