@@ -1,6 +1,6 @@
 using CUTEst, NLPModels, NLPModelsIpopt, Plots, SolverBenchmark, SolverTools
 #This package
-using Main.DCI
+using DCI
 gr()
 
 function runcutest()
