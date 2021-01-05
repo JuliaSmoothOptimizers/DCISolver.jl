@@ -1,5 +1,7 @@
-using CUTEst, DCI, NLPModels, NLPModelsIpopt, Plots, SolverBenchmark, SolverTools
-pyplot()
+using CUTEst, NLPModels, NLPModelsIpopt, Plots, SolverBenchmark, SolverTools
+#This package
+using Main.DCI
+gr()
 
 function runcutest()
   #pnames = readlines("paper-problems.list")
@@ -11,7 +13,7 @@ function runcutest()
   stats = bmark_solvers(solvers, cutest_problems)
 
   join_df = join(stats, [:objective, :dual_feas, :primal_feas, :neval_obj, :status], invariant_cols=[:name])
-  markdown_table(stdout, join_df)
+  SolverBenchmark.markdown_table(stdout, join_df)
   for col in [:neval_obj, :elapsed_time]
     for df in values(stats)
       if all(df[col] .== 0)

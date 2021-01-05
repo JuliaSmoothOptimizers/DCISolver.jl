@@ -1,18 +1,6 @@
-module DCI
-
-using LinearAlgebra, Logging
-
-using Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
-
-export dci
-
-include("dci_normal.jl")
-include("dci_tangent.jl")
-
-const solver_correspondence = Dict(#:ma57 => MA57Struct, 
-                                   :ldlfact => LDLFactorizationStruct)
+export dciv2
 """
-    dci(nlp; kwargs...)
+    dciv2(nlp; kwargs...)
 
 This method implements the Dynamic Control of Infeasibility for equality-constrained
 problems described in
@@ -22,15 +10,16 @@ problems described in
     SIAM J. Optim., 19(3), 1299–1325.
     https://doi.org/10.1137/070679557
 
+Use JSO for the normal step.
 """
-function dci(nlp :: AbstractNLPModel;
-             atol = 1e-5,
-             rtol = 1e-5,
-             ctol = 1e-5,
-             linear_solver = :ldlfact,#:ma57,
-             max_eval = 50000,
-             max_time = 60
-            )
+function dciv2(nlp :: AbstractNLPModel;
+               atol = 1e-5,
+               rtol = 1e-5,
+               ctol = 1e-5,
+               linear_solver = :ldlfact,#:ma57,
+               max_eval = 50000,
+               max_time = 60
+               )
   if !equality_constrained(nlp)
     error("DCI only works for equality constrained problems")
   end
@@ -51,8 +40,6 @@ function dci(nlp :: AbstractNLPModel;
   fz = fx = f(x)
   ∇fx = ∇f(x)
   cx = c(x)
-  
-  #T.M: we probably don't want to compute Jx and λ, if cx > ρ
   Jx = J(x)
   # λ = argmin ‖∇f + Jᵀλ‖
   λ = cgls(Jx', -∇fx)[1]
@@ -124,45 +111,39 @@ function dci(nlp :: AbstractNLPModel;
 
   while !(solved || tired || infeasible)
     # Normal step
-    local ℓzλ, ∇ℓzλ #T.M.: why do we need the local keyword here?
-    #assign x_c variables:
-    z, cz, Jz, ∇fz        = x, cx, Jx, ∇fx
-    ℓzλ, ∇ℓzλ              = ℓxλ, ∇ℓxλ
-    
-    #Initialize ρ at x
-    #ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
-    
-    done_with_normal_step = false#primalnorm ≤ ρ
-    iter_normal_step      = 0
-    @show  ρ, primalnorm ≤ ρ
-    #T.M.: the drawback here is the evaluation of Jz and λ for potential unnecessary steps.
+    ###########################################################################
+    nls = FeasibilityResidual(nlp)
+    @assert unconstrained(nls)
+    ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
+    stats = cannoles(nls, 
+                     x = x,
+                     max_time = max_time - eltime,
+                     ϵtol = ρ,
+                     linsolve = :ldlfactorizations,
+                     method = :Newton_noFHess) #:Newton, :LM
+    done_with_normal_step = false
+    local ℓzλ, ∇ℓzλ
     while !done_with_normal_step
-        
-      z, cz, normal_status = normal_step(nlp, ϵp, z, cz, Jz, ρ, max_eval = max_eval, max_time = max_time - eltime)
-      
-      ∇fz        = ∇f(z)
-      Jz         = J(z)
-      λ          = cgls(Jz', -∇fz)[1] #cgls(Jx', -∇fz)[1] #T.M.: Jx?
-      fz         = f(z)
-      ℓzλ        = fz + dot(λ, cz)
+      # ngp = dualnorm/(norm(∇fx) + 1)
+      ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
+      z, cz, normal_status = normal_step(nlp, ϵp, x, cx, Jx, ρ, max_eval=max_eval, max_time=max_time-eltime)
+      ∇fz = ∇f(z)
+      Jz = J(z)
+      λ = cgls(Jz', -∇fz)[1] #cgls(Jx', -∇fz)[1] #T.M.: Jx?
+      fz = f(z)
+      ℓzλ = fz + dot(λ, cz)
       primalnorm = norm(cz)
-      ∇ℓzλ       = ∇fz + Jz'*λ
-      dualnorm   = norm(∇ℓzλ)
-      
-      #update rho
-      iter_normal_step += 1
-      ρ = compute_ρ(dualnorm, primalnorm, ∇fz, ρmax, ctol, iter_normal_step)
-      
+      # ∇fx = ∇f(x)
+      #∇ℓxλ = ∇fx + Jx'*λ
+      ∇ℓzλ = ∇fz + Jz'*λ
+      dualnorm = norm(∇ℓzλ) #norm(∇ℓxλ)
       @info log_row(Any["N", iter, evals(nlp), fz, dualnorm, primalnorm, ρmax, ρ, normal_status])
-      
-      eltime     = time() - start_time
-      tired      = evals(nlp) > max_eval || eltime > max_time
+      eltime = time() - start_time
+      tired = evals(nlp) > max_eval || eltime > max_time
       infeasible = normal_status == :infeasible
-      
       done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
     end
-    @show  ρ, iter_normal_step
-    #T.M.: outside the loop, we need z, ℓzλ,  ∇ℓzλ, primalnorm, dualnorm, ρ
+    ###########################################################################
 
     # Convergence test
     solved = primalnorm < ϵp && dualnorm < ϵd
@@ -246,23 +227,3 @@ function dci(nlp :: AbstractNLPModel;
 
   return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
 end
-
-#Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
-#Should really check whether 3/4ρmax < ngp ρmax 10^-4 ?
-function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ, iter)
-  if iter > 100
-      return 0.75 * ρmax
-  end
-  ngp = dualnorm / (norm(∇fx) + 1)
-  ρ = min(ngp, 0.75) * ρmax
-  if ρ < ϵ && primalnorm > 100ϵ
-    ρ = primalnorm / 10
-  elseif ngp ≤ 5ϵ
-    ρ = ϵ
-  end
-  return ρ
-end
-
-include("dciv2.jl")
-
-end # module

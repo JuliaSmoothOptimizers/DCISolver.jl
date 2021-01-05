@@ -1,8 +1,8 @@
 #December, 9th, T.M. comments:
 using Krylov, LinearAlgebra, NLPModels, CUTEst, Test
 #This package
-using DCI
-using DCI: compute_ρ, normal_step
+using Main.DCI
+using Main.DCI: compute_ρ, normal_step
 
 atol = 1e-6
 rtol = 1e-6
@@ -47,7 +47,7 @@ ctol = 1e-6
                                 )
     @test status == :infeasible
 
-    xϵ = [0.; 1.; 0.] + rand(3)*ctol/norm(x)
+    xϵ = [0.; 1.; 0.] .+ ctol/norm(x)
     cxϵ = cons(nlp, xϵ)
     Jxϵ = jac(nlp, xϵ)
     zϵ, czϵ, statusϵ = normal_step(nlp, ctol, xϵ, cxϵ, Jxϵ, ρ;
