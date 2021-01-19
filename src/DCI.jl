@@ -9,7 +9,7 @@ export dci
 include("dci_normal.jl")
 include("dci_tangent.jl")
 
-const solver_correspondence = Dict(:ma57 => MA57Struct, 
+const solver_correspondence = Dict(#:ma57 => MA57Struct, 
                                    :ldlfact => LDLFactorizationStruct)
 """
     dci(nlp; kwargs...)
@@ -24,10 +24,10 @@ problems described in
 
 """
 function dci(nlp :: AbstractNLPModel;
-             atol = 1e-6,
-             rtol = 1e-6,
-             ctol = 1e-6,
-             linear_solver = :ma57,
+             atol = 1e-5,
+             rtol = 1e-5,
+             ctol = 1e-5,
+             linear_solver = :ldlfact,#:ma57,
              max_eval = 50000,
              max_time = 60
             )
@@ -51,9 +51,10 @@ function dci(nlp :: AbstractNLPModel;
   fz = fx = f(x)
   ∇fx = ∇f(x)
   cx = c(x)
+  
+  #T.M: we probably don't want to compute Jx and λ, if cx > ρ
   Jx = J(x)
-  # λ = argmin ‖∇f + Jᵀλ‖
-  λ = cgls(Jx', -∇fx)[1]
+  λ = compute_lx(Jx, ∇fx)#cgls(Jx', -∇fx)[1] # λ = argmin ‖∇f + Jᵀλ‖
 
   # Regularization
   γ = 0.0
@@ -82,7 +83,7 @@ function dci(nlp :: AbstractNLPModel;
   nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
   rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
   cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  vals[nnz_idx] .= -δ
+  vals[nnz_idx] .= - δ
 
   LDL = solver_correspondence[linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
 
@@ -98,7 +99,7 @@ function dci(nlp :: AbstractNLPModel;
   primalnorm = norm(cx)
 
   ρmax = max(ctol, 5primalnorm, 50dualnorm)
-  ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol)
+  ρ = NaN #not needed
 
   start_time = time()
   eltime = 0.0
@@ -121,28 +122,14 @@ function dci(nlp :: AbstractNLPModel;
   @info log_row(Any["init", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ])
 
   while !(solved || tired || infeasible)
-    # Normal step
-    done_with_normal_step = false
-    local ℓzλ
-    while !done_with_normal_step
-      # ngp = dualnorm/(norm(∇fx) + 1)
-      ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol)
-      z, cz, normal_status = normal_step(nlp, ϵp, x, cx, Jx, ρ, max_eval=max_eval, max_time=max_time-eltime)
-      ∇fz = ∇f(z)
-      λ = cgls(Jx', -∇fz)[1]
-      fz = f(z)
-      ℓzλ = fz + dot(λ, cz)
-      primalnorm = norm(cz)
-      # ∇fx = ∇f(x)
-      ∇ℓxλ = ∇fx + Jx'*λ
-      dualnorm = norm(∇ℓxλ)
-      @info log_row(Any["N", iter, evals(nlp), fz, dualnorm, primalnorm, ρmax, ρ, normal_status])
-      eltime = time() - start_time
-      tired = evals(nlp) > max_eval || eltime > max_time
-      infeasible = normal_status == :infeasible
-      done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
-    end
-
+    # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
+    @time z, ℓzλ,  ∇ℓzλ, ρ, 
+      primalnorm, dualnorm, 
+      tired, infeasible = trust_the_cylinder(nlp, x, cx, Jx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
+                                             dualnorm, primalnorm, ρmax, 
+                                             ctol, ϵp, 
+                                             max_eval, max_time, 
+                                             eltime, start_time)
     # Convergence test
     solved = primalnorm < ϵp && dualnorm < ϵd
 
@@ -150,12 +137,7 @@ function dci(nlp :: AbstractNLPModel;
       break
     end
 
-    # @info("",
-    #   fx,
-    #   fz,
-    #   ℓxλ,
-    #   ℓzλ
-    # )
+    # TODO Comment
     Δℓₙ = ℓzλ - ℓxλ
     if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
       ρmax /= 2
@@ -164,37 +146,43 @@ function dci(nlp :: AbstractNLPModel;
       ℓᵣ = ℓzλ
     end
 
-    gBg = 0.0
+    gBg = 0.0 #T.M.: ∇ℓxλ' * B * ∇ℓxλ (recall the only the lower triangular is in vals)
     for k = 1:nlp.meta.nnzh
       i, j, v = rows[k], cols[k], vals[k]
-      gBg += v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+      gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2) #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
     end
 
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     # TODO: Don't compute every time
-    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
+    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)]) #T.M.: redundant with previous loop
     # TODO: Update γ and δ here
-    x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓxλ, ℓzλ, gBg, ρ, γ, δ,
-                                                Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
-    #=
-    if tg_status != :success
+    x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓzλ, ℓzλ, gBg, ρ, γ, δ, # ∇ℓxλ
+                                                     Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
+    #γ
+    if tg_status == :tired
       tired = true
+      #now it depends whether we are feasibility or not.
       continue
+    elseif tg_status == :small_horizontal_step
+        #Try something ?
+    else
+        #success :)
     end
-    =#
     
     γ = γ / 10
     Δtangent *= 10
 
-    fx = obj(nlp, x)
+    fx = f(x)
     cx = c(x)
     ∇fx = ∇f(x)
     Jx = J(x)
-    # λ = cgls(Jx', -∇fx)[1]
+    compute_lx!(Jx, ∇fx, λ) #cgls(Jx', -∇fx)[1]
     ℓxλ = fx + dot(λ, cx)
     ∇ℓxλ = ∇fx + Jx'*λ
+    
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
+    
     @info log_row(Any["T", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ, tg_status])
     iter += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
@@ -221,15 +209,93 @@ function dci(nlp :: AbstractNLPModel;
   return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
 end
 
-function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ)
+function trust_the_cylinder(nlp, x, cx, Jx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
+                            dualnorm, primalnorm, 
+                            ρmax, ctol, ϵp, 
+                            max_eval, max_time, 
+                            eltime, start_time)
+  #assign z variable:
+  z, cz, Jz, ∇fz = x, cx, Jx, ∇fx
+  ℓzλ, ∇ℓzλ      = ℓxλ, ∇ℓxλ
+
+  infeasible = false
+  tired      = false
+  
+  #Initialize ρ at x
+  ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
+  
+  done_with_normal_step = primalnorm ≤ ρ
+  iter_normal_step      = 0
+
+  while !done_with_normal_step
+      
+    #primalnorm = norm(cz)
+    z, cz, primalnorm, normal_status = normal_step(nlp, ϵp, z, cz, Jz, ρ, 
+                                                   max_eval = max_eval, 
+                                                   max_time = max_time - eltime)
+    
+    fz, ∇fz    = objgrad(nlp, z)
+    Jz         = jac_op(nlp, z)
+    compute_lx!(Jz, ∇fz, λ) #cgls(Jx', -∇fx)[1] #T.M.: Jx?
+    ℓzλ        = fz + dot(λ, cz)
+    ∇ℓzλ       = ∇fz + Jz'*λ
+    dualnorm   = norm(∇ℓzλ)
+    
+    #update rho
+    iter_normal_step += 1
+    ρ = compute_ρ(dualnorm, primalnorm, ∇fz, ρmax, ctol, iter_normal_step)
+    
+    @info log_row(Any["N", iter_normal_step, neval_obj(nlp) + neval_cons(nlp), 
+                           fz, dualnorm, primalnorm, ρmax, ρ, normal_status])
+    
+    eltime     = time() - start_time
+    tired      = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
+    infeasible = normal_status == :infeasible
+    
+    done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
+  end
+
+  return z, ℓzλ,  ∇ℓzλ, ρ, primalnorm, dualnorm, tired, infeasible
+end
+
+#Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
+#Should really check whether 3/4ρmax < ngp ρmax 10^-4 ?
+#No evaluations of functions here.
+function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ, iter)
+  if iter > 100
+      return 0.75 * ρmax
+  end
   ngp = dualnorm / (norm(∇fx) + 1)
-  ρ = max(ngp, 0.75) * ρmax
-  if ρ < ϵ && primalnorm > 100ctol
+  ρ = min(ngp, 0.75) * ρmax
+  if ρ < ϵ && primalnorm > 100ϵ
     ρ = primalnorm / 10
   elseif ngp ≤ 5ϵ
     ρ = ϵ
   end
   return ρ
 end
+
+"""
+Compute the solution of || Jx' λ - ∇fx ||
+"""
+function compute_lx(Jx :: LinearOperator, ∇fx)
+    return cgls(Jx', -∇fx)[1]
+end
+
+function compute_lx(Jx, ∇fx)
+    return Jx' \ ( - ∇fx)
+end
+
+function compute_lx!(Jx :: LinearOperator, ∇fx, λ)
+    λ .= cgls(Jx', -∇fx)[1]
+    return λ
+end
+
+function compute_lx!(Jx, ∇fx, λ)
+    λ .= Jx' \ ( - ∇fx)
+    return λ
+end
+
+#include("dciv2.jl")
 
 end # module
