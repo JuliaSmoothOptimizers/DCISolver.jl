@@ -1,8 +1,8 @@
 #December, 9th, T.M. comments:
 using Krylov, LinearAlgebra, NLPModels, CUTEst, Test
 #This package
-using Main.DCI
-using Main.DCI: compute_ρ, normal_step
+using DCI
+using DCI: compute_ρ, feasibility_step
 
 atol = 1e-6
 rtol = 1e-6
@@ -41,16 +41,16 @@ ctol = 1e-6
     =#
     ρ = 0.5
 
-    z, cz, status = normal_step(nlp, ctol, x, cx, Jx, ρ;
+    z, cz, ncz, Jz, status = feasibility_step(nlp, x, cx, norm(cx), Jx, ρ, ctol;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
                                 max_eval = 1_000, max_time = 60.,
                                 )
     @test status == :infeasible
 
-    xϵ = [0.; 1.; 0.] .+ ctol/norm(x)
+    xϵ = [0.; 1.; 0.] .+ rand(3) * sqrt(ctol)/norm(x)
     cxϵ = cons(nlp, xϵ)
     Jxϵ = jac(nlp, xϵ)
-    zϵ, czϵ, statusϵ = normal_step(nlp, ctol, xϵ, cxϵ, Jxϵ, ρ;
+    zϵ, czϵ, ncz, Jz, statusϵ = feasibility_step(nlp, xϵ, cxϵ, norm(cxϵ), Jxϵ, ρ, ctol;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
                                 max_eval = 1_000, max_time = 60.,
                                 )
@@ -74,16 +74,16 @@ end
     Jx = jac(nlp, x)
     ρ = 0.5
 
-    z, cz, status = normal_step(nlp, ctol, x, cx, Jx, ρ;
+    z, cz, ncz, Jz, status = feasibility_step(nlp, x, cx, norm(cx), Jx, ρ, ctol;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
                                 max_eval = 1_000, max_time = 60.,
                                 )
     @test status == :infeasible
 
-    xϵ = [0.; 1.; 0.] + rand(3)*ctol/norm(x)
+    xϵ = [0.; 1.; 0.] + rand(3)*sqrt(ctol)/norm(x)
     cx = cons(nlp, xϵ)
     Jx = jac(nlp, xϵ)
-    z, cz, status = normal_step(nlp, ctol, xϵ, cx, Jx, ρ;
+    z, cz, ncz, Jz, status = feasibility_step(nlp, xϵ, cx, norm(cx), Jx, ρ, ctol;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
                                 max_eval = 1_000, max_time = 60.,
                                 )
@@ -101,7 +101,7 @@ end
     @test det(jac(nlp,x)*jac(nlp,x)') == 0.
     @test rank(jac(nlp, x)) == 45
 
-    z, cz, status = normal_step(nlp, ctol, x, cx, Jx, ρ;
+    z, cz, ncz, Jz, status = feasibility_step(nlp, x, cx, norm(cx), Jx, ρ, ctol;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
                                 max_eval = 1_000, max_time = 60.,
                                 )
@@ -111,13 +111,13 @@ end
     @test ctol*norm(cx) ≥ 1.6e-7
     @test status == :infeasible
 
-    xϵ = x + rand(nlp.meta.nvar)*ctol/norm(x)
+    xϵ = x + rand(nlp.meta.nvar)*sqrt(ctol)/norm(x)
     cx = cons(nlp, xϵ)
     Jx = jac(nlp, xϵ)
-    z, cz, status = normal_step(nlp, ctol, xϵ, cx, Jx, ρ;
-                                η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60.,
-                                )
+    z, cz, ncz, Jz, status = feasibility_step(nlp, xϵ, cx, norm(cx), Jx, ρ, ctol;
+                                     η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
+                                     max_eval = 1_000, max_time = 60.,
+                                     )
     @test status == :success
     finalize(nlp)
 end

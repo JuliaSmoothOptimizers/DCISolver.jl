@@ -1,37 +1,41 @@
 #December, 9th, T.M. comments:
-# i) The sequence σ₁ = 0.25, σ₂ = 4.0 is strange as we just cycle.
-# in the 2008 paper they suggest σ₁ = 0.25, σ₂ = 2.0
 # iii) as suggest in 2008 paper, maybe don't update Jx if we reduced 
 # the Infeasibility by 10%.
 # iv) analyze the case with 3 consecutive_bad_steps
-# v) normal_iter is not used
 # vi) regroup the algorithmic parameters at the beginning
 # vii) typing
 # viii) the precision of lsmr should depend on the other parameters?
-"""    normal_step(nls, x, cx, Jx)
+"""    feasibility_step(nls, x, cx, Jx)
 
 Approximately solves min ‖c(x)‖.
 
 Given xₖ, finds min ‖cₖ + Jₖd‖
 """
-function normal_step(nlp :: AbstractNLPModel, ctol, x, cx, Jx, ρ;
-                     η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                     max_eval = 1_000, 
-                     max_time :: Float64 = 60.,
-                     max_normal_iter = typemax(Int64),
-                     )
-
-  c(x) = cons(nlp, x) #redefine the function
+function feasibility_step(nlp             :: AbstractNLPModel, 
+                          x               :: AbstractVector{T}, 
+                          cx              :: AbstractVector{T}, 
+                          normcx          :: T,
+                          Jx              :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
+                          ρ               :: T,
+                          ctol            :: AbstractFloat;
+                          η₁              :: AbstractFloat = 1e-3, 
+                          η₂              :: AbstractFloat = 0.66, 
+                          σ₁              :: AbstractFloat = 0.25, 
+                          σ₂              :: AbstractFloat = 2.0,
+                          max_eval        :: Int = 1_000, 
+                          max_time        :: AbstractFloat = 60.,
+                          max_normal_iter :: Int = typemax(Int64), #try something smarter?
+                          ) where T
   
-  z      = copy(x)
-  cz     = copy(cx)
-  normcz = norm(cz)
+  z      = x
+  cz     = cx
+  Jz     = Jx
+  normcz = normcx # cons(nlp, x) = normcx = normcz for the first z
 
-  Δ = 1.0
+  Δ = one(T)
 
   normal_iter = 0
-  consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
-  normcx = normcz           # c(x) = normcx = normcz for the first z
+  consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95         
 
   start_time = time()
   el_time    = 0.0
@@ -40,7 +44,7 @@ function normal_step(nlp :: AbstractNLPModel, ctol, x, cx, Jx, ρ;
   
   while !(normcz ≤ ρ || tired || infeasible)
       
-    d     = -Jx' * cz
+    d     = -Jz' * cz
     nd2   = dot(d, d)
     
     if sqrt(nd2) < ctol * normcz #norm(d) < ctol * normcz
@@ -48,7 +52,7 @@ function normal_step(nlp :: AbstractNLPModel, ctol, x, cx, Jx, ρ;
       break
     end
     
-    Jd    = Jx * d
+    Jd    = Jz * d
     
     t     = nd2 / dot(Jd, Jd) #dot(d, d) / dot(Jd, Jd)
     dcp   = t * d
@@ -57,7 +61,7 @@ function normal_step(nlp :: AbstractNLPModel, ctol, x, cx, Jx, ρ;
     if sqrt(ndcp2) > Δ
       d   = dcp * Δ / sqrt(ndcp2) #so ||d||=Δ
     else
-      dn  = lsmr(Jx, -cz)[1]
+      dn  = lsmr(Jz, -cz)[1]
       if norm(dn) <= Δ
         d = dn
       else
@@ -70,26 +74,27 @@ function normal_step(nlp :: AbstractNLPModel, ctol, x, cx, Jx, ρ;
       end
     end
     
-    Jd   = Jx * d
-    zp   = z + d
-    czp  = c(zp)
+    Jd      = Jz * d
+    zp      = z + d
+    czp     = cons(nlp, zp)
     normczp = norm(czp)
-    Pred = 0.5*(normcz^2 - norm(Jd + cz)^2)
-    Ared = 0.5*(normcz^2 - normczp^2)
+
+    Pred = T(0.5) * (normcz^2 - norm(Jd + cz)^2)
+    Ared = T(0.5) * (normcz^2 - normczp^2)
 
     if Ared/Pred < η₁
-      Δ = max(1e-8, Δ * σ₁)
-    else
+      Δ = max(T(1e-8), Δ * σ₁)
+    else #success
       z  = zp
-      Jx = jac_op(nlp, z)
+      Jz = jac_op(nlp, z)
       cz = czp
       normcz = normczp
-      if Ared/Pred > η₂ && norm(d) >= 0.99Δ
+      if Ared/Pred > η₂ && norm(d) >= T(0.99) * Δ
         Δ *= σ₂
       end
     end
 
-    if normcz / normcx > 0.95
+    if normcz / normcx > T(0.95)
       consecutive_bad_steps += 1
     else
       consecutive_bad_steps = 0
@@ -99,7 +104,7 @@ function normal_step(nlp :: AbstractNLPModel, ctol, x, cx, Jx, ρ;
     # if normcz > ρ && consecutive_bad_steps ≥ 3
     #   d = cg(hess_op(nlp, z, cz, obj_weight=0.0), Jx' * cz)[1]
     #   z -= d
-    #   cz = c(z)
+    #   cz = cons(nlp, z)
     #   normcz = norm(cz)
     # end
 
@@ -126,5 +131,5 @@ function normal_step(nlp :: AbstractNLPModel, ctol, x, cx, Jx, ρ;
     :unknown
   end
 
-  return z, cz, status
+  return z, cz, normcz, Jz, status
 end

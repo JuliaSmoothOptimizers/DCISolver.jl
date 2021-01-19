@@ -7,6 +7,7 @@ using Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolve
 export dci
 
 include("dci_normal.jl")
+include("trust_cylinder.jl")
 include("dci_tangent.jl")
 
 const solver_correspondence = Dict(#:ma57 => MA57Struct, 
@@ -29,7 +30,7 @@ function dci(nlp :: AbstractNLPModel;
              ctol = 1e-5,
              linear_solver = :ldlfact,#:ma57,
              max_eval = 50000,
-             max_time = 60
+             max_time = 60.
             )
   if !equality_constrained(nlp)
     error("DCI only works for equality constrained problems")
@@ -99,7 +100,7 @@ function dci(nlp :: AbstractNLPModel;
   primalnorm = norm(cx)
 
   ρmax = max(ctol, 5primalnorm, 50dualnorm)
-  ρ = NaN #not needed #compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
+  ρ = NaN #not needed
 
   start_time = time()
   eltime = 0.0
@@ -122,46 +123,14 @@ function dci(nlp :: AbstractNLPModel;
   @info log_row(Any["init", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ])
 
   while !(solved || tired || infeasible)
-    # Normal step
-    local ℓzλ, ∇ℓzλ #T.M.: why do we need the local keyword here?
-    #assign x_c variables:
-    z, cz, Jz, ∇fz        = x, cx, Jx, ∇fx
-    ℓzλ, ∇ℓzλ              = ℓxλ, ∇ℓxλ
-    
-    #Initialize ρ at x
-    ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
-    
-    done_with_normal_step = primalnorm ≤ ρ
-    iter_normal_step      = 0
-
-    #T.M.: the drawback here is the evaluation of Jz and λ for potential unnecessary steps.
-    while !done_with_normal_step
-        
-      z, cz, normal_status = normal_step(nlp, ϵp, z, cz, Jz, ρ, max_eval = max_eval, max_time = max_time - eltime)
-      
-      ∇fz        = ∇f(z)
-      Jz         = J(z)
-      compute_lx!(Jz, ∇fz, λ) #cgls(Jx', -∇fx)[1] #T.M.: Jx?
-      fz         = f(z)
-      ℓzλ        = fz + dot(λ, cz)
-      primalnorm = norm(cz)
-      ∇ℓzλ       = ∇fz + Jz'*λ
-      dualnorm   = norm(∇ℓzλ)
-      
-      #update rho
-      iter_normal_step += 1
-      ρ = compute_ρ(dualnorm, primalnorm, ∇fz, ρmax, ctol, iter_normal_step)
-      
-      @info log_row(Any["N", iter, evals(nlp), fz, dualnorm, primalnorm, ρmax, ρ, normal_status])
-      
-      eltime     = time() - start_time
-      tired      = evals(nlp) > max_eval || eltime > max_time
-      infeasible = normal_status == :infeasible
-      
-      done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
-    end
-    #T.M.: outside the loop, we need z, ℓzλ,  ∇ℓzλ, primalnorm, dualnorm, ρ, tired, infeasible, solved
-
+    # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
+    z, ℓzλ,  ∇ℓzλ, ρ, 
+      primalnorm, dualnorm, 
+      tired, infeasible = normal_step(nlp, x, cx, Jx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
+                                             dualnorm, primalnorm, ρmax, 
+                                             ctol, ϵp, 
+                                             max_eval, max_time, 
+                                             eltime, start_time)
     # Convergence test
     solved = primalnorm < ϵp && dualnorm < ϵd
 
@@ -169,12 +138,7 @@ function dci(nlp :: AbstractNLPModel;
       break
     end
 
-    # @info("",
-    #   fx,
-    #   fz,
-    #   ℓxλ,
-    #   ℓzλ
-    # )
+    # TODO Comment
     Δℓₙ = ℓzλ - ℓxλ
     if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
       ρmax /= 2
@@ -193,6 +157,7 @@ function dci(nlp :: AbstractNLPModel;
     # TODO: Don't compute every time
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)]) #T.M.: redundant with previous loop
     # TODO: Update γ and δ here
+    
     x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓzλ, ℓzλ, gBg, ρ, γ, δ, # ∇ℓxλ
                                                      Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
     #γ
@@ -244,22 +209,6 @@ function dci(nlp :: AbstractNLPModel;
   end
 
   return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
-end
-
-#Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
-#Should really check whether 3/4ρmax < ngp ρmax 10^-4 ?
-function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ, iter)
-  if iter > 100
-      return 0.75 * ρmax
-  end
-  ngp = dualnorm / (norm(∇fx) + 1)
-  ρ = min(ngp, 0.75) * ρmax
-  if ρ < ϵ && primalnorm > 100ϵ
-    ρ = primalnorm / 10
-  elseif ngp ≤ 5ϵ
-    ρ = ϵ
-  end
-  return ρ
 end
 
 """

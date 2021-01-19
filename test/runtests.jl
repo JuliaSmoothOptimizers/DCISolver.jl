@@ -61,8 +61,7 @@ function test_dci(;tol = 1e-5)
     @test primal < tol
     @test status == :first_order
   end
-#=
-#tangent step never converges
+
   @testset "HS8" begin
     nlp = ADNLPModel(x->-1.0, [2.0; 1.0],
                      x->[x[1]^2 + x[2]^2 - 25; x[1] * x[2] - 9], zeros(2), zeros(2))
@@ -75,7 +74,7 @@ function test_dci(;tol = 1e-5)
     @test primal < tol
     @test status == :first_order
   end
-=#
+
   @testset "HS9" begin
     nlp = ADNLPModel(x->sin(π * x[1] / 12) * cos(π * x[2] / 16), zeros(2),
                      x->[4 * x[1] - 3 * x[2]], [0.0], [0.0])
