@@ -261,6 +261,8 @@ end
 #Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
 #Should really check whether 3/4ρmax < ngp ρmax 10^-4 ?
 #No evaluations of functions here.
+# ρ = O(||g_p(z)||) and 
+#in the paper ρ = ν n_p(z) ρ_max with n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)
 function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ, iter)
   if iter > 100
       return 0.75 * ρmax
