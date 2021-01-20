@@ -4,9 +4,11 @@ We test here the computation of a direction d such that
  \minimize_d q(d):=∇f(z)'d + 1/2 d'B(z)d \st ||d|| ≤ Δ, ||∇h(z)d|| ≤ Δ²,
  where B represents the Lagrangian Hessian.
 
- #Solution 1: we consider infinity norm and solve a linear program:
+ This is a first try to see how `lsmr` works. From the documentation it should solve
+    [ B^{-1} J'][r] = [-g]
+    [ J      0 ][μ] = [ 0]
 =#
-using Krylov, LinearAlgebra, NLPModels, NLPModelsIpopt, NLPModelsKnitro, QuadraticModels
+using Krylov, LinearAlgebra, NLPModels, Test
 
 #@testset "Example 1" begin
     nlp = ADNLPModel(
@@ -26,14 +28,19 @@ using Krylov, LinearAlgebra, NLPModels, NLPModelsIpopt, NLPModelsKnitro, Quadrat
 
     Δ = .5
 
-    #Is there a problem here?
     c = grad(nlp, x)
-    (μ, stats) = lsmr(jac_op(nlp, x)', -c, M=B, verbose = true)
+    #=
+    This is a first try to see how `lsmr` works. From the documentation it should solve
+        [ B^{-1} J'][r] = [-g]
+        [ J      0 ][μ] = [ 0]
+    =#
+    (μ, stats) = lsmr(jac_op(nlp, x)', -c, M = B, verbose = true)
     @test μ == [0.]
     r = - c - jac_op(nlp, x)' * μ
     nres = sqrt(r' * B *r)
     @test [nres] == stats.residuals
 
+    #Est-ce qu'il y a un problème ici ?
     #Depuis la doc, je pensais que ça résolvait ce problème:
     @test [inv(B) Jx'; Jx  zeros(1,1)] * vcat(r, μ) - vcat(-c, zeros(1)) != zeros(4)
     #ou au pire celui-là (^^)
