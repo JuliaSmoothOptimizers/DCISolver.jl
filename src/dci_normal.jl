@@ -108,9 +108,11 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     #   normcz = norm(cz)
     # end
 
-    el_time = time() - start_time
+    el_time      = time() - start_time
     normal_iter += 1
-    tired   = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time || normal_iter > max_normal_iter
+    many_evals   = neval_obj(nlp) + neval_cons(nlp) > max_eval
+    iter_limit   = normal_iter > max_normal_iter
+    tired        = many_evals || el_time > max_time || iter_limit
   end
 
   status = if normcz ≤ ρ

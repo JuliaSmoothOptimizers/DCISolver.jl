@@ -40,7 +40,6 @@ function normal_step(nlp        :: AbstractNLPModel,
 
     fz, ∇fz    = objgrad(nlp, z)
     norm∇fz    = norm(∇fz) #can be avoided if we use dualnorm
-    #Jz         = jac_op(nlp, z) :)
     compute_lx!(Jz, ∇fz, λ)
     ℓzλ        = fz + dot(λ, cz)
     ∇ℓzλ       = ∇fz + Jz'*λ

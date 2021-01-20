@@ -55,7 +55,7 @@ function dci(nlp :: AbstractNLPModel;
   
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
   Jx = J(x)
-  λ = compute_lx(Jx, ∇fx)#cgls(Jx', -∇fx)[1] # λ = argmin ‖∇f + Jᵀλ‖
+  λ = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
 
   # Regularization
   γ = 0.0
@@ -110,8 +110,9 @@ function dci(nlp :: AbstractNLPModel;
 
   Δtangent = 1.0
 
-  solved = primalnorm < ϵp && dualnorm < ϵd
-  tired = evals(nlp) > max_eval || eltime > max_time
+  #stopping statuses
+  solved     = primalnorm < ϵp && dualnorm < ϵd
+  tired      = evals(nlp) > max_eval || eltime > max_time
   infeasible = false
 
   iter = 0
@@ -147,16 +148,14 @@ function dci(nlp :: AbstractNLPModel;
       ℓᵣ = ℓzλ
     end
 
-    gBg = 0.0 #T.M.: ∇ℓxλ' * B * ∇ℓxλ (recall the only the lower triangular is in vals)
-    for k = 1:nlp.meta.nnzh
-      i, j, v = rows[k], cols[k], vals[k]
-      gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2) #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
-    end
+    #gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ) #why not after updating?
 
+    #Update matrix system
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
-    # TODO: Don't compute every time
-    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)]) #T.M.: redundant with previous loop
+    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
     # TODO: Update γ and δ here
+
+    gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
     
     x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓzλ, ℓzλ, gBg, ρ, γ, δ, # ∇ℓxλ
                                                      Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
@@ -178,7 +177,7 @@ function dci(nlp :: AbstractNLPModel;
     cx = c(x)
     ∇fx = ∇f(x)
     Jx = J(x)
-    compute_lx!(Jx, ∇fx, λ) #cgls(Jx', -∇fx)[1]
+    compute_lx!(Jx, ∇fx, λ)
     ℓxλ = fx + dot(λ, cx)
     ∇ℓxλ = ∇fx + Jx'*λ
     
@@ -186,10 +185,10 @@ function dci(nlp :: AbstractNLPModel;
     dualnorm = norm(∇ℓxλ)
     
     @info log_row(Any["T", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ, tg_status])
-    iter += 1
+    iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time
-    tired = evals(nlp) > max_eval || eltime > max_time
+    tired  = evals(nlp) > max_eval || eltime > max_time
   end
 
   status = if solved
@@ -209,6 +208,20 @@ function dci(nlp :: AbstractNLPModel;
   end
 
   return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
+end
+
+#T.M.: ∇ℓxλ' * B * ∇ℓxλ (recall the only the lower triangular is in vals)
+function compute_gBg(nlp :: AbstractNLPModel, 
+                     rows :: AbstractVector, 
+                     cols :: AbstractVector, 
+                     vals :: AbstractVector{T}, 
+                     ∇ℓzλ :: AbstractVector{T}) where T
+  gBg = zero(T)
+  for k = 1:nlp.meta.nnzh
+    i, j, v = rows[k], cols[k], vals[k]
+    gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2) #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+  end
+  return gBg
 end
 
 """

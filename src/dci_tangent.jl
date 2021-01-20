@@ -21,7 +21,7 @@ function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
                       σ₂ = 2.0, #increase trust-region radius after success
                       small_d = 1e-20, #below this value ||d|| is too small
                       max_eval = 1_000, #max number of evaluation of obj + cons
-                      max_time = 1_000, #max real time
+                      max_time = 1_000., #max real time
                      )
   m, n = nlp.meta.ncon, nlp.meta.nvar
   
@@ -55,35 +55,11 @@ function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
       ft   = obj(nlp, xt)
       ℓxtλ = ft + dot(λ, ct)
       qd   = dBd / 2 + dot(g, d)
-################################################################
-#      if qd ≥ 0
-#        @error "status = $status"
-#        @error("iter = $iter", "qd = $qd", "‖d‖ = $(norm(d))", "Δ = $Δ")
-#      end
-#      @assert qd < 0 #Tanj: a bit harsh
-#
-#      # Trust region update. TODO: Change to SolverTools.jl
-#      Δℓ = ℓxtλ - ℓzλ + max(1.0, abs(ℓzλ)) * 10 * eps()
-#      if abs(qd) < 1e4 * eps() || abs(Δℓ) < 1e4 * eps() * abs(ℓzλ)
-#        #gt = grad(nlp, xt)
-#        #Δℓ = (dot(g, d) + dot(gt, d)) / 2
-#      end
-################################################################
+
       #SolverTools.aredpred https://github.com/JuliaSmoothOptimizers/SolverTools.jl/blob/78f6793f161c3aac2234aee8a27aa07f1df3e8ee/src/trust-region/trust-region.jl#L37
       Δℓ, pred = aredpred(nlp, ℓzλ, ℓxtλ, qd, xt, d, dot(g, d))
-      #@assert abs(ared - Δℓ)==0.0
-      #@assert abs(pred - (qd  - max(one(Float64), abs(ℓzλ)) * 10 * eps(Float64)))==0.0
+
       r = Δℓ / qd
-      # @info("",
-      #   Δℓ,
-      #   qd,
-      #   ft,
-      #   ℓzλ,
-      #   ℓxtλ,
-      #   r,
-      #   Δℓ - η₁ * qd,
-      #   (Δℓ - η₁ * qd) / max(1, abs(ft))
-      # )
       if r < η₁
         Δ *= σ₁
       else #success
