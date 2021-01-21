@@ -6,7 +6,10 @@ gr()
 function runcutest()
   #pnames = readlines("paper-problems.list")
   #pnames = pnames[1:3]
-  pnames = CUTEst.select(max_var=100, min_con=1, max_con=100, only_free_var=true, only_equ_con=true)
+  _pnames = CUTEst.select(max_var=100, min_con=1, max_con=100, only_free_var=true, only_equ_con=true)
+  #Remove all the problems ending by NE as Ipopt cannot handle them.
+  pnamesNE = _pnames[findall(x->occursin(r"NE\b", x), _pnames)]
+  pnames = setdiff(_pnames, pnamesNE)
   cutest_problems = (CUTEstModel(p) for p in pnames)
 
   solvers = Dict(:DCI => dci, :ipopt => (nlp; kwargs...) -> ipopt(nlp, print_level=0, kwargs...))
