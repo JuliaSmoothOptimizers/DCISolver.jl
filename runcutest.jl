@@ -1,4 +1,4 @@
-using CUTEst, NLPModels, NLPModelsIpopt, Plots, SolverBenchmark, SolverTools
+using CUTEst, NLPModels, NLPModelsIpopt, NLPModelsKnitro, Plots, SolverBenchmark, SolverTools
 #This package
 using DCI
 gr()
@@ -6,13 +6,16 @@ gr()
 function runcutest()
   #pnames = readlines("paper-problems.list")
   #pnames = pnames[1:3]
-  _pnames = CUTEst.select(max_var=100, min_con=1, max_con=100, only_free_var=true, only_equ_con=true)
+  #_pnames = CUTEst.select(max_var=100, min_con=1, max_con=100, only_free_var=true, only_equ_con=true)
+  pnames = CUTEst.select(max_var=100, min_con=1, max_con=100, only_free_var=true, only_equ_con=true, objtype=3:6)
   #Remove all the problems ending by NE as Ipopt cannot handle them.
-  pnamesNE = _pnames[findall(x->occursin(r"NE\b", x), _pnames)]
-  pnames = setdiff(_pnames, pnamesNE)
+  #pnamesNE = _pnames[findall(x->occursin(r"NE\b", x), _pnames)]
+  #pnames = setdiff(_pnames, pnamesNE)
   cutest_problems = (CUTEstModel(p) for p in pnames)
 
-  solvers = Dict(:DCI => dci, :ipopt => (nlp; kwargs...) -> ipopt(nlp, print_level=0, kwargs...))
+  solvers = Dict(:DCI => dci, 
+                 :ipopt => (nlp; kwargs...) -> ipopt(nlp, print_level=0, kwargs...))#, 
+                 #:knitro =>(nlp; kwargs...) -> knitro(nlp, out_hints = 0, outlev = 0, kwargs...))
   stats = bmark_solvers(solvers, cutest_problems)
 
   join_df = join(stats, [:objective, :dual_feas, :primal_feas, :neval_obj, :status], invariant_cols=[:name])
