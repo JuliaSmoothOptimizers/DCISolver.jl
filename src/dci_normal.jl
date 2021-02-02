@@ -25,6 +25,7 @@ function feasibility_step(nlp             :: AbstractNLPModel,
                           max_eval        :: Int = 1_000, 
                           max_time        :: AbstractFloat = 60.,
                           max_normal_iter :: Int = typemax(Int64), #try something smarter?
+                          TR_compute_step :: Function = TR_lsmr #dogleg
                           ) where T
   
   z      = x
@@ -43,37 +44,12 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   infeasible = false
   
   while !(normcz ≤ ρ || tired || infeasible)
-      
-    d     = -Jz' * cz
-    nd2   = dot(d, d)
     
-    if sqrt(nd2) < ctol * normcz #norm(d) < ctol * normcz
-      infeasible = true
+    #Compute the a direction satisfying the trust-region constraint
+    d, Jd, infeasible, solved = TR_compute_step(cz, Jz, ctol, Δ, normcz) #dogleg by default
+
+    if infeasible
       break
-    end
-    
-    Jd    = Jz * d
-    
-    t     = nd2 / dot(Jd, Jd) #dot(d, d) / dot(Jd, Jd)
-    dcp   = t * d
-    ndcp2 = t^2 * nd2 #dot(dcp, dcp)
- 
-    if sqrt(ndcp2) > Δ
-      d   = dcp * Δ / sqrt(ndcp2) #so ||d||=Δ
-      Jd  = Jd * t * Δ / sqrt(ndcp2) #avoid recomputing Jd
-    else
-      (dn, stats)  = lsmr(Jz, -cz)
-      if norm(dn) <= Δ
-        d = dn
-      else
-        v = dn - dcp 
-        #τ = (-dot(dcp, v) + sqrt(dot(dcp, v)^2 + 4 * dot(v, v) * (Δ^2 - dot(dcp, dcp)))) / dot(v, v)
-        nv2  = dot(v, v)
-        dcpv = dot(dcp, v)
-        τ    = (-dcpv + sqrt(dcpv^2 + 4 * nv2 * (Δ^2 - ndcp2))) / nv2
-        d    = dcp + τ * v
-      end
-      Jd      = Jz * d # d has been updated
     end
 
     zp      = z + d
@@ -135,4 +111,81 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   end
 
   return z, cz, normcz, Jz, status
+end
+
+"""    feasibility_step(nls, x, cx, Jx)
+
+Compute a direction d such that
+min ‖cₖ + Jₖd‖ s.t. ||d|| ≤ Δ
+using a dogleg.
+
+Also checks if problem is infeasible.
+
+Returns 4 entries:
+(d, Jd, solved, infeasible)
+"""
+function dogleg(cz     :: AbstractVector, 
+                Jz     :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
+                ctol   :: AbstractFloat, 
+                Δ      :: AbstractFloat, 
+                normcz :: AbstractFloat) where T
+
+  infeasible, solved = false, true
+
+  d     = -Jz' * cz
+  nd2   = dot(d, d)
+  Jd    = Jz * d
+    
+  if sqrt(nd2) < ctol * normcz #norm(d) < ctol * normcz
+    infeasible = true
+    return d, Jd, solved, infeasible
+  end
+    
+  t     = nd2 / dot(Jd, Jd) #dot(d, d) / dot(Jd, Jd)
+  dcp   = t * d
+  ndcp2 = t^2 * nd2 #dot(dcp, dcp)
+ 
+  if sqrt(ndcp2) > Δ
+    d   = dcp * Δ / sqrt(ndcp2) #so ||d||=Δ
+    Jd  = Jd * t * Δ / sqrt(ndcp2) #avoid recomputing Jd
+  else
+    (dn, stats)  = lsmr(Jz, -cz)
+    solved =stats.solved
+    if !stats.solved #stats.status ∈ ("maximum number of iterations exceeded")
+      @warn "Fail lsmr in dogleg: $(stats.status)"
+    end
+
+    if norm(dn) <= Δ
+      d = dn
+    else
+      v = dn - dcp 
+      #τ = (-dot(dcp, v) + sqrt(dot(dcp, v)^2 + 4 * dot(v, v) * (Δ^2 - dot(dcp, dcp)))) / dot(v, v)
+      nv2  = dot(v, v)
+      dcpv = dot(dcp, v)
+      τ    = (-dcpv + sqrt(dcpv^2 + 4 * nv2 * (Δ^2 - ndcp2))) / nv2
+      d    = dcp + τ * v
+    end
+    Jd      = Jz * d # d has been updated
+  end
+
+  return d, Jd, infeasible, solved
+end
+
+function TR_lsmr(cz     :: AbstractVector, 
+                 Jz     :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
+                 ctol   :: AbstractFloat, 
+                 Δ      :: AbstractFloat, 
+                 normcz :: AbstractFloat) where T
+
+  (d, stats)  = lsmr(Jz, -cz, radius = Δ)
+
+  infeasible = norm(d) < ctol * normcz
+  solved = stats.solved
+  if !solved
+      @warn "Fail lsmr in TR_lsmr: $(stats.status)"
+  end
+
+  Jd = Jz * d #lsmr doesn't return this information
+
+  return d, Jd, infeasible, solved
 end

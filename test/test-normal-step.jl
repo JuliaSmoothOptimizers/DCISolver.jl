@@ -90,7 +90,7 @@ end
     @test status == :success
 end
 
-@testset "Example 3, MSS1 " begin
+@testset "Example 3, MSS1 dogleg" begin
     nlp = CUTEstModel("MSS1")
     #obtained by running dci that stops at an infeasible point.
     x  = vcat(4.4916850028689986e-7*ones(18), 0.11624763874379575*ones(72))
@@ -104,6 +104,7 @@ end
     z, cz, ncz, Jz, status = feasibility_step(nlp, x, cx, norm(cx), Jx, ρ, ctol;
                                 η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
                                 max_eval = 1_000, max_time = 60.,
+                                TR_compute_step = DCI.dogleg
                                 )
     @test norm(z - x) == 0.
     d = -Jx'*cz
@@ -117,6 +118,41 @@ end
     z, cz, ncz, Jz, status = feasibility_step(nlp, xϵ, cx, norm(cx), Jx, ρ, ctol;
                                      η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
                                      max_eval = 1_000, max_time = 60.,
+                                     TR_compute_step = DCI.dogleg
+                                     )
+    @test status == :success
+    finalize(nlp)
+end
+
+@testset "Example 3, MSS1 TR_lsmr" begin
+    nlp = CUTEstModel("MSS1")
+    #obtained by running dci that stops at an infeasible point.
+    x  = vcat(4.4916850028689986e-7*ones(18), 0.11624763874379575*ones(72))
+    cx = cons(nlp, x)
+    Jx = jac(nlp, x)
+    ρ = 1e-6
+
+    @test det(jac(nlp,x)*jac(nlp,x)') == 0.
+    @test rank(jac(nlp, x)) == 45
+
+    z, cz, ncz, Jz, status = feasibility_step(nlp, x, cx, norm(cx), Jx, ρ, ctol;
+                                η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
+                                max_eval = 1_000, max_time = 60.,
+                                TR_compute_step = DCI.TR_lsmr
+                                )
+
+    d = -Jx'*cz
+    @test norm(d) ≤ 1.1e-7
+    @test ctol*norm(cx) ≥ 1.6e-7
+    @test status == :infeasible
+
+    xϵ = x + rand(nlp.meta.nvar)*sqrt(ctol)/norm(x)
+    cx = cons(nlp, xϵ)
+    Jx = jac(nlp, xϵ)
+    z, cz, ncz, Jz, status = feasibility_step(nlp, xϵ, cx, norm(cx), Jx, ρ, ctol;
+                                     η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
+                                     max_eval = 1_000, max_time = 60.,
+                                     TR_compute_step = DCI.TR_lsmr
                                      )
     @test status == :success
     finalize(nlp)
