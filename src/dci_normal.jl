@@ -9,7 +9,7 @@
 
 Approximately solves min ‖c(x)‖.
 
-Given xₖ, finds min ‖cₖ + Jₖd‖
+Given xₖ, finds min ‖cₖ + Jₖd‖ s.t. ||d|| ≤ Δ
 """
 function feasibility_step(nlp             :: AbstractNLPModel, 
                           x               :: AbstractVector{T}, 
@@ -57,11 +57,12 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     t     = nd2 / dot(Jd, Jd) #dot(d, d) / dot(Jd, Jd)
     dcp   = t * d
     ndcp2 = t^2 * nd2 #dot(dcp, dcp)
-    
+ 
     if sqrt(ndcp2) > Δ
       d   = dcp * Δ / sqrt(ndcp2) #so ||d||=Δ
+      Jd  = Jd * t * Δ / sqrt(ndcp2) #avoid recomputing Jd
     else
-      dn  = lsmr(Jz, -cz)[1]
+      (dn, stats)  = lsmr(Jz, -cz)
       if norm(dn) <= Δ
         d = dn
       else
@@ -72,9 +73,9 @@ function feasibility_step(nlp             :: AbstractNLPModel,
         τ    = (-dcpv + sqrt(dcpv^2 + 4 * nv2 * (Δ^2 - ndcp2))) / nv2
         d    = dcp + τ * v
       end
+      Jd      = Jz * d # d has been updated
     end
-    
-    Jd      = Jz * d
+
     zp      = z + d
     czp     = cons(nlp, zp)
     normczp = norm(czp)
