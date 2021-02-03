@@ -30,11 +30,11 @@ function tangent_step(nlp      :: AbstractNLPModel,
                       ρ        :: AbstractFloat, 
                       δ        :: T, 
                       γ        :: T;
-                      Δ        :: AbstractFloat= 1.0, #trust-region radius
-                      η₁       :: AbstractFloat= 1e-2,
-                      η₂       :: AbstractFloat= 0.75,
-                      σ₁       :: AbstractFloat= 0.25, #decrease trust-region radius
-                      σ₂       :: AbstractFloat= 2.0, #increase trust-region radius after success
+                      Δ        :: AbstractFloat= one(T), #trust-region radius
+                      η₁       :: AbstractFloat= T(1e-2),
+                      η₂       :: AbstractFloat= T(0.75),
+                      σ₁       :: AbstractFloat= T(0.25), #decrease trust-region radius
+                      σ₂       :: AbstractFloat= T(2.0), #increase trust-region radius after success
                       δmin     :: T = √eps(T),
                       small_d  :: AbstractFloat = eps(T), #below this value ||d|| is too small
                       max_eval :: Int = 1_000, #max number of evaluation of obj + cons
@@ -112,7 +112,7 @@ Compute a direction `d` with three possible outcomes:
 - `:newton`
 - `:dogleg`
 - `:interior_cauchy_step` when γ is too large.
-for `min_d q(d) s.t. ||d|| ≤ Δ`.
+for `min_d q(d) s.t. ‖d‖ ≤ Δ`.
 """
 function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)
     m, n = nlp.meta.ncon, nlp.meta.nvar
@@ -153,23 +153,24 @@ end
 
 """
 Compute a solution to
-min_α q(-α g) s.t. ||αg||_2 ≤ Δ
+min_α q(-α g) s.t. ‖αg‖_2 ≤ Δ
 
-return `dcp_on_boundary` true if ||αg|| = Δ,
+return `dcp_on_boundary` true if ‖αg‖ = Δ,
 return `dcp = - α g`
 return `dcpBdcp = α^2 gBg`
 and `α` the solution.
 """
 function _compute_gradient_step(nlp, gBg, g, Δ)
+
     dcp_on_boundary = false
     dgg = dot(g,g)
-    if gBg ≤ 1e-12 * dgg
-      α = Δ / sqrt(dgg) #norm(g)
+    if gBg ≤ 1e-12 * dgg #generalize this test
+      α = Δ / √dgg #norm(g)
       dcp_on_boundary = true
     else
       α = dgg / gBg #dot(g, g) / gBg
-      if α > Δ / sqrt(dgg) #norm(g)
-        α = Δ / sqrt(dgg) #norm(g)
+      if α > Δ / √dgg #norm(g)
+        α = Δ / √dgg #norm(g)
         dcp_on_boundary = true
       end
     end
@@ -181,9 +182,9 @@ end
 
 """
 Given two directions dcp and dn, compute the largest 0 ≤ τ ≤ 1 such that
-||dn + τ (dcp -dn)|| = Δ
+‖dn + τ (dcp -dn)‖ = Δ
 """
-function _compute_step_length(norm2dn, dotdndcp, norm2dcp, Δ)
+function _compute_step_length(norm2dn, dotdndcp, norm2dcp, Δ :: T) where T <: AbstractFloat
     # d = τ dcp + (1 - τ) * dn = dn + τ * (dcp - dn)
     # ‖d‖² = Δ² => τ² ‖dcp - dn‖² + 2τ dnᵀ(dcp - dn) + ‖dn‖² - Δ² = 0
     # Δ = b² - 4ac
@@ -192,8 +193,8 @@ function _compute_step_length(norm2dn, dotdndcp, norm2dcp, Δ)
     q₂ = norm2dcp - 2 * dotdndcp + norm2dn
     #q₀, q₁, q₂ = [q₀, q₁, q₂] / maximum(abs.([q₀, q₁, q₂]))
     q₀, q₁, q₂ = [q₀, q₁, q₂] / q₂ #so the first coefficient is 1.
-    roots = Krylov.roots_quadratic(q₂, q₁, q₀)
-    τ = length(roots) == 0 ? 1.0 : min(1.0, roots...)
+    roots = Krylov.roots_quadratic(q₂, q₁, q₀) #Is this type stable?
+    τ = length(roots) == 0 ? one(T) : min(one(T), roots...)
     
     return τ
 end
@@ -201,17 +202,21 @@ end
 """
 compute a step ****
 
-return dn = 0. whenever γ > 1e16
+return dn = 0. whenever γ > 1/eps(T)
 """
 function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
+
     m, n, nnzh, nnzj = nlp.meta.ncon, nlp.meta.nvar, nlp.meta.nnzh, nlp.meta.nnzj
-    dζ = Array{Float64}(undef, m + n)#zeros(m + n)
-    dn = zeros(n) #Array{Float64}(undef, n)
+    T = eltype(nlp.meta.x0)
+
+    dζ = Array{T}(undef, m + n)
+    dn = zeros(T, n) #Array{Float64}(undef, n)
+
     # When there is room for improvement, we try a dogleg step
     # A CG variant can be implemented, but it needs the nullspace matrix.
-    rhs = [-g; zeros(m)]
+    rhs = [-g; zeros(T, m)]
     descent = false
-    dnBdn = dcpBdn = 0.0
+    dnBdn = dcpBdn = zero(T)
     γ_too_large = false
     while !descent
       factorize!(LDL)
@@ -224,11 +229,11 @@ function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
       end
 
       while !(success(LDL) && num_neg_eig(LDL) == m)
-        γ = max(10γ, 1e-8)
-        if γ > 1e16
+        γ = max(10γ, √eps(T))
+        if γ > 1/eps(T)
           γ_too_large = true
-          dnBdn = 0.
-          dcpBdn = 0.
+          dnBdn = zero(T)
+          dcpBdn = zero(T)
           dn = zeros(n)
           break
         end

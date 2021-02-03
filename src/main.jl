@@ -163,15 +163,20 @@ function dci(nlp :: AbstractNLPModel;
     γ = γ / 10
     Δtangent *= 10
 
-@show norm(fx - f(x)), norm(cx - c(x))
+    if norm(x-z) == 0. #nothing happened in tangent_step
+      # skip some computations z, cz, fz, ℓzλ,  ∇ℓzλ
+      #@show "Pass here sometimes?"
+    else
+      #run computations
+    end
     ∇fx = ∇f(x)
-    Jx = J(x)
+    Jx  = J(x)
     compute_lx!(Jx, ∇fx, λ)
-    ℓxλ = fx + dot(λ, cx)
+    ℓxλ  = fx + dot(λ, cx) #differs from the tangent step as λ is different
     ∇ℓxλ = ∇fx + Jx'*λ
     
     primalnorm = norm(cx)
-    dualnorm = norm(∇ℓxλ)
+    dualnorm   = norm(∇ℓxλ)
     
     @info log_row(Any["T", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ, tg_status])
     iter  += 1
