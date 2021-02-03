@@ -11,13 +11,14 @@ problems described in
 
 """
 function dci(nlp :: AbstractNLPModel;
+             x   :: AbstractVector{T} = nlp.meta.x0,
              atol = 1e-5,
              rtol = 1e-5,
              ctol = 1e-5,
              linear_solver = :ldlfact,#:ma57,
              max_eval = 50000,
              max_time = 60.
-            )
+            ) where T
   if !equality_constrained(nlp)
     error("DCI only works for equality constrained problems")
   end
@@ -28,12 +29,14 @@ function dci(nlp :: AbstractNLPModel;
 
   evals(nlp) = neval_obj(nlp) + neval_cons(nlp)
 
+  ##########################
+  #This is not really useful?
   f(x) = obj(nlp, x)
   ∇f(x) = grad(nlp, x)
   c(x) = cons(nlp, x)
   J(x) = jac_op(nlp, x)
+  #########################
 
-  x = nlp.meta.x0
   z = copy(x)
   fz = fx = f(x)
   ∇fx = ∇f(x)
@@ -44,9 +47,9 @@ function dci(nlp :: AbstractNLPModel;
   λ = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
 
   # Regularization
-  γ = 0.0
-  δmin = 1e-8
-  δ = 0.0
+  γ = zero(T)
+  δmin = T(1e-8) #√eps(T)
+  δ = zero(T)
 
   # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
   nnz = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon # H, J, γI, -δI
@@ -65,7 +68,7 @@ function dci(nlp :: AbstractNLPModel;
   nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
   rows[nnz_idx] .= 1:nlp.meta.nvar
   cols[nnz_idx] .= 1:nlp.meta.nvar
-  vals[nnz_idx] .= 0.0
+  vals[nnz_idx] .= zero(T)
   # -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
   nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
   rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
@@ -78,9 +81,9 @@ function dci(nlp :: AbstractNLPModel;
   ℓxλ = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
 
-  Δℓₜ = Inf
-  Δℓₙ = 0.0
-  ℓᵣ = Inf
+  Δℓₜ = T(Inf)
+  Δℓₙ = zero(T)
+  ℓᵣ = T(Inf)
 
   dualnorm = norm(∇ℓxλ)
   primalnorm = norm(cx)
@@ -94,7 +97,7 @@ function dci(nlp :: AbstractNLPModel;
   ϵd = atol + rtol * dualnorm
   ϵp = ctol
 
-  Δtangent = 1.0
+  Δtg = one(T)
 
   #stopping statuses
   solved     = primalnorm < ϵp && dualnorm < ϵd
@@ -113,15 +116,15 @@ function dci(nlp :: AbstractNLPModel;
     # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
     z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, 
       primalnorm, dualnorm, 
-      tired, infeasible = normal_step(nlp, x, cx, Jx, fx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
+      normal_status = normal_step(nlp, x, cx, Jx, fx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
                                              dualnorm, primalnorm, ρmax, 
                                              ctol, ϵp, 
                                              max_eval, max_time, 
                                              eltime, start_time)
     # Convergence test
     solved = primalnorm < ϵp && dualnorm < ϵd
-
-    if solved || tired || infeasible
+    infeasible = normal_status == :infeasible
+    if solved || infeasible || (normal_status ∉ (:init_success, :success))
       break
     end
 
@@ -134,21 +137,23 @@ function dci(nlp :: AbstractNLPModel;
       ℓᵣ = ℓzλ
     end
 
-    #Update matrix system
+    #Update matrix system if we moved
+    #if normal_status != :init_success
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
     # TODO: Update γ and δ here
+    #end
 
     gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
     
-    x, cx, fx, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, cz, 
-                                                              primalnorm, fz,
-                                                              LDL, vals, 
-                                                              ∇ℓzλ, ℓzλ, gBg, 
-                                                              ρ, γ, δ,
-                                                              Δ = Δtangent, 
-                                                              max_eval = max_eval, 
-                                                              max_time = max_time - eltime)
+    x, cx, fx, tg_status, Δtg, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, cz, 
+                                                        primalnorm, fz,
+                                                        LDL, vals, 
+                                                        ∇ℓzλ, ℓzλ, gBg, 
+                                                        ρ, γ, δ,
+                                                        Δ = Δtg, 
+                                                        max_eval = max_eval, 
+                                                        max_time = max_time - eltime)
     #γ
     if tg_status == :tired
       tired = true
@@ -161,7 +166,7 @@ function dci(nlp :: AbstractNLPModel;
     end
     
     γ = γ / 10
-    Δtangent *= 10
+    Δtg *= 10
 
     if tg_status == :unknown #nothing happened in tangent_step
       # skip some computations z, cz, fz, ℓzλ,  ∇ℓzλ

@@ -17,11 +17,11 @@ module DCI
   include("main.jl")
 
   struct MetaDCI
-    #Tolerances:
+
+    #Tolerances on the problem:
     atol # = 1e-5,
     rtol # = 1e-5, #ϵd = atol + rtol * dualnorm
     ctol # = 1e-5, #feasibility tolerance
-    linear_solver # = :ldlfact,#:ma57,
 
     #Limits
     max_eval # = 50000,
@@ -35,6 +35,18 @@ module DCI
     #List of intermediary functions:
     feas_step :: Symbol #minimize ‖c(x)‖  #dogleg or TR_lsmr
     TR_computation_step :: Symbol #min_d ‖cₖ + Jₖd‖ s.t. ||d|| ≤ Δ #feasibility_step or cannoles_step
+
+    #Parameters in tangent step
+    Δ       :: AbstractFloat # = one(T), #trust-region radius
+    η₁      :: AbstractFloat # = T(1e-2),
+    η₂      :: AbstractFloat # = T(0.75),
+    σ₁      :: AbstractFloat # = T(0.25), #decrease trust-region radius
+    σ₂      :: AbstractFloat # = T(2.0), #increase trust-region radius after success
+    small_d :: AbstractFloat # = eps(T)  #below this threshold on ||d|| the step is too small.
+    #Parameters for the regularization of the factorization in tangent step
+    linear_solver # = :ldlfact,#:ma57,
+    δmin     :: AbstractFloat # = √eps(T),
+
   end
 
   """compute_gBg

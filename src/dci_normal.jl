@@ -14,9 +14,10 @@ function normal_step(nlp        :: AbstractNLPModel,
                      ctol       :: T, 
                      ϵp         :: T, 
                      max_eval   :: Int, 
-                     max_time   :: AbstractFloat, 
+                     max_time   :: AbstractFloat,
                      eltime     :: AbstractFloat, 
                      start_time :: AbstractFloat;
+                     max_iter   :: Int = typemax(Int64),
                      feas_step  :: Function = feasibility_step #feasibility_step or cannoles_step
                      ) where T
 
@@ -59,7 +60,7 @@ function normal_step(nlp        :: AbstractNLPModel,
 
     eltime     = time() - start_time
     many_evals = neval_obj(nlp) + neval_cons(nlp) > max_eval
-    tired      = many_evals || eltime > max_time
+    tired      = many_evals || eltime > max_time || iter_normal_step > max_iter
     infeasible = normal_status == :infeasible
 
     if infeasible && !restoration && !(primalnorm ≤ ρ || tired) 
@@ -76,7 +77,27 @@ function normal_step(nlp        :: AbstractNLPModel,
     done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
   end
 
-  return z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, primalnorm, dualnorm, tired, infeasible
+  status = if primalnorm ≤ ρ && iter_normal_step == 0
+      :init_success
+    elseif primalnorm ≤ ρ
+      :success
+    elseif tired
+      if neval_obj(nlp) + neval_cons(nlp) > max_eval
+        :max_eval
+      elseif el_time > max_time
+        :max_time
+      elseif iter_normal_step > max_iter
+        :max_iter
+      else
+        :unknown_tired
+      end
+    elseif infeasible
+      :infeasible
+    else
+      :unknown
+    end
+
+  return z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, primalnorm, dualnorm, status
 end
 
 #Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
