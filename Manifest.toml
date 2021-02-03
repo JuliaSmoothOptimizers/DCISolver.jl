@@ -583,7 +583,9 @@ version = "0.5.1"
 
 [[NLPModelsKnitro]]
 deps = ["KNITRO", "NLPModels", "SolverTools"]
-git-tree-sha1 = "2da4f7baa0c1ef920d8d2db2e948d64f02eb046b"
+git-tree-sha1 = "30df785e382b0c2c494f306c21f6dc0bd2eb8c39"
+repo-rev = "fix"
+repo-url = "https://github.com/tmigot/NLPModelsKnitro.jl"
 uuid = "bec4dd0d-7755-52d5-9a02-22f0ffc7efcb"
 version = "0.4.3"
 
