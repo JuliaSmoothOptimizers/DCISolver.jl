@@ -91,6 +91,14 @@ git-tree-sha1 = "4169deb7cdb1de1803a36288dcdb5ace252f6d34"
 uuid = "bb5f6f25-f23d-57fd-8f90-3ef7bad1d825"
 version = "2.0.4+1"
 
+[[CaNNOLeS]]
+deps = ["HSL", "Krylov", "LDLFactorizations", "LinearAlgebra", "LinearOperators", "Logging", "NLPModels", "SolverTools", "SparseArrays"]
+git-tree-sha1 = "79c4947f88068ef016927cc23858c00ffa0e1d32"
+repo-rev = "master"
+repo-url = "https://github.com/tmigot/CaNNOLeS.jl"
+uuid = "5a1c9e79-9c58-5ec0-afc4-3298fdea2875"
+version = "0.3.0"
+
 [[CategoricalArrays]]
 deps = ["DataAPI", "Future", "JSON", "Missings", "Printf", "Statistics", "StructTypes", "Unicode"]
 git-tree-sha1 = "2ac27f59196a68070e132b25713f9a5bbc5fa0d2"

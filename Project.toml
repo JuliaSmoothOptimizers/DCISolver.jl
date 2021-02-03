@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 CUTEst = "1b53aba6-35b6-5f92-a507-53c67d53f819"
+CaNNOLeS = "5a1c9e79-9c58-5ec0-afc4-3298fdea2875"
 GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
