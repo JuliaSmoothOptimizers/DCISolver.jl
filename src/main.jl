@@ -163,7 +163,7 @@ function dci(nlp :: AbstractNLPModel;
     γ = γ / 10
     Δtangent *= 10
 
-    if norm(x-z) == 0. #nothing happened in tangent_step
+    if tg_status == :unknown #nothing happened in tangent_step
       # skip some computations z, cz, fz, ℓzλ,  ∇ℓzλ
       #@show "Pass here sometimes?"
     else
@@ -201,5 +201,9 @@ function dci(nlp :: AbstractNLPModel;
     :unknown
   end
 
-  return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
+  return GenericExecutionStats(status, nlp, solution     = z, 
+                                            objective    = fz, 
+                                            dual_feas    = dualnorm, 
+                                            primal_feas  = primalnorm, 
+                                            elapsed_time = eltime)
 end

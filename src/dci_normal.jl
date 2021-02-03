@@ -25,8 +25,9 @@ function normal_step(nlp        :: AbstractNLPModel,
   norm∇fz        = norm(∇fx) #can be avoided if we use dualnorm
   ℓzλ, ∇ℓzλ      = ℓxλ, ∇ℓxλ
 
-  infeasible = false
-  tired      = false
+  infeasible  = false
+  restoration = false
+  tired       = false
 
   #Initialize ρ at x
   ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ctol, 0)
@@ -60,6 +61,17 @@ function normal_step(nlp        :: AbstractNLPModel,
     many_evals = neval_obj(nlp) + neval_cons(nlp) > max_eval
     tired      = many_evals || eltime > max_time
     infeasible = normal_status == :infeasible
+
+    if infeasible && !restoration && !(primalnorm ≤ ρ || tired) 
+    #Enter restoration phase to avoid infeasible stationary points.
+    #Very simple heuristic that forces a random move from z
+      restoration, infeasible = true, false
+      z += rand(nlp.meta.nvar) * sqrt(ctol)/norm(z)
+      cz = cons(nlp, z)
+      Jz = jac_op(nlp, z)
+      primalnorm = norm(cz)
+
+    end
 
     done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
   end

@@ -26,7 +26,9 @@ function cannoles_step(nlp      :: AbstractNLPModel,
   #See  https://github.com/tmigot/CaNNOLeS.jl/blob/master/src/CaNNOLeS.jl
   stats = cannoles(nls, x = x, max_time = max_time, 
                                max_f = max_eval, 
-                               ϵtol = 2 * ρ^2)
+                               ϵtol = 2 * ρ^2,
+                               linsolve = :ldlfactorizations,
+                               method = :Newton_noFHess) #:Newton, :LM)
 
   z  = stats.solution
   cz = cons(nlp, z)

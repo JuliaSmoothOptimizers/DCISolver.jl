@@ -60,7 +60,8 @@ module DCI
   Compute the solution of ‖Jx' λ - ∇fx‖
   """
   function compute_lx(Jx :: LinearOperator{T}, ∇fx) where T
-    (λ, stats) = cgls(Jx', -∇fx) #atol, rtol
+    m, n = size(Jx) 
+    (λ, stats) = cgls(Jx', -∇fx)#, itmax = 10 * (m + n)) #atol, rtol
     if !stats.solved
       @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
     end
@@ -72,7 +73,9 @@ module DCI
   end
 
   function compute_lx!(Jx :: LinearOperator{T}, ∇fx, λ) where T
-    (l, stats) = cgls(Jx', -∇fx) #atol, rtol
+     
+    m, n = size(Jx) 
+    (l, stats) = cgls(Jx', -∇fx)#, itmax = 10 * (m + n)) #atol, rtol
     if !stats.solved
       @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
     end
