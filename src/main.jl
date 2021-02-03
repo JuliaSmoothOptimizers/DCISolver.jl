@@ -10,15 +10,16 @@ problems described in
     https://doi.org/10.1137/070679557
 
 """
-function dci(nlp :: AbstractNLPModel;
-             x   :: AbstractVector{T} = nlp.meta.x0,
-             atol = 1e-5,
-             rtol = 1e-5,
-             ctol = 1e-5,
-             linear_solver = :ldlfact,#:ma57,
-             max_eval = 50000,
-             max_time = 60.
+function dci(nlp  :: AbstractNLPModel;
+             x    :: AbstractVector{T} = nlp.meta.x0,
+             atol :: AbstractFloat = 1e-5,
+             rtol :: AbstractFloat = 1e-5,
+             ctol :: AbstractFloat = 1e-5,
+             linear_solver :: Symbol = :ldlfact,#:ma57,
+             max_eval :: Int = 50000,
+             max_time :: Float64 = 60.
             ) where T
+
   if !equality_constrained(nlp)
     error("DCI only works for equality constrained problems")
   end
@@ -44,7 +45,7 @@ function dci(nlp :: AbstractNLPModel;
   
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
   Jx = J(x)
-  λ = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
+  λ  = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
 
   # Regularization
   γ = zero(T)
@@ -110,7 +111,8 @@ function dci(nlp :: AbstractNLPModel;
                    [String, Int, Int, Float64, Float64, Float64, Float64, Float64, String],
                    hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)", :dual => "‖∇L‖", :primal => "‖c(x)‖")
                   )
-  @info log_row(Any["init", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ])
+  @info log_row(Any["init", iter, evals(nlp), fx, 
+                            dualnorm, primalnorm, ρmax, ρ])
 
   while !(solved || tired || infeasible)
     # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
@@ -183,7 +185,8 @@ function dci(nlp :: AbstractNLPModel;
     primalnorm = norm(cx)
     dualnorm   = norm(∇ℓxλ)
     
-    @info log_row(Any["T", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ, tg_status])
+    @info log_row(Any["T", iter, evals(nlp), fx, 
+                           dualnorm, primalnorm, ρmax, ρ, tg_status])
     iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time

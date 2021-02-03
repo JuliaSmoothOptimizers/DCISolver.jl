@@ -71,6 +71,7 @@ function normal_step(nlp        :: AbstractNLPModel,
       cz = cons(nlp, z)
       Jz = jac_op(nlp, z)
       primalnorm = norm(cz)
+      ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ctol, 0)
 
     end
 
