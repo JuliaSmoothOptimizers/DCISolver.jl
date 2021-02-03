@@ -111,9 +111,9 @@ function dci(nlp :: AbstractNLPModel;
 
   while !(solved || tired || infeasible)
     # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
-    z, ℓzλ,  ∇ℓzλ, ρ, 
+    z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, 
       primalnorm, dualnorm, 
-      tired, infeasible = normal_step(nlp, x, cx, Jx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
+      tired, infeasible = normal_step(nlp, x, cx, Jx, fx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
                                              dualnorm, primalnorm, ρmax, 
                                              ctol, ϵp, 
                                              max_eval, max_time, 
@@ -141,8 +141,14 @@ function dci(nlp :: AbstractNLPModel;
 
     gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
     
-    x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓzλ, ℓzλ, gBg, ρ, γ, δ, # ∇ℓxλ
-                                                     Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
+    x, cx, fx, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, cz, 
+                                                              primalnorm, fz,
+                                                              LDL, vals, 
+                                                              ∇ℓzλ, ℓzλ, gBg, 
+                                                              ρ, γ, δ,
+                                                              Δ = Δtangent, 
+                                                              max_eval = max_eval, 
+                                                              max_time = max_time - eltime)
     #γ
     if tg_status == :tired
       tired = true
@@ -157,8 +163,7 @@ function dci(nlp :: AbstractNLPModel;
     γ = γ / 10
     Δtangent *= 10
 
-    fx = f(x)
-    cx = c(x)
+@show norm(fx - f(x)), norm(cx - c(x))
     ∇fx = ∇f(x)
     Jx = J(x)
     compute_lx!(Jx, ∇fx, λ)

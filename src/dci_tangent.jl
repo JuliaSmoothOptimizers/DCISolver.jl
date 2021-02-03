@@ -11,11 +11,17 @@ Return status with outcomes:
 - :unknown if we didn't enter the loop.
 - :small_horizontal_step
 - :tired if we stop due to max_eval or max_time
-- :success if we computed z such that ||c(z)|| ≤ 2ρ and Δℓ ≥ η₁ q(d)
+- :success if we computed z such that ‖c(z)‖ ≤ 2ρ and Δℓ ≥ η₁ q(d)
+
+See https://github.com/JuliaSmoothOptimizers/SolverTools.jl/blob/78f6793f161c3aac2234aee8a27aa07f1df3e8ee/src/trust-region/trust-region.jl#L37
+for `SolverTools.aredpred`
 """
 function tangent_step(nlp      :: AbstractNLPModel, 
                       z        :: AbstractVector{T}, 
                       λ        :: AbstractVector{T}, 
+                      cz       :: AbstractVector{T},
+                      normcz   :: T,
+                      fz       :: T,
                       LDL, 
                       vals     :: AbstractVector{T}, 
                       g        :: AbstractVector{T}, 
@@ -30,7 +36,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
                       σ₁       :: AbstractFloat= 0.25, #decrease trust-region radius
                       σ₂       :: AbstractFloat= 2.0, #increase trust-region radius after success
                       δmin     :: T = √eps(T),
-                      small_d  :: AbstractFloat = 1e-20, #below this value ||d|| is too small
+                      small_d  :: AbstractFloat = eps(T), #below this value ||d|| is too small
                       max_eval :: Int = 1_000, #max number of evaluation of obj + cons
                       max_time :: AbstractFloat = 1_000., #max real time
                      ) where T
@@ -46,11 +52,11 @@ function tangent_step(nlp      :: AbstractNLPModel,
   el_time = 0.0
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
 
-  normct, r = 1.0, -1.0
+  normct, r = normcz, -one(T)
 
   while !((normct ≤ 2ρ && r ≥ η₁) || tired)
     #Compute a descent direction d
-    d, dBd, status, γ, δ, vals = compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)
+    d, dBd, status, γ, δ, vals = compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d) #no evals
     n2d = dot(d,d)
     if √n2d > Δ
       d = d * (Δ / √n2d) #Just in case.
@@ -59,8 +65,9 @@ function tangent_step(nlp      :: AbstractNLPModel,
       status = :small_horizontal_step
       break
     end
-    xt = z + d
-    ct = cons(nlp, xt)
+
+    xt     = z + d
+    ct     = cons(nlp, xt)
     normct = norm(ct)
 
     if normct ≤ 2ρ
@@ -68,7 +75,6 @@ function tangent_step(nlp      :: AbstractNLPModel,
       ℓxtλ = ft + dot(λ, ct)
       qd   = dBd / 2 + dot(g, d)
 
-      #SolverTools.aredpred https://github.com/JuliaSmoothOptimizers/SolverTools.jl/blob/78f6793f161c3aac2234aee8a27aa07f1df3e8ee/src/trust-region/trust-region.jl#L37
       Δℓ, pred = aredpred(nlp, ℓzλ, ℓxtλ, qd, xt, d, dot(g, d))
 
       r = Δℓ / qd
@@ -76,9 +82,10 @@ function tangent_step(nlp      :: AbstractNLPModel,
         Δ *= σ₁
       else #success
         status = :success
-        z = xt
-        cx = ct
-        ℓxλ = ℓxtλ
+        z  = xt
+        cz = ct
+        fz = ft
+        #ℓzλ = ℓxtλ
         if r ≥ η₂ && √n2d >= 0.99 Δ
           Δ *= σ₂
         end
@@ -96,7 +103,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
       status = :tired
   end
 
-  return z, status, Δ, Δℓ, γ, δ #cx, ℓxλ
+  return z, cz, fz, status, Δ, Δℓ, γ, δ #ℓzλ
 end
 
 """

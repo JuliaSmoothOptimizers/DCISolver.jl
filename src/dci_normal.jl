@@ -1,8 +1,9 @@
 # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
 function normal_step(nlp        :: AbstractNLPModel, 
                      x          :: AbstractVector{T}, 
-                     cx         :: AbstractVector{T}, 
+                     cx         :: AbstractVector{T},
                      Jx         :: LinearOperator{T},  
+                     fx         :: T,
                      ∇fx        :: AbstractVector{T}, 
                      λ          :: AbstractVector{T}, 
                      ℓxλ        :: T, 
@@ -20,7 +21,7 @@ function normal_step(nlp        :: AbstractNLPModel,
                      ) where T
 
   #assign z variable:
-  z, cz, Jz, ∇fz = x, cx, Jx, ∇fx
+  z, cz, Jz, fz, ∇fz = x, cx, Jx, fx, ∇fx
   norm∇fz        = norm(∇fx) #can be avoided if we use dualnorm
   ℓzλ, ∇ℓzλ      = ℓxλ, ∇ℓxλ
 
@@ -63,13 +64,13 @@ function normal_step(nlp        :: AbstractNLPModel,
     done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
   end
 
-  return z, ℓzλ,  ∇ℓzλ, ρ, primalnorm, dualnorm, tired, infeasible
+  return z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, primalnorm, dualnorm, tired, infeasible
 end
 
 #Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
 #Should really check whether 3/4ρmax < ngp ρmax 10^-4 ?
 #No evaluations of functions here.
-# ρ = O(||g_p(z)||) and 
+# ρ = O(‖g_p(z)‖) and 
 #in the paper ρ = ν n_p(z) ρ_max with n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)
 function compute_ρ(dualnorm   :: T, 
                    primalnorm :: T, 
