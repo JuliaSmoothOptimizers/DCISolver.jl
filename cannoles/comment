@@ -1,0 +1,24 @@
+ERROR: Unsatisfiable requirements detected for package LDLFactorizations [40e66cde]:
+ LDLFactorizations [40e66cde] log:
+ ├─possible versions are: [0.2.0, 0.3.0, 0.4.0, 0.5.0, 0.6.0, 0.7.0] or uninstalled
+ ├─restricted to versions 0.5 by SymCOOSolverInterface [ae3c181e], leaving only versions 0.5.0
+ │ └─SymCOOSolverInterface [ae3c181e] log:
+ │   ├─possible versions are: 0.1.0 or uninstalled
+ │   └─SymCOOSolverInterface [ae3c181e] is fixed to version 0.1.0
+ └─restricted by compatibility requirements with CaNNOLeS [5a1c9e79] to versions: [0.2.0, 0.3.0, 0.4.0] — no versions left
+   └─CaNNOLeS [5a1c9e79] log:
+     ├─possible versions are: [0.1.0-0.1.1, 0.2.0, 0.3.0] or uninstalled
+     └─restricted to versions * by an explicit requirement, leaving only versions [0.1.0-0.1.1, 0.2.0, 0.3.0]
+
+
+So, I forced things by
+] add https://github.com/tmigot/CaNNOLeS.jl
+
+julia> include("cannoles/test_cannoles.jl")
+[ Info: Precompiling CaNNOLeS [5a1c9e79-9c58-5ec0-afc4-3298fdea2875]
+┌ Warning: linsolve ma57 not available. Using :ldlfactorizations instead
+└ @ CaNNOLeS ~/.julia/packages/CaNNOLeS/2m2rN/src/CaNNOLeS.jl:60
+[ Info:      I      #F        fx        Δt      ‖∇L‖  ‖Fx - r‖    ‖c(x)‖         α         η         ρ         δ   in_it     nbk  
+[ Info:      0       2   1.2e+01   0.0e+00   1.1e+02   0.0e+00   0.0e+00
+
+and we wait forever here ...
