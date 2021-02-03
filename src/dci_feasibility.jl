@@ -10,7 +10,7 @@
 
 Approximately solves min ‖c(x)‖.
 
-Given xₖ, finds min ‖cₖ + Jₖd‖ s.t. ||d|| ≤ Δ
+Given xₖ, finds min ‖cₖ + Jₖd‖
 """
 function feasibility_step(nlp             :: AbstractNLPModel, 
                           x               :: AbstractVector{T}, 
@@ -48,7 +48,7 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   while !(normcz ≤ ρ || tired || infeasible)
     
     #Compute the a direction satisfying the trust-region constraint
-    d, Jd, infeasible, solved = TR_compute_step(cz, Jz, ctol, Δ, normcz) #dogleg by default
+    d, Jd, infeasible, solved = TR_compute_step(cz, Jz, ctol, Δ, normcz)
 
     if infeasible
       break

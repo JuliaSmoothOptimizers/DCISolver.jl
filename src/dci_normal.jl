@@ -15,7 +15,10 @@ function normal_step(nlp        :: AbstractNLPModel,
                      max_eval   :: Int, 
                      max_time   :: AbstractFloat, 
                      eltime     :: AbstractFloat, 
-                     start_time :: AbstractFloat) where T
+                     start_time :: AbstractFloat;
+                     feas_step  :: Function = cannoles_step #feasibility_step or cannoles_step
+                     ) where T
+
   #assign z variable:
   z, cz, Jz, ∇fz = x, cx, Jx, ∇fx
   norm∇fz        = norm(∇fx) #can be avoided if we use dualnorm
@@ -33,10 +36,10 @@ function normal_step(nlp        :: AbstractNLPModel,
   while !done_with_normal_step
 
     #primalnorm = norm(cz)
-    z, cz, primalnorm, Jz, normal_status = feasibility_step(nlp, z, cz, primalnorm,
-                                                            Jz, ρ, ϵp, 
-                                                            max_eval = max_eval, 
-                                                            max_time = max_time - eltime)
+    z, cz, primalnorm, Jz, normal_status = feas_step(nlp, z, cz, primalnorm,
+                                                     Jz, ρ, ϵp, 
+                                                     max_eval = max_eval, 
+                                                     max_time=max_time-eltime)
 
     fz, ∇fz    = objgrad(nlp, z)
     norm∇fz    = norm(∇fz) #can be avoided if we use dualnorm
