@@ -4,15 +4,15 @@ Approximately solves min ‖c(x)‖.
 
 such that |‖c(x)‖ ≤ ρ
 """
-function cannoles_step(nlp             :: AbstractNLPModel, 
-                       x               :: AbstractVector{T}, 
-                       cx              :: AbstractVector{T}, 
-                       normcx          :: T,
-                       Jx              :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
-                       ρ               :: T,
-                       ctol            :: AbstractFloat;
-                       max_eval        :: Int = 1_000, 
-                       max_time        :: AbstractFloat = 60.,
+function cannoles_step(nlp      :: AbstractNLPModel, 
+                       x        :: AbstractVector{T}, 
+                       cx       :: AbstractVector{T}, 
+                       normcx   :: T,
+                       Jx       :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
+                       ρ        :: T,
+                       ctol     :: AbstractFloat;
+                       max_eval :: Int = 1_000, 
+                       max_time :: AbstractFloat = 60.,
                        ) where T
 
   if normcx ≤ ρ

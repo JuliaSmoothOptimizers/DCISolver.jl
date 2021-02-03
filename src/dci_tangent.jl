@@ -13,29 +13,41 @@ Return status with outcomes:
 - :tired if we stop due to max_eval or max_time
 - :success if we computed z such that ||c(z)|| ≤ 2ρ and Δℓ ≥ η₁ q(d)
 """
-function tangent_step(nlp, z, λ, LDL, vals, g, ℓzλ, gBg, ρ, δ, γ;
-                      Δ = 1.0, #trust-region radius
-                      η₁ = 1e-2,
-                      η₂ = 0.75,
-                      σ₁ = 0.25, #decrease trust-region radius
-                      σ₂ = 2.0, #increase trust-region radius after success
-                      small_d = 1e-20, #below this value ||d|| is too small
-                      max_eval = 1_000, #max number of evaluation of obj + cons
-                      max_time = 1_000., #max real time
-                     )
+function tangent_step(nlp      :: AbstractNLPModel, 
+                      z        :: AbstractVector{T}, 
+                      λ        :: AbstractVector{T}, 
+                      LDL, 
+                      vals     :: AbstractVector{T}, 
+                      g        :: AbstractVector{T}, 
+                      ℓzλ      :: T, 
+                      gBg      :: T, 
+                      ρ        :: AbstractFloat, 
+                      δ        :: T, 
+                      γ        :: T;
+                      Δ        :: AbstractFloat= 1.0, #trust-region radius
+                      η₁       :: AbstractFloat= 1e-2,
+                      η₂       :: AbstractFloat= 0.75,
+                      σ₁       :: AbstractFloat= 0.25, #decrease trust-region radius
+                      σ₂       :: AbstractFloat= 2.0, #increase trust-region radius after success
+                      δmin     :: T = √eps(T),
+                      small_d  :: AbstractFloat = 1e-20, #below this value ||d|| is too small
+                      max_eval :: Int = 1_000, #max number of evaluation of obj + cons
+                      max_time :: AbstractFloat = 1_000., #max real time
+                     ) where T
+
   m, n = nlp.meta.ncon, nlp.meta.nvar
   
-  d = Array{Float64,1}(undef, n)
-  
-  δmin = 1e-8
-  Δℓ = 0.0
+  d = Array{T, 1}(undef, n)
+  Δℓ = zero(T)
 
   status = :unknown
   iter = 0
   start_time = time()
   el_time = 0.0
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
+
   normct, r = 1.0, -1.0
+
   while !((normct ≤ 2ρ && r ≥ η₁) || tired)
     #Compute a descent direction d
     d, dBd, status, γ, δ, vals = compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)

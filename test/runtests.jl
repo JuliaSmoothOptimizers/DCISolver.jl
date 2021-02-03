@@ -8,6 +8,10 @@ using NLPModels
 using DCI
 
 function test_dci(;tol = 1e-5)
+
+  #Test if it has equality constraints
+  @test_throws ErrorException("DCI only works for equality constrained problems") dci(ADNLPModel(x->dot(x, x), zeros(5)))
+
   @testset "Simple problem" begin
     n = 10
     nlp = ADNLPModel(x->dot(x, x), zeros(n),

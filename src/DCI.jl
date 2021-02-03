@@ -37,7 +37,12 @@ module DCI
     TR_computation_step :: Symbol #min_d ‖cₖ + Jₖd‖ s.t. ||d|| ≤ Δ #feasibility_step or cannoles_step
   end
 
-  #T.M.: ∇ℓxλ' * B * ∇ℓxλ (recall the only the lower triangular is in vals)
+  """compute_gBg
+    B is a symmetric sparse matrix 
+    whose lower triangular given in COO: (rows, cols, vals)
+
+    Compute ∇ℓxλ' * B * ∇ℓxλ
+  """
   function compute_gBg(nlp :: AbstractNLPModel, 
                        rows :: AbstractVector, 
                        cols :: AbstractVector, 

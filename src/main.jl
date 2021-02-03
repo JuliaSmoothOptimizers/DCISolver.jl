@@ -134,8 +134,6 @@ function dci(nlp :: AbstractNLPModel;
       ℓᵣ = ℓzλ
     end
 
-    #gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ) #why not after updating?
-
     #Update matrix system
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])

@@ -16,7 +16,7 @@ function normal_step(nlp        :: AbstractNLPModel,
                      max_time   :: AbstractFloat, 
                      eltime     :: AbstractFloat, 
                      start_time :: AbstractFloat;
-                     feas_step  :: Function = cannoles_step #feasibility_step or cannoles_step
+                     feas_step  :: Function = feasibility_step #feasibility_step or cannoles_step
                      ) where T
 
   #assign z variable:
