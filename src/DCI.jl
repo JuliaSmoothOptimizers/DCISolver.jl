@@ -4,14 +4,14 @@ module DCI
 
   using Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
 
-  const solver_correspondence = Dict(#:ma57 => MA57Struct, 
+  const solver_correspondence = Dict(:ma57 => MA57Struct, 
                                     :ldlfact => LDLFactorizationStruct)
 
   export dci
 
   include("dci_feasibility.jl")
-  using CaNNOLeS
-  include("dci_cannoles_feasibility.jl")
+  #using CaNNOLeS
+  #include("dci_cannoles_feasibility.jl")
   include("dci_normal.jl")
   include("dci_tangent.jl")
   include("main.jl")

@@ -40,6 +40,6 @@ knitro(nlp, out_hints = 0, outlev = 0,
   #thanks to the restoration step we avoid the infeasible stationary point
   #it is impressive how many iterations we need for λ !
   #Probably, we need some scaling or pre-conditioning ?
-  stats_dci = dci(nlp, max_eval = 1000)
+  stats_dci = dci(nlp, nlp.meta.x0, max_eval = 1000)
 
 finalize(nlp)

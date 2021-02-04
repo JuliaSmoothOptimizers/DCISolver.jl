@@ -10,12 +10,12 @@ problems described in
     https://doi.org/10.1137/070679557
 
 """
-function dci(nlp  :: AbstractNLPModel;
-             x    :: AbstractVector{T} = nlp.meta.x0,
+function dci(nlp  :: AbstractNLPModel,
+             x    :: AbstractVector{T};# = nlp.meta.x0,
              atol :: AbstractFloat = 1e-5,
              rtol :: AbstractFloat = 1e-5,
              ctol :: AbstractFloat = 1e-5,
-             linear_solver :: Symbol = :ldlfact,#:ma57,
+             linear_solver :: Symbol = :ma57, #:ldlfact,
              max_eval :: Int = 50000,
              max_time :: Float64 = 60.
             ) where T

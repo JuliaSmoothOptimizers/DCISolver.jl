@@ -10,7 +10,7 @@ function test_dci(S :: String)
     )
     nlp = CUTEstModel(S)
     try
-        output = dci(nlp, max_time=Inf, max_eval=3000)
+        output = dci(nlp, nlp.meta.x0, max_time=Inf, max_eval=3000)
         println(output)
     catch ex
         @show ex
