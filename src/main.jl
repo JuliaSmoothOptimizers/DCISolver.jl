@@ -70,7 +70,7 @@ function dci(nlp  :: AbstractNLPModel,
   # J (nvar .+ 1:ncon, 1:nvar)
   nnz_idx = nlp.meta.nnzh .+ (1:nlp.meta.nnzj)
   @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
-  @views jac_coord!(nlp, x, vals[nnz_idx])
+  #@views jac_coord!(nlp, x, vals[nnz_idx])
   rows[nnz_idx] .+= nlp.meta.nvar
   # γI (1:nvar, 1:nvar)
   nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
