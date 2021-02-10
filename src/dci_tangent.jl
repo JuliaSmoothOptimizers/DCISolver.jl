@@ -28,8 +28,8 @@ function tangent_step(nlp      :: AbstractNLPModel,
                       ℓzλ      :: T, 
                       gBg      :: T, 
                       ρ        :: AbstractFloat, 
-                      δ        :: T, 
-                      γ        :: T;
+                      γ        :: T, 
+                      δ        :: T;
                       Δ        :: AbstractFloat= one(T), #trust-region radius
                       η₁       :: AbstractFloat= T(1e-2),
                       η₂       :: AbstractFloat= T(0.75),
@@ -150,7 +150,8 @@ function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)
         dBd = τ^2 * dcpBdcp + 2 * τ * (1 - τ) * dcpBdn + (1 - τ)^2 * dnBdn
         status = :dogleg
       end
-    end #end of "d="
+    end
+
   return d, dBd, status, γ, δ, vals
 end
 
@@ -237,9 +238,10 @@ function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
         dnBdn  = - dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
         dcpBdn = - dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
       end
+      @info log_row(Any["Fact", γ, 1/eps(T), δ, δmin])
 
       while !(success(LDL) && num_neg_eig(LDL) == m)
-        γ = max(10γ, √eps(T))
+        γ = max(100γ, √eps(T)) #max(10γ, √eps(T))
         if γ > 1/eps(T)
           γ_too_large = true
           dnBdn = zero(T)
@@ -260,8 +262,8 @@ function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
           dnBdn = -dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
           dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
         end
+        @info log_row(Any["Fact", γ, 1/eps(T), δ, δmin])
       end
-      @info log_row(Any["Fact", γ, 1/eps(T), δ, δmin])
       descent = true
     end
     
