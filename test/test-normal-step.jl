@@ -4,9 +4,9 @@ using Krylov, LinearAlgebra, NLPModels, CUTEst, Test
 using DCI
 using DCI: compute_ρ, feasibility_step
 
-atol = 1e-6
-rtol = 1e-6
-ctol = 1e-6
+atol = 1e-5
+rtol = 1e-5
+ctol = 1e-5
 
 ##
 # 1st problem: check the case of an "infeasible" **unstable** initial point,
@@ -106,7 +106,7 @@ end
                                 max_eval = 1_000, max_time = 60.,
                                 TR_compute_step = DCI.dogleg
                                 )
-    @test norm(z - x) == 0.
+    @test z ≈ x atol=ctol
     d = -Jx'*cz
     @test norm(d) ≤ 1.1e-7
     @test ctol*norm(cx) ≥ 1.6e-7

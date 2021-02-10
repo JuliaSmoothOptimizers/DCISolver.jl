@@ -17,7 +17,8 @@ function dci(nlp  :: AbstractNLPModel,
              ctol :: AbstractFloat = 1e-5,
              linear_solver :: Symbol = :ldlfact,  # :ma57,#
              max_eval :: Int = 50000,
-             max_time :: Float64 = 10.
+             max_time :: Float64 = 10.,
+             max_iter :: Int = 500,
             ) where T
 
   if !equality_constrained(nlp)
@@ -46,6 +47,10 @@ function dci(nlp  :: AbstractNLPModel,
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
   Jx = J(x)
   λ  = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
+  ℓxλ  = fx + dot(λ, cx)
+  ∇ℓxλ = ∇fx + Jx'*λ
+  dualnorm = norm(∇ℓxλ)
+  primalnorm = norm(cx)
 
   # Regularization
   γ = zero(T)
@@ -57,6 +62,8 @@ function dci(nlp  :: AbstractNLPModel,
   rows = zeros(Int, nnz)
   cols = zeros(Int, nnz)
   vals = zeros(nnz)
+  #regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
+#########################################################################################
   # H (1:nvar, 1:nvar)
   nnz_idx = 1:nlp.meta.nnzh
   @views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
@@ -75,18 +82,12 @@ function dci(nlp  :: AbstractNLPModel,
   rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
   cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
   vals[nnz_idx] .= - δ
-
+##############################################################################################
   LDL = solver_correspondence[linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
-
-  ℓxλ  = fx + dot(λ, cx)
-  ∇ℓxλ = ∇fx + Jx'*λ
 
   Δℓₜ = T(Inf)
   Δℓₙ = zero(T)
   ℓᵣ  = T(Inf)
-
-  dualnorm = norm(∇ℓxλ)
-  primalnorm = norm(cx)
 
   ρmax = max(ctol, 5primalnorm, 50dualnorm)
   ρ = NaN #not needed
@@ -140,6 +141,7 @@ function dci(nlp  :: AbstractNLPModel,
 
     #Update matrix system if we moved
     #if normal_status != :init_success
+    #at the first iteration if x=z, this is unnecessary ?
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
     # TODO: Update γ and δ here
@@ -167,8 +169,9 @@ function dci(nlp  :: AbstractNLPModel,
         #success :)
     end
     
-    γ = γ / 10
-    Δtg *= 10
+    γ = max(γ / 10, eps(T)) #use tolerances + is γ updated in vals ?
+    #increase the trust-region paramter
+    Δtg = min(10Δtg, 1/√eps(T))
 
     if tg_status == :unknown #nothing happened in tangent_step
       # skip some computations z, cz, fz, ℓzλ,  ∇ℓzλ
@@ -190,8 +193,7 @@ function dci(nlp  :: AbstractNLPModel,
     iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time
-    tired  = evals(nlp) > max_eval || eltime > max_time
-    @show eltime, max_time
+    tired  = evals(nlp) > max_eval || eltime > max_time || iter > max_iter
   end
 
   status = if solved
@@ -201,6 +203,8 @@ function dci(nlp  :: AbstractNLPModel,
       :max_eval
     elseif eltime > max_time
       :max_time
+    elseif iter > max_iter
+      :max_iter
     else
       :exception
     end

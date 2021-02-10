@@ -54,26 +54,26 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     if infeasible #the direction is too small
       failed_step_comp = true #too small step
       status = :too_small
-    end
+    else
+      zp      = z + d
+      czp     = cons(nlp, zp)
+      normczp = norm(czp)
 
-    zp      = z + d
-    czp     = cons(nlp, zp)
-    normczp = norm(czp)
+      Pred = T(0.5) * (normcz^2 - norm(Jd + cz)^2)
+      Ared = T(0.5) * (normcz^2 - normczp^2)
 
-    Pred = T(0.5) * (normcz^2 - norm(Jd + cz)^2)
-    Ared = T(0.5) * (normcz^2 - normczp^2)
-
-    if Ared/Pred < η₁
-      Δ = max(T(1e-8), Δ * σ₁)
-      status = :reduce_Δ
-    else #success
-      z  = zp
-      Jz = jac_op(nlp, z)
-      cz = czp
-      normcz = normczp
-      status = :success
-      if Ared/Pred > η₂ && norm(d) >= T(0.99) * Δ
-        Δ *= σ₂
+      if Ared/Pred < η₁
+        Δ = max(T(1e-8), Δ * σ₁)
+        status = :reduce_Δ
+      else #success
+        z  = zp
+        Jz = jac_op(nlp, z)
+        cz = czp
+        normcz = normczp
+        status = :success
+        if Ared/Pred > η₂ && norm(d) >= T(0.99) * Δ
+          Δ *= σ₂
+        end
       end
     end
 
@@ -87,16 +87,21 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     #maybe also if infeasible is true, to verify that we still have a =0.
     if normcz > ρ && (consecutive_bad_steps ≥ 3 || failed_step_comp)
         (d, stats) = cg(hess_op(nlp, z, cz, obj_weight=0.0) + Jz' * Jz, Jz' * cz)
-        z     -= d
-        Jz     = jac_op(nlp, z)
-        cz     = cons(nlp, z)
-        normcz = norm(cz)
-        if norm(d) < ctol * min(normcz, one(T))
+        zp   = z - d
+        czp  = cons(nlp, zp)
+        nczp = norm(czp)
+        if norm(d) < ctol * min(nczp, one(T))
           infeasible = true
           status = :agressive_fail
-        elseif stats.solved && normcz < normczp #norm(d) < ctol * normcz #success
+        elseif nczp < normcz #even if d is small we keep going
           infeasible = false
           status = :agressive
+          z, cz  = zp, czp
+          normcz = nczp
+          Jz     = jac_op(nlp, z)
+          if !stats.solved
+            @warn "Fail cg in feasibility_step: $(stats.status)"
+          end
         end
     end
 
