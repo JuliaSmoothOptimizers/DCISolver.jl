@@ -7,7 +7,7 @@ pnames = CUTEst.select(max_var=3000, min_var=1000, min_con=1, only_free_var=true
  "EIGENA2" #easy :)
  "MSS3" --> feasibility issue -> move a bit but stuck in the T/Tr step
  "EIGENBCO" - tough
- "LCH" --> looks like a problem in the scaling ρ/dL = 1000 (only 1 constraint)
+ "LCH" --> works ! Youhou
  "EIGENB2" --> small tangent step (finish too soon)
  "EIGENC2" --> same
  "EIGENCCO" --> same
@@ -30,8 +30,10 @@ What is the value of λ when it is stalling?
 
 using NLPModels, CUTEst, DCI
 
-nlp = CUTEstModel("EIGENA2")
+nlp = CUTEstModel("LCH")
 
-stats = dci(nlp, nlp.meta.x0, linear_solver = :ma57, max_time = 1200.)
+stats = dci(nlp, nlp.meta.x0, linear_solver = :ma57, max_time = 120., max_iter = 480)
+
+@show nlp.counters
 
 finalize(nlp)

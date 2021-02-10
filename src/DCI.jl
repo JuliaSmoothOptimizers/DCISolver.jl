@@ -73,6 +73,43 @@ module DCI
   end
 
   """
+  `regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)`
+    Compute the structure for the saddle system [H + γI  [Jᵀ]; J -δI] in COO-format in the following order:
+    H J γ -δ
+  """
+  function regularized_coo_saddle_system!(nlp  :: AbstractNLPModel,
+                                          rows :: AbstractVector{S},
+                                          cols :: AbstractVector{S},
+                                          vals :: AbstractVector{T};
+                                          γ    :: T = zero(T),
+                                          δ    :: T = zero(T),
+                                         ) where {S <: Int, T <: AbstractFloat}
+    #n = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon
+    #Test length rows, cols, vals
+    #@lencheck n rows cols vals
+
+    # H (1:nvar, 1:nvar)
+    nnz_idx = 1:nlp.meta.nnzh
+    @views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+    # J (nvar .+ 1:ncon, 1:nvar)
+    nnz_idx = nlp.meta.nnzh .+ (1:nlp.meta.nnzj)
+    @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+    rows[nnz_idx] .+= nlp.meta.nvar
+    # γI (1:nvar, 1:nvar)
+    nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
+    rows[nnz_idx] .= 1:nlp.meta.nvar
+    cols[nnz_idx] .= 1:nlp.meta.nvar
+    vals[nnz_idx] .= γ
+    # -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
+    nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
+    rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
+    cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
+    vals[nnz_idx] .= - δ
+
+    return rows, cols, vals
+  end
+
+  """
   Compute the solution of ‖Jx' λ - ∇fx‖
   """
   function compute_lx(Jx :: LinearOperator{T}, ∇fx) where T

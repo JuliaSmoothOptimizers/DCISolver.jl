@@ -62,27 +62,8 @@ function dci(nlp  :: AbstractNLPModel,
   rows = zeros(Int, nnz)
   cols = zeros(Int, nnz)
   vals = zeros(nnz)
-  #regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
-#########################################################################################
-  # H (1:nvar, 1:nvar)
-  nnz_idx = 1:nlp.meta.nnzh
-  @views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
-  # J (nvar .+ 1:ncon, 1:nvar)
-  nnz_idx = nlp.meta.nnzh .+ (1:nlp.meta.nnzj)
-  @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
-  #@views jac_coord!(nlp, x, vals[nnz_idx])
-  rows[nnz_idx] .+= nlp.meta.nvar
-  # γI (1:nvar, 1:nvar)
-  nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
-  rows[nnz_idx] .= 1:nlp.meta.nvar
-  cols[nnz_idx] .= 1:nlp.meta.nvar
-  vals[nnz_idx] .= zero(T)
-  # -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
-  nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  vals[nnz_idx] .= - δ
-##############################################################################################
+  regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
+
   LDL = solver_correspondence[linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
 
   Δℓₜ = T(Inf)
@@ -130,10 +111,13 @@ function dci(nlp  :: AbstractNLPModel,
       break
     end
 
-    # TODO Comment
+    # TODO Comment: Tanj: not sure how this is supposed to work.
     Δℓₙ = ℓzλ - ℓxλ
+#@show Δℓₙ, Δℓₜ, (ℓᵣ - ℓxλ) / 2, ℓzλ, ℓxλ, ℓᵣ
     if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
       ρmax /= 2
+    else #we don't let ρmax too far from the residuals
+      ρmax = min(ρmax, max(ctol, 5primalnorm, 50dualnorm))
     end
     if Δℓₙ > -Δℓₜ / 2
       ℓᵣ = ℓzλ
@@ -141,10 +125,13 @@ function dci(nlp  :: AbstractNLPModel,
 
     #Update matrix system if we moved
     #if normal_status != :init_success
-    #at the first iteration if x=z, this is unnecessary ?
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
-    # TODO: Update γ and δ here
+    if γ != 0.0 && γ != √eps(T)
+      γ = max(γ / 10, √eps(T)) #use tolerances
+      vals[nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)] .= γ
+    end
+    # TODO: Update δ here
     #end
 
     gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
@@ -157,7 +144,6 @@ function dci(nlp  :: AbstractNLPModel,
                                                         Δ = Δtg, 
                                                         max_eval = max_eval, 
                                                         max_time = max_time - eltime)
-    #γ
     if tg_status == :tired
       tired  = true
       eltime = time() - start_time
@@ -169,15 +155,12 @@ function dci(nlp  :: AbstractNLPModel,
         #success :)
     end
     
-    γ = max(γ / 10, eps(T)) #use tolerances + is γ updated in vals ?
     #increase the trust-region paramter
     Δtg = min(10Δtg, 1/√eps(T))
 
     if tg_status == :unknown #nothing happened in tangent_step
       # skip some computations z, cz, fz, ℓzλ,  ∇ℓzλ
       #@show "Pass here sometimes?"
-    else
-      #run computations
     end
     ∇fx = ∇f(x)
     Jx  = J(x)
@@ -189,7 +172,7 @@ function dci(nlp  :: AbstractNLPModel,
     dualnorm   = norm(∇ℓxλ)
     
     @info log_row(Any["T", iter, evals(nlp), fx, 
-                           dualnorm, primalnorm, ρmax, ρ, tg_status, NaN, NaN])
+                           dualnorm, primalnorm, ρmax, ρ, tg_status, "", ""])
     iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time
