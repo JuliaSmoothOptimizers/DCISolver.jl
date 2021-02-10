@@ -86,7 +86,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
         cz = ct
         fz = ft
         #ℓzλ = ℓxtλ
-        if r ≥ η₂ && √n2d >= 0.99 Δ
+        if r ≥ η₂ && √n2d ≥ 0.99Δ
           Δ *= σ₂
         end
       end
@@ -221,6 +221,13 @@ function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
     descent = false
     dnBdn = dcpBdn = zero(T)
     γ_too_large = false
+
+    @info log_header([:stage, :gamma, :gamma_max, :delta, :delta_min],
+                   [String, Float64, Float64, Float64, Float64],
+                   hdr_override=Dict(:gamma => "γ", :gamma_max => "γmax", :delta => "δ", :delta_min => "δmin")
+                  )
+    @info log_row(Any["init", γ, 1/eps(T), δ, δmin])
+
     while !descent
       factorize!(LDL)
       if success(LDL) && num_neg_eig(LDL) == m
@@ -254,6 +261,7 @@ function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
           dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
         end
       end
+      @info log_row(Any["Fact", γ, 1/eps(T), δ, δmin])
       descent = true
     end
     

@@ -17,7 +17,7 @@ function dci(nlp  :: AbstractNLPModel,
              ctol :: AbstractFloat = 1e-5,
              linear_solver :: Symbol = :ldlfact,  # :ma57,#
              max_eval :: Int = 50000,
-             max_time :: Float64 = 60.
+             max_time :: Float64 = 10.
             ) where T
 
   if !equality_constrained(nlp)
@@ -118,10 +118,10 @@ function dci(nlp  :: AbstractNLPModel,
     z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, 
       primalnorm, dualnorm, 
       normal_status = normal_step(nlp, x, cx, Jx, fx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
-                                             dualnorm, primalnorm, ρmax, 
-                                             ctol, ϵp, 
-                                             max_eval, max_time, 
-                                             eltime, start_time)
+                                              dualnorm, primalnorm, ρmax, 
+                                              ctol, ϵp, 
+                                              max_eval = max_eval, 
+                                              max_time = max_time - eltime)
     # Convergence test
     solved = primalnorm < ϵp && dualnorm < ϵd
     infeasible = normal_status == :infeasible
@@ -157,7 +157,8 @@ function dci(nlp  :: AbstractNLPModel,
                                                         max_time = max_time - eltime)
     #γ
     if tg_status == :tired
-      tired = true
+      tired  = true
+      eltime = time() - start_time
       #now it depends whether we are feasibility or not.
       continue
     elseif tg_status == :small_horizontal_step
@@ -190,6 +191,7 @@ function dci(nlp  :: AbstractNLPModel,
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time
     tired  = evals(nlp) > max_eval || eltime > max_time
+    @show eltime, max_time
   end
 
   status = if solved

@@ -12,11 +12,9 @@ function normal_step(nlp        :: AbstractNLPModel,
                      primalnorm :: T, #norm(cx)
                      ρmax       :: T, 
                      ctol       :: T, 
-                     ϵp         :: T, 
-                     max_eval   :: Int, 
-                     max_time   :: AbstractFloat,
-                     eltime     :: AbstractFloat, 
-                     start_time :: AbstractFloat;
+                     ϵp         :: T;
+                     max_eval   :: Int = 1_000,
+                     max_time   :: AbstractFloat = 1_000.,
                      max_iter   :: Int = typemax(Int64),
                      feas_step  :: Function = feasibility_step #feasibility_step or cannoles_step
                      ) where T
@@ -29,6 +27,8 @@ function normal_step(nlp        :: AbstractNLPModel,
   infeasible  = false
   restoration = false
   tired       = false
+  start_time  = time()
+  eltime      = 0.0
 
   #Initialize ρ at x
   ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ctol, 0)
@@ -42,7 +42,7 @@ function normal_step(nlp        :: AbstractNLPModel,
     z, cz, primalnorm, Jz, normal_status = feas_step(nlp, z, cz, primalnorm,
                                                      Jz, ρ, ϵp, 
                                                      max_eval = max_eval, 
-                                                     max_time=max_time-eltime)
+                                                     max_time=max_time)
 
     fz, ∇fz    = objgrad(nlp, z)
     norm∇fz    = norm(∇fz) #can be avoided if we use dualnorm
@@ -108,6 +108,7 @@ end
 #in the paper ρ = ν n_p(z) ρ_max with n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)
 #
 # Tangi, 2021 Feb. 5th: what if dualnorm is excessively small ?
+#             Feb. 8th: don't let ρ decrease too crazy
 function compute_ρ(dualnorm   :: T, 
                    primalnorm :: T, 
                    norm∇fx    :: T, 
