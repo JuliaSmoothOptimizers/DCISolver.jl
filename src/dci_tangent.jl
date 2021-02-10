@@ -93,6 +93,9 @@ function tangent_step(nlp      :: AbstractNLPModel,
     else
       Δ *= σ₁
     end
+
+    @info log_row(Any["Tr", iter, neval_obj(nlp) + neval_cons(nlp), fz,
+                           NaN, norm(ct), NaN, NaN, status, √n2d, Δ])
     iter += 1
 
     el_time = time() - start_time

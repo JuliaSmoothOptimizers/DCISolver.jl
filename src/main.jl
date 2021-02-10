@@ -15,7 +15,7 @@ function dci(nlp  :: AbstractNLPModel,
              atol :: AbstractFloat = 1e-5,
              rtol :: AbstractFloat = 1e-5,
              ctol :: AbstractFloat = 1e-5,
-             linear_solver :: Symbol = :ma57, #:ldlfact,
+             linear_solver :: Symbol = :ldlfact,  # :ma57,#
              max_eval :: Int = 50000,
              max_time :: Float64 = 60.
             ) where T
@@ -78,13 +78,12 @@ function dci(nlp  :: AbstractNLPModel,
 
   LDL = solver_correspondence[linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
 
-  #ℓ(x,λ) = f(x) + λᵀc(x)
-  ℓxλ = fx + dot(λ, cx)
+  ℓxλ  = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
 
   Δℓₜ = T(Inf)
   Δℓₙ = zero(T)
-  ℓᵣ = T(Inf)
+  ℓᵣ  = T(Inf)
 
   dualnorm = norm(∇ℓxλ)
   primalnorm = norm(cx)
@@ -107,9 +106,9 @@ function dci(nlp  :: AbstractNLPModel,
 
   iter = 0
 
-  @info log_header([:stage, :iter, :nf, :fx, :dual, :primal, :ρmax, :ρ, :status],
-                   [String, Int, Int, Float64, Float64, Float64, Float64, Float64, String],
-                   hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)", :dual => "‖∇L‖", :primal => "‖c(x)‖")
+  @info log_header([:stage, :iter, :nf, :fx, :dual, :primal, :ρmax, :ρ, :status, :nd, :Δ],
+                   [String, Int, Int, Float64, Float64, Float64, Float64, Float64, String, Float64, Float64],
+                   hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)", :dual => "‖∇L‖", :primal => "‖c(x)‖", :nd => "‖d‖")
                   )
   @info log_row(Any["init", iter, evals(nlp), fx, 
                             dualnorm, primalnorm, ρmax, ρ])
@@ -186,7 +185,7 @@ function dci(nlp  :: AbstractNLPModel,
     dualnorm   = norm(∇ℓxλ)
     
     @info log_row(Any["T", iter, evals(nlp), fx, 
-                           dualnorm, primalnorm, ρmax, ρ, tg_status])
+                           dualnorm, primalnorm, ρmax, ρ, tg_status, NaN, NaN])
     iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time

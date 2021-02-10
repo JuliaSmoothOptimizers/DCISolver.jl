@@ -44,14 +44,16 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   el_time    = 0.0
   tired      = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   infeasible = false
+  status     = :unknown
   
   while !(normcz ≤ ρ || tired || infeasible)
     
     #Compute the a direction satisfying the trust-region constraint
     d, Jd, infeasible, solved = TR_compute_step(cz, Jz, ctol, Δ, normcz)
 
-    if infeasible
-      break
+    if infeasible #the direction is too small
+      failed_step_comp = true #too small step
+      status = :too_small
     end
 
     zp      = z + d
@@ -63,11 +65,13 @@ function feasibility_step(nlp             :: AbstractNLPModel,
 
     if Ared/Pred < η₁
       Δ = max(T(1e-8), Δ * σ₁)
+      status = :reduce_Δ
     else #success
       z  = zp
       Jz = jac_op(nlp, z)
       cz = czp
       normcz = normczp
+      status = :success
       if Ared/Pred > η₂ && norm(d) >= T(0.99) * Δ
         Δ *= σ₂
       end
@@ -80,12 +84,24 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     end
 
     # Safeguard AKA agressive normal step - Loses robustness, doesn't seem to fix any
-    # if normcz > ρ && (consecutive_bad_steps ≥ 3 || failed_step_comp)
-    #   d = cg(hess_op(nlp, z, cz, obj_weight=0.0), Jx' * cz)[1]
-    #   z -= d
-    #   cz = cons(nlp, z)
-    #   normcz = norm(cz)
-    # end
+    #maybe also if infeasible is true, to verify that we still have a =0.
+    if normcz > ρ && (consecutive_bad_steps ≥ 3 || failed_step_comp)
+        (d, stats) = cg(hess_op(nlp, z, cz, obj_weight=0.0) + Jz' * Jz, Jz' * cz)
+        z     -= d
+        Jz     = jac_op(nlp, z)
+        cz     = cons(nlp, z)
+        normcz = norm(cz)
+        if norm(d) < ctol * min(normcz, one(T))
+          infeasible = true
+          status = :agressive_fail
+        elseif stats.solved && normcz < normczp #norm(d) < ctol * normcz #success
+          infeasible = false
+          status = :agressive
+        end
+    end
+
+    @info log_row(Any["F", normal_iter, neval_obj(nlp) + neval_cons(nlp), 
+                           NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
 
     el_time      = time() - start_time
     normal_iter += 1
@@ -138,7 +154,7 @@ function dogleg(cz     :: AbstractVector,
   nd2   = dot(d, d)
   Jd    = Jz * d
     
-  if sqrt(nd2) < ctol * normcz #norm(d) < ctol * normcz
+  if √nd2 < ctol * min(normcz, one(T)) #norm(d) < ctol * normcz
     infeasible = true
     return d, Jd, solved, infeasible
   end
@@ -147,9 +163,9 @@ function dogleg(cz     :: AbstractVector,
   dcp   = t * d
   ndcp2 = t^2 * nd2 #dot(dcp, dcp)
  
-  if sqrt(ndcp2) > Δ
-    d   = dcp * Δ / sqrt(ndcp2) #so ||d||=Δ
-    Jd  = Jd * t * Δ / sqrt(ndcp2) #avoid recomputing Jd
+  if √ndcp2 > Δ
+    d   = dcp * Δ / √ndcp2  #so ||d||=Δ
+    Jd  = Jd * t * Δ / √ndcp2  #avoid recomputing Jd
   else
     (dn, stats)  = lsmr(Jz, -cz)
     solved =stats.solved
@@ -181,7 +197,7 @@ function TR_lsmr(cz     :: AbstractVector,
 
   (d, stats)  = lsmr(Jz, -cz, radius = Δ)
 
-  infeasible = norm(d) < ctol * normcz
+  infeasible = norm(d) < ctol * min(normcz, one(T))
   solved = stats.solved
   if !solved
       @warn "Fail lsmr in TR_lsmr: $(stats.status)"

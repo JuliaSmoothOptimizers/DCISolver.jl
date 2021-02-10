@@ -3,7 +3,7 @@ List of reasonably large problems:
 
 pnames = CUTEst.select(max_var=3000, min_var=1000, min_con=1, only_free_var=true, only_equ_con=true, objtype=3:6)
 9-element Array{String,1}:
- "SPINOP" --> feasibility issue
+ "SPINOP" --> feasibility issue (work with the agressive step)
  "EIGENA2" #easy :)
  "MSS3" --> feasibility issue
  "EIGENBCO" - tough
@@ -33,7 +33,7 @@ Check that our limits are size dependent.
 "Execution stats: problem may be infeasible"
 
 #Our formula for Infeasibility:
-infeasible = norm(d) < ctol * ρ * min(normcz, one(T))
+infeasible = norm(d) < ctol * ρ * min(normcz, one(T)) #should probably depend on Δ also?
 #Alternative: scaling
 #Unproductive steps
 
@@ -42,12 +42,13 @@ i) infeasible stationary points of the feasibility problem. (-> move from the cu
 ii) infeasible stationary points of the optimization problem. (-> need to move from the current point AND change ρ)
 
 Small tangent step: "Execution stats: unhandled exception"
+What is the value of λ when it is stalling?
 =#
 
 using NLPModels, CUTEst, DCI
 
-nlp = CUTEstModel("EIGENA2")
+nlp = CUTEstModel("MSS3")
 
-dci(nlp, nlp.meta.x0)
+stats = dci(nlp, nlp.meta.x0)
 
 finalize(nlp)

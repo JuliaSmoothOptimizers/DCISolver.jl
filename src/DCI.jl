@@ -2,10 +2,14 @@ module DCI
 
   using LinearAlgebra, Logging
 
-  using Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
+  using HSL, Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
 
-  const solver_correspondence = Dict(:ma57 => MA57Struct, 
-                                    :ldlfact => LDLFactorizationStruct)
+  const solver_correspondence = if isdefined(HSL, :libhsl_ma57)
+    Dict(:ma57 => MA57Struct, 
+         :ldlfact => LDLFactorizationStruct)
+  else
+    Dict(:ldlfact => LDLFactorizationStruct)
+  end
 
   export dci
 

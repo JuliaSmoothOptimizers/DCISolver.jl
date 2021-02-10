@@ -56,7 +56,7 @@ function normal_step(nlp        :: AbstractNLPModel,
     ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ctol, iter_normal_step)
 
     @info log_row(Any["N", iter_normal_step, neval_obj(nlp) + neval_cons(nlp), 
-                           fz, dualnorm, primalnorm, ρmax, ρ, normal_status])
+                           fz, dualnorm, primalnorm, ρmax, ρ, normal_status, NaN, NaN])
 
     eltime     = time() - start_time
     many_evals = neval_obj(nlp) + neval_cons(nlp) > max_eval
@@ -106,11 +106,13 @@ end
 #No evaluations of functions here.
 # ρ = O(‖g_p(z)‖) and 
 #in the paper ρ = ν n_p(z) ρ_max with n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)
+#
+# Tangi, 2021 Feb. 5th: what if dualnorm is excessively small ?
 function compute_ρ(dualnorm   :: T, 
                    primalnorm :: T, 
                    norm∇fx    :: T, 
                    ρmax       :: T, 
-                   ϵ          :: T, 
+                   ϵ          :: T, #ctol
                    iter       :: Int) where T
   if iter > 100
     return 0.75 * ρmax
