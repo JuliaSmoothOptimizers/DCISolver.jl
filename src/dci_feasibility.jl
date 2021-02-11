@@ -69,18 +69,17 @@ function feasibility_step(nlp             :: AbstractNLPModel,
         z  = zp
         Jz = jac_op(nlp, z)
         cz = czp
+        if normczp / normcz > T(0.95)
+          consecutive_bad_steps += 1
+        else
+          consecutive_bad_steps = 0
+        end
         normcz = normczp
         status = :success
         if Ared/Pred > η₂ && norm(d) >= T(0.99) * Δ
           Δ *= σ₂
         end
       end
-    end
-
-    if normcz / normcx > T(0.95)
-      consecutive_bad_steps += 1
-    else
-      consecutive_bad_steps = 0
     end
 
     # Safeguard AKA agressive normal step - Loses robustness, doesn't seem to fix any

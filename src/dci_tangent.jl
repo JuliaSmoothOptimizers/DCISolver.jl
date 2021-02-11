@@ -78,8 +78,9 @@ function tangent_step(nlp      :: AbstractNLPModel,
       Δℓ, pred = aredpred(nlp, ℓzλ, ℓxtλ, qd, xt, d, dot(g, d))
 
       r = Δℓ / qd
-      if r < η₁
-        Δ *= σ₁
+      if r < η₁ #we can decrease further Δ so that ≤ ||d||
+        m = max(ceil(log(√n2d / Δ) / log(σ₁)), 1)
+        Δ *= σ₁^m
       else #success
         status = :success
         z  = xt
@@ -90,8 +91,9 @@ function tangent_step(nlp      :: AbstractNLPModel,
           Δ *= σ₂
         end
       end
-    else
-      Δ *= σ₁
+    else #we can decrease further Δ so that ≤ ||d||
+      m = max(ceil(log(√n2d / Δ) / log(σ₁)), 1)
+      Δ *= σ₁^m
     end
 
     @info log_row(Any["Tr", iter, neval_obj(nlp) + neval_cons(nlp), fz,

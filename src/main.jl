@@ -201,5 +201,6 @@ function dci(nlp  :: AbstractNLPModel,
                                             objective    = fz, 
                                             dual_feas    = dualnorm, 
                                             primal_feas  = primalnorm, 
+                                            iter         = iter,
                                             elapsed_time = eltime)
 end
