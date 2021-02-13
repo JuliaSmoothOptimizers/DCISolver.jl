@@ -86,7 +86,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
         z  = xt
         cz = ct
         fz = ft
-        #ℓzλ = ℓxtλ
+        ℓzλ = ℓxtλ
         if r ≥ η₂ && √n2d ≥ 0.99Δ
           Δ *= σ₂
         end
@@ -96,7 +96,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
       Δ *= σ₁^m
     end
 
-    @info log_row(Any["Tr", iter, neval_obj(nlp) + neval_cons(nlp), fz,
+    @info log_row(Any["Tr", iter, neval_obj(nlp) + neval_cons(nlp), fz, ℓzλ,
                            NaN, norm(ct), NaN, NaN, status, √n2d, Δ])
     iter += 1
 
@@ -130,7 +130,7 @@ function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)
       dBd = dcpBdcp
       d = dcp
     else
-      dn, dnBdn, dcpBdn,  γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
+      dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
       if γ_too_large 
           #dn = 0 here.
           if norm(dcp) < Δ #just to be sure
@@ -153,7 +153,7 @@ function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)
         status = :dogleg
       end
     end
-
+@show gBg, dBd, dot(g, d), norm(dn), norm(dcp), dnBdn, dcpBdn, status
   return d, dBd, status, γ, δ, vals
 end
 
@@ -210,7 +210,7 @@ compute a step ****
 
 return dn = 0. whenever γ > 1/eps(T)
 """
-function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
+function _compute_newton_step!2(nlp, LDL, g, γ, δ, δmin, dcp, vals)
 
     m, n, nnzh, nnzj = nlp.meta.ncon, nlp.meta.nvar, nlp.meta.nnzh, nlp.meta.nnzj
     T = eltype(nlp.meta.x0)
@@ -224,23 +224,32 @@ function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
     descent = false
     dnBdn = dcpBdn = zero(T)
     γ_too_large = false
+    status = :unknown #:γ_too_large, :success_fact, :success_psd, :regularize
 
-    @info log_header([:stage, :gamma, :gamma_max, :delta, :delta_min],
-                   [String, Float64, Float64, Float64, Float64],
+    @info log_header([:stage, :gamma, :gamma_max, :delta, :delta_min, :status],
+                   [String, Float64, Float64, Float64, Float64, Symbol],
                    hdr_override=Dict(:gamma => "γ", :gamma_max => "γmax", :delta => "δ", :delta_min => "δmin")
                   )
-    @info log_row(Any["init", γ, 1/eps(T), δ, δmin])
+    #@info log_row(Any["init", γ, 1/eps(T), δ, δmin])
 
     while !descent
       factorize!(LDL)
+      status = if success(LDL)
+        :success_fact
+      elseif num_neg_eig(LDL) == m
+        :success_psd
+      else
+        :regularize
+      end
       if success(LDL) && num_neg_eig(LDL) == m
         solve!(dζ, LDL, rhs)
         dn = dζ[1:n]
         dλ = view(dζ, n+1:n+m)
         dnBdn  = - dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
         dcpBdn = - dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
+        status = :success
       end
-      @info log_row(Any["Fact", γ, 1/eps(T), δ, δmin])
+      @info log_row(Any["Fact", γ, 1/eps(T), δ, δmin, status])
 
       while !(success(LDL) && num_neg_eig(LDL) == m)
         γ = max(100γ, √eps(T)) #max(10γ, √eps(T))
@@ -257,17 +266,27 @@ function _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
         δ = δmin
         vals[nnz_idx] .= -δ
         factorize!(LDL)
+        status = if success(LDL)
+                :success_fact
+              elseif num_neg_eig(LDL) == m
+                :success_psd
+              else
+                :regularize
+              end
         if success(LDL) && num_neg_eig(LDL) == m
           solve!(dζ, LDL, rhs)
           dn = dζ[1:n]
           dλ = view(dζ, n+1:n+m)
           dnBdn = -dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
           dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
+          status = :success
         end
-        @info log_row(Any["Fact", γ, 1/eps(T), δ, δmin])
+        @info log_row(Any["Fact", γ, 1/eps(T), δ, δmin, status])
       end
       descent = true
     end
     
     return dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals
 end
+
+include("factorization.jl")

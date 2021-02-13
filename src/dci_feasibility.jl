@@ -85,14 +85,11 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     # Safeguard AKA agressive normal step - Loses robustness, doesn't seem to fix any
     #maybe also if infeasible is true, to verify that we still have a =0.
     if normcz > ρ && (consecutive_bad_steps ≥ 3 || failed_step_comp)
-        (d, stats) = cg(hess_op(nlp, z, cz, obj_weight=0.0) + Jz' * Jz, Jz' * cz)
+        (d, stats) = cg(hess_op(nlp, z, cz, obj_weight = zero(T)) + Jz' * Jz, Jz' * cz)
         zp   = z - d
         czp  = cons(nlp, zp)
         nczp = norm(czp)
-        if norm(d) < ctol * min(nczp, one(T))
-          infeasible = true
-          status = :agressive_fail
-        elseif nczp < normcz #even if d is small we keep going
+        if nczp < normcz #even if d is small we keep going
           infeasible = false
           status = :agressive
           z, cz  = zp, czp
@@ -101,11 +98,14 @@ function feasibility_step(nlp             :: AbstractNLPModel,
           if !stats.solved
             @warn "Fail cg in feasibility_step: $(stats.status)"
           end
+        elseif norm(d) < ctol * min(nczp, one(T))
+          infeasible = true
+          status = :agressive_fail
         end
     end
 
     @info log_row(Any["F", normal_iter, neval_obj(nlp) + neval_cons(nlp), 
-                           NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
+                           NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
 
     el_time      = time() - start_time
     normal_iter += 1

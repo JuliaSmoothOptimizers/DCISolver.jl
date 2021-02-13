@@ -85,17 +85,19 @@ function dci(nlp  :: AbstractNLPModel,
   solved     = primalnorm < ϵp && dualnorm < ϵd
   tired      = evals(nlp) > max_eval || eltime > max_time
   infeasible = false
+  small_step_rescue = false
+  stalled = false
 
   iter = 0
 
-  @info log_header([:stage, :iter, :nf, :fx, :dual, :primal, :ρmax, :ρ, :status, :nd, :Δ],
-                   [String, Int, Int, Float64, Float64, Float64, Float64, Float64, String, Float64, Float64],
-                   hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)", :dual => "‖∇L‖", :primal => "‖c(x)‖", :nd => "‖d‖")
+  @info log_header([:stage, :iter, :nf, :fx, :lag, :dual, :primal, :ρmax, :ρ, :status, :nd, :Δ],
+                   [String, Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, String, Float64, Float64],
+                   hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)", :lag => "ℓ", :dual => "‖∇L‖", :primal => "‖c(x)‖", :nd => "‖d‖")
                   )
-  @info log_row(Any["init", iter, evals(nlp), fx, 
+  @info log_row(Any["init", iter, evals(nlp), fx, ℓxλ, 
                             dualnorm, primalnorm, ρmax, ρ])
 
-  while !(solved || tired || infeasible)
+  while !(solved || tired || infeasible || stalled)
     # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
     z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, 
       primalnorm, dualnorm, 
@@ -150,7 +152,14 @@ function dci(nlp  :: AbstractNLPModel,
       #now it depends whether we are feasibility or not.
       continue
     elseif tg_status == :small_horizontal_step
-        #Try something ?
+        if !small_step_rescue
+          #Try something ?
+          ρ = primalnorm/2 #force a feasibility step
+          small_step_rescue = true
+        else
+          stalled = true
+        end
+        #Or stop!
     else
         #success :)
     end
@@ -171,7 +180,7 @@ function dci(nlp  :: AbstractNLPModel,
     primalnorm = norm(cx)
     dualnorm   = norm(∇ℓxλ)
     
-    @info log_row(Any["T", iter, evals(nlp), fx, 
+    @info log_row(Any["T", iter, evals(nlp), fx, ℓxλ,
                            dualnorm, primalnorm, ρmax, ρ, tg_status, "", ""])
     iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
@@ -191,6 +200,8 @@ function dci(nlp  :: AbstractNLPModel,
     else
       :exception
     end
+  elseif stalled
+    :small_step
   elseif infeasible
     :infeasible
   else
