@@ -119,7 +119,7 @@ Compute a direction `d` with three possible outcomes:
 - `:interior_cauchy_step` when γ is too large.
 for `min_d q(d) s.t. ‖d‖ ≤ Δ`.
 """
-function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)
+function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ :: T, δ :: T, δmin :: T, vals, d) where T
     m, n = nlp.meta.ncon, nlp.meta.nvar
     
     #first compute a gradient step
@@ -132,7 +132,8 @@ function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)
     else
       dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
 
-      if γ_too_large #or dn too small ?
+      norm2dn = dot(dn, dn)
+      if γ_too_large || dnBdn ≤ eps(T) #or same test as gBg in _compute_gradient_step ?
           #dn = 0 here.
           if norm(dcp) < Δ #just to be sure
               d = dcp
@@ -141,7 +142,6 @@ function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d)
               return d, dBd, status, γ, δ, vals
           end
       end
-      norm2dn = dot(dn, dn)
       
       if √norm2dn < Δ # Both Newton and Cauchy are inside the TR.
         status = :newton

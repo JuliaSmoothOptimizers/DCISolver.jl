@@ -25,17 +25,27 @@ infeasible = norm(d) < ctol * ρ * min(normcz, one(T)) #should probably depend o
 There are two annoying points:
 i) infeasible stationary points of the feasibility problem. (-> move from the current point)
 ii) infeasible stationary points of the optimization problem. (-> need to move from the current point AND change ρ)
-
-Small tangent step: "Execution stats: unhandled exception"
-What is the value of λ when it is stalling?
 =#
 
 using NLPModels, CUTEst, DCI
+# Solved: SPINOP, EIGENA2, EIGENBCO, LCH, EIGENB2
+# Why don't cgls work for MSS3?
+# EIGENC2 no real progress
+# EIGENCCO Maybe with more time?
+nlp = CUTEstModel("MSS1")
 
-nlp = CUTEstModel("EIGENBCO")
-
-stats = dci(nlp, nlp.meta.x0, linear_solver = :ma57, max_time = 600., max_iter = 1000)
+stats = dci(nlp, nlp.meta.x0, linear_solver = :ma57, max_time = 160., max_iter = 1000)
 
 @show nlp.counters
+@show (stats.status, stats.elapsed_time, neval_obj(nlp))
 
 finalize(nlp)
+
+#=
+problems = ["SPINOP", "EIGENA2", "MSS3", "EIGENBCO", "LCH", "EIGENB2", "EIGENC2", "EIGENCCO", "EIGENACO"]
+for p in problems
+  nlp = CUTEstModel(p)
+  @show (nlp.meta.nvar, nlp.meta.ncon)
+  finalize(nlp)
+end
+=#
