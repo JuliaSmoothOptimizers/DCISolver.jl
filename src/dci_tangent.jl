@@ -22,7 +22,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
                       cz       :: AbstractVector{T},
                       normcz   :: T,
                       fz       :: T,
-                      LDL, 
+                      LDL      :: SymCOOSolverInterface.SymCOOSolver, 
                       vals     :: AbstractVector{T}, 
                       g        :: AbstractVector{T}, 
                       ℓzλ      :: T, 
@@ -30,11 +30,11 @@ function tangent_step(nlp      :: AbstractNLPModel,
                       ρ        :: AbstractFloat, 
                       γ        :: T, 
                       δ        :: T;
-                      Δ        :: AbstractFloat= one(T), #trust-region radius
-                      η₁       :: AbstractFloat= T(1e-2),
-                      η₂       :: AbstractFloat= T(0.75),
-                      σ₁       :: AbstractFloat= T(0.25), #decrease trust-region radius
-                      σ₂       :: AbstractFloat= T(2.0), #increase trust-region radius after success
+                      Δ        :: AbstractFloat = one(T), #trust-region radius
+                      η₁       :: AbstractFloat = T(1e-2),
+                      η₂       :: AbstractFloat = T(0.75),
+                      σ₁       :: AbstractFloat = T(0.25), #decrease trust-region radius
+                      σ₂       :: AbstractFloat = T(2.0), #increase trust-region radius after success
                       δmin     :: T = √eps(T),
                       small_d  :: AbstractFloat = eps(T), #below this value ||d|| is too small
                       max_eval :: Int = 1_000, #max number of evaluation of obj + cons
@@ -119,7 +119,16 @@ Compute a direction `d` with three possible outcomes:
 - `:interior_cauchy_step` when γ is too large.
 for `min_d q(d) s.t. ‖d‖ ≤ Δ`.
 """
-function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ :: T, δ :: T, δmin :: T, vals, d) where T
+function compute_descent_direction(nlp  :: AbstractNLPModel, 
+                                   gBg  :: T, 
+                                   g    :: AbstractVector{T}, 
+                                   Δ    :: T, 
+                                   LDL  :: SymCOOSolverInterface.SymCOOSolver, 
+                                   γ    :: T, 
+                                   δ    :: T, 
+                                   δmin :: T, 
+                                   vals :: AbstractVector{T}, 
+                                   d    :: AbstractVector{T}) where T
     m, n = nlp.meta.ncon, nlp.meta.nvar
     
     #first compute a gradient step
@@ -131,9 +140,9 @@ function compute_descent_direction(nlp, gBg, g, Δ, LDL, γ :: T, δ :: T, δmin
       d = dcp
     else
       dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
-
+#@show norm(dn), norm(dcp), Δ, dnBdn, dcpBdcp, gBg
       norm2dn = dot(dn, dn)
-      if γ_too_large || dnBdn ≤ eps(T) #or same test as gBg in _compute_gradient_step ?
+      if γ_too_large || dnBdn ≤ 1e-10 #or same test as gBg in _compute_gradient_step ?
           #dn = 0 here.
           if norm(dcp) < Δ #just to be sure
               d = dcp
@@ -168,7 +177,10 @@ return `dcp = - α g`
 return `dcpBdcp = α^2 gBg`
 and `α` the solution.
 """
-function _compute_gradient_step(nlp, gBg, g, Δ)
+function _compute_gradient_step(nlp :: AbstractNLPModel, 
+                                gBg :: T, 
+                                g   :: AbstractVector{T}, 
+                                Δ   :: T) where T
 
     dcp_on_boundary = false
     dgg = dot(g,g)
@@ -192,7 +204,10 @@ end
 Given two directions dcp and dn, compute the largest 0 ≤ τ ≤ 1 such that
 ‖dn + τ (dcp -dn)‖ = Δ
 """
-function _compute_step_length(norm2dn, dotdndcp, norm2dcp, Δ :: T) where T <: AbstractFloat
+function _compute_step_length(norm2dn  :: T, 
+                              dotdndcp :: T, 
+                              norm2dcp :: T, 
+                              Δ        :: T) where T <: AbstractFloat
     # d = τ dcp + (1 - τ) * dn = dn + τ * (dcp - dn)
     # ‖d‖² = Δ² => τ² ‖dcp - dn‖² + 2τ dnᵀ(dcp - dn) + ‖dn‖² - Δ² = 0
     # Δ = b² - 4ac

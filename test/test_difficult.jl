@@ -10,6 +10,7 @@ This file list problems from benchmarks that we didn't solve.
 problems = ["MSS1", "S308NE", "COATINGNE"] 
 #=
 MSS1 is unknown for Knitro, and the other two are infeasible.
+Actually, we just struggle to achieve a high precision.
 
 The three are unknowns for Ipopt
 =#
@@ -40,6 +41,7 @@ knitro(nlp, out_hints = 0, outlev = 0,
   #thanks to the restoration step we avoid the infeasible stationary point
   #it is impressive how many iterations we need for λ !
   #Probably, we need some scaling or pre-conditioning ?
-  stats_dci = dci(nlp, nlp.meta.x0, max_eval = 1000)
+  #stats = dci(nlp, nlp.meta.x0, linear_solver = :ldlfact, max_time = 160., max_iter = 1000)
+  stats = dci(nlp, nlp.meta.x0, linear_solver = :ma57, max_time = 160., max_iter = 1000)
 
 finalize(nlp)

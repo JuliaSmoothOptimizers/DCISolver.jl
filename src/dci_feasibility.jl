@@ -23,10 +23,10 @@ function feasibility_step(nlp             :: AbstractNLPModel,
                           η₂              :: AbstractFloat = 0.66, 
                           σ₁              :: AbstractFloat = 0.25, 
                           σ₂              :: AbstractFloat = 2.0,
-                          Δ0              :: AbstractFloat = one(T),
+                          Δ0              :: T = one(T),
                           max_eval        :: Int = 1_000, 
                           max_time        :: AbstractFloat = 60.,
-                          max_normal_iter :: Int = typemax(Int64), #try something smarter?
+                          max_feas_iter   :: Int = typemax(Int64), #try something smarter?
                           TR_compute_step :: Function = TR_lsmr #dogleg
                           ) where T
   
@@ -34,9 +34,10 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   cz     = cx
   Jz     = Jx
   normcz = normcx # cons(nlp, x) = normcx = normcz for the first z
+  
   Δ = Δ0
 
-  normal_iter = 0
+  feas_iter = 0
   consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
   failed_step_comp = false         
 
@@ -104,13 +105,13 @@ function feasibility_step(nlp             :: AbstractNLPModel,
         end
     end
 
-    @info log_row(Any["F", normal_iter, neval_obj(nlp) + neval_cons(nlp), 
+    @info log_row(Any["F", feas_iter, neval_obj(nlp) + neval_cons(nlp), 
                            NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
 
     el_time      = time() - start_time
-    normal_iter += 1
+    feas_iter += 1
     many_evals   = neval_obj(nlp) + neval_cons(nlp) > max_eval
-    iter_limit   = normal_iter > max_normal_iter
+    iter_limit   = feas_iter > max_feas_iter
     tired        = many_evals || el_time > max_time || iter_limit
   end
 
@@ -121,7 +122,7 @@ function feasibility_step(nlp             :: AbstractNLPModel,
       :max_eval
     elseif el_time > max_time
       :max_time
-    elseif normal_iter > max_normal_iter
+    elseif feas_iter > max_feas_iter
       :max_iter
     else
       :unknown_tired
@@ -146,10 +147,10 @@ Also checks if problem is infeasible.
 Returns 4 entries:
 (d, Jd, solved, infeasible)
 """
-function dogleg(cz     :: AbstractVector, 
+function dogleg(cz     :: AbstractVector{T}, 
                 Jz     :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
                 ctol   :: AbstractFloat, 
-                Δ      :: AbstractFloat, 
+                Δ      :: T, 
                 normcz :: AbstractFloat) where T
 
   infeasible, solved = false, true
@@ -193,10 +194,10 @@ function dogleg(cz     :: AbstractVector,
   return d, Jd, infeasible, solved
 end
 
-function TR_lsmr(cz     :: AbstractVector, 
+function TR_lsmr(cz     :: AbstractVector{T}, 
                  Jz     :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
                  ctol   :: AbstractFloat, 
-                 Δ      :: AbstractFloat, 
+                 Δ      :: T, 
                  normcz :: AbstractFloat) where T
 
   (d, stats)  = lsmr(Jz, -cz, radius = Δ)

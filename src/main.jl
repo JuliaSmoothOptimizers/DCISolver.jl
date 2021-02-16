@@ -20,7 +20,6 @@ function dci(nlp  :: AbstractNLPModel,
              max_time :: Float64 = 10.,
              max_iter :: Int = 500,
             ) where T
-
   if !equality_constrained(nlp)
     error("DCI only works for equality constrained problems")
   end
@@ -45,11 +44,11 @@ function dci(nlp  :: AbstractNLPModel,
   cx = c(x)
   
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
-  Jx = J(x)
-  λ  = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
+  Jx   = J(x)
+  λ    = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
   ℓxλ  = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
-  dualnorm = norm(∇ℓxλ)
+  dualnorm   = norm(∇ℓxλ)
   primalnorm = norm(cx)
 
   # Regularization
@@ -76,7 +75,7 @@ function dci(nlp  :: AbstractNLPModel,
   start_time = time()
   eltime = 0.0
 
-  ϵd = atol + rtol * dualnorm
+  ϵd = atol + rtol * max(dualnorm, norm(∇fx)) # dualnorm OR max(dualnorm, primalnorm, norm(∇fx))
   ϵp = ctol
 
   Δtg = one(T)
@@ -117,7 +116,7 @@ function dci(nlp  :: AbstractNLPModel,
     Δℓₙ = ℓzλ - ℓxλ
 #@show Δℓₙ, Δℓₜ, (ℓᵣ - ℓxλ) / 2, ℓzλ, ℓxλ, ℓᵣ
     if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
-      ρmax /= 2
+      ρmax = max(ctol, ρmax/2)
     else #we don't let ρmax too far from the residuals
       ρmax = min(ρmax, max(ctol, 5primalnorm, 50dualnorm))
     end
@@ -133,7 +132,7 @@ function dci(nlp  :: AbstractNLPModel,
       γ = max(γ / 10, √eps(T)) #use tolerances
       vals[nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)] .= γ
     end
-    # TODO: Update δ here
+    # TODO: Update δ here?
     #end
 
     gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)

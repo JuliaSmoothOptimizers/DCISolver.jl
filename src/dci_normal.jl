@@ -42,7 +42,7 @@ function normal_step(nlp        :: AbstractNLPModel,
     z, cz, primalnorm, Jz, normal_status = feas_step(nlp, z, cz, primalnorm,
                                                      Jz, ρ, ϵp, 
                                                      max_eval = max_eval, 
-                                                     max_time=max_time)
+                                                     max_time = max_time)
 
     fz, ∇fz    = objgrad(nlp, z)
     norm∇fz    = norm(∇fz) #can be avoided if we use dualnorm
