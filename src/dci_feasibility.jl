@@ -46,6 +46,9 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   tired      = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   infeasible = false
   status     = :unknown
+
+  #tolerances for the agressive step: (default parameters in Krylov.jl)
+  agg_atol, agg_rtol, agg_itmax = √eps(T), √eps(T), 2 * length(z) #2n by default
   
   while !(normcz ≤ ρ || tired || infeasible)
     
@@ -83,30 +86,49 @@ function feasibility_step(nlp             :: AbstractNLPModel,
       end
     end
 
-    # Safeguard AKA agressive normal step - Loses robustness, doesn't seem to fix any
-    #maybe also if infeasible is true, to verify that we still have a =0.
+    @info log_row(Any["F", feas_iter, neval_obj(nlp) + neval_cons(nlp), 
+                           NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
+
+    # Safeguard: agressive normal step
     if normcz > ρ && (consecutive_bad_steps ≥ 3 || failed_step_comp)
-        (d, stats) = cg(hess_op(nlp, z, cz, obj_weight = zero(T)) + Jz' * Jz, Jz' * cz)
+        Hz = hess_op(nlp, z, cz, obj_weight = zero(T))
+        (d, stats) = cg(Hz + Jz' * Jz, Jz' * cz, 
+                        atol  = agg_atol, 
+                        rtol  = agg_rtol, 
+                        itmax = agg_itmax) #or cg, cgls, lsqr
+        if !stats.solved
+            @warn "Fail cg in feasibility_step: $(stats.status)"
+        end
         zp   = z - d
         czp  = cons(nlp, zp)
         nczp = norm(czp)
         if nczp < normcz #even if d is small we keep going
           infeasible = false
+          failed_step_comp = false
           status = :agressive
           z, cz  = zp, czp
           normcz = nczp
           Jz     = jac_op(nlp, z)
-          if !stats.solved
-            @warn "Fail cg in feasibility_step: $(stats.status)"
-          end
         elseif norm(d) < ctol * min(nczp, one(T))
           infeasible = true
           status = :agressive_fail
+        else #not successful, nczp > normcz, infeasible = true, status = :too_small
+          cg_iter = length(stats.residuals)
+#@show cg_iter, stats.residuals[end], agg_atol, agg_rtol, nczp, normcz, norm(Jz' * czp)
+          if cg_iter < agg_itmax #need more precise solve
+            agg_atol = min(agg_atol/10, 1e-10)
+            agg_rtol = min(agg_rtol/10, 1e-10)
+            agg_itmax += length(z)
+            if agg_atol ≥ 1e-10
+              infeasible, failed_step_comp = false, false
+            end
+          end
+          #should we increase the iteration limit if we busted it?
+          #Adding regularization might be more efficient
         end
+      @info log_row(Any["F-safe", feas_iter, neval_obj(nlp) + neval_cons(nlp), 
+                          NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
     end
-
-    @info log_row(Any["F", feas_iter, neval_obj(nlp) + neval_cons(nlp), 
-                           NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
 
     el_time      = time() - start_time
     feas_iter += 1
