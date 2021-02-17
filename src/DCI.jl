@@ -14,6 +14,39 @@ module DCI
   include("dci_tangent.jl")
   include("main.jl")
 
+  """
+      dci(nlp, x; kwargs...)
+
+  This method implements the Dynamic Control of Infeasibility for equality-constrained
+  problems described in
+
+      Dynamic Control of Infeasibility in Equality Constrained Optimization
+      Roberto H. Bielschowsky and Francisco A. M. Gomes
+      SIAM J. Optim., 19(3), 1299–1325.
+      https://doi.org/10.1137/070679557
+
+  """
+  #=
+  function dci(nlp  :: AbstractNLPModel,
+              x    :: AbstractVector{T};# = nlp.meta.x0,
+              atol :: AbstractFloat = 1e-5,
+              rtol :: AbstractFloat = 1e-5,
+              ctol :: AbstractFloat = 1e-5,
+              linear_solver :: Symbol = :ldlfact,  # :ma57,#
+              max_eval :: Int = 50000,
+              max_time :: Float64 = 10.,
+              max_iter :: Int = 500,
+              ) where T
+  =#
+  function dci(nlp  :: AbstractNLPModel,
+              x    :: AbstractVector{T};
+              kwargs...
+              ) where T
+    meta = MetaDCI(x, nlp.meta.y0; kwargs...)
+    return dci(nlp, x, meta)
+  end
+
+
   """compute_gBg
     B is a symmetric sparse matrix 
     whose lower triangular given in COO: (rows, cols, vals)

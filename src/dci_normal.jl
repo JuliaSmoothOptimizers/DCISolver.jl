@@ -11,7 +11,6 @@ function normal_step(nlp        :: AbstractNLPModel,
                      dualnorm   :: T, 
                      primalnorm :: T, #norm(cx)
                      ρmax       :: T, 
-                     ctol       :: T, 
                      ϵp         :: T;
                      max_eval   :: Int = 1_000,
                      max_time   :: AbstractFloat = 1_000.,
@@ -31,7 +30,7 @@ function normal_step(nlp        :: AbstractNLPModel,
   eltime      = 0.0
 
   #Initialize ρ at x
-  ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ctol, 0)
+  ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0)
 
   done_with_normal_step = primalnorm ≤ ρ
   iter_normal_step      = 0
@@ -53,7 +52,7 @@ function normal_step(nlp        :: AbstractNLPModel,
 
     #update rho
     iter_normal_step += 1
-    ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ctol, iter_normal_step)
+    ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, iter_normal_step)
 
     @info log_row(Any["N", iter_normal_step, neval_obj(nlp) + neval_cons(nlp), 
                            fz, ℓzλ, dualnorm, primalnorm, ρmax, ρ, normal_status, "", ""])
@@ -67,11 +66,11 @@ function normal_step(nlp        :: AbstractNLPModel,
     #Enter restoration phase to avoid infeasible stationary points.
     #Very simple heuristic that forces a random move from z
       restoration, infeasible = true, false
-      z += rand(nlp.meta.nvar) * min(primalnorm, √ctol) / norm(z) #sqrt(ctol)/norm(z)
+      z += rand(nlp.meta.nvar) * min(primalnorm, √ϵp) / norm(z) #sqrt(ϵp)/norm(z)
       cz = cons(nlp, z)
       Jz = jac_op(nlp, z)
       primalnorm = norm(cz)
-      ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ctol, 0)
+      ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0)
     end
 
     done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 

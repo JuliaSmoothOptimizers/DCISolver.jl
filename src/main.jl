@@ -1,31 +1,10 @@
-"""
-    dci(nlp, x; kwargs...)
-
-This method implements the Dynamic Control of Infeasibility for equality-constrained
-problems described in
-
-    Dynamic Control of Infeasibility in Equality Constrained Optimization
-    Roberto H. Bielschowsky and Francisco A. M. Gomes
-    SIAM J. Optim., 19(3), 1299–1325.
-    https://doi.org/10.1137/070679557
-
-"""
 function dci(nlp  :: AbstractNLPModel,
-             x    :: AbstractVector{T};# = nlp.meta.x0,
-             atol :: AbstractFloat = 1e-5,
-             rtol :: AbstractFloat = 1e-5,
-             ctol :: AbstractFloat = 1e-5,
-             linear_solver :: Symbol = :ldlfact,  # :ma57,#
-             max_eval :: Int = 50000,
-             max_time :: Float64 = 10.,
-             max_iter :: Int = 500,
+             x    :: AbstractVector{T},
+             meta :: MetaDCI
             ) where T
+
   if !equality_constrained(nlp)
     error("DCI only works for equality constrained problems")
-  end
-  if !(linear_solver ∈ keys(solver_correspondence))
-    @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
-    linear_solver = :ldlfact
   end
 
   evals(nlp) = neval_obj(nlp) + neval_cons(nlp)
@@ -63,26 +42,26 @@ function dci(nlp  :: AbstractNLPModel,
   vals = zeros(nnz)
   regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
 
-  LDL = solver_correspondence[linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
+  LDL = solver_correspondence[meta.linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
 
   Δℓₜ = T(Inf)
   Δℓₙ = zero(T)
   ℓᵣ  = T(Inf)
 
-  ρmax = max(ctol, 5primalnorm, 50dualnorm)
-  ρ = NaN #not needed
-
   start_time = time()
   eltime = 0.0
 
-  ϵd = atol + rtol * max(dualnorm, norm(∇fx)) # dualnorm OR max(dualnorm, primalnorm, norm(∇fx))
-  ϵp = ctol
+  ϵd = meta.atol + meta.rtol * max(dualnorm, norm(∇fx)) # dualnorm OR max(dualnorm, primalnorm, norm(∇fx))
+  ϵp = meta.ctol
+
+  ρmax = max(ϵp, 5primalnorm, 50dualnorm)
+  ρ = NaN #not needed
 
   Δtg = one(T)
 
   #stopping statuses
   solved     = primalnorm < ϵp && dualnorm < ϵd
-  tired      = evals(nlp) > max_eval || eltime > max_time
+  tired      = evals(nlp) > meta.max_eval || eltime > meta.max_time
   infeasible = false
   small_step_rescue = false
   stalled = false
@@ -102,9 +81,9 @@ function dci(nlp  :: AbstractNLPModel,
       primalnorm, dualnorm, 
       normal_status = normal_step(nlp, x, cx, Jx, fx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
                                               dualnorm, primalnorm, ρmax, 
-                                              ctol, ϵp, 
-                                              max_eval = max_eval, 
-                                              max_time = max_time - eltime)
+                                              ϵp,
+                                              max_eval = meta.max_eval, 
+                                              max_time = meta.max_time - eltime)
     # Convergence test
     solved = primalnorm < ϵp && dualnorm < ϵd
     infeasible = normal_status == :infeasible
@@ -116,10 +95,10 @@ function dci(nlp  :: AbstractNLPModel,
     Δℓₙ = ℓzλ - ℓxλ
 #@show Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2, Δℓₙ > -Δℓₜ / 2, Δℓₙ, Δℓₜ, (ℓᵣ - ℓxλ) / 2, ℓzλ, ℓxλ, ℓᵣ
     if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
-      ρmax = max(ctol, ρmax / 2)
+      ρmax = max(ϵp, ρmax / 2)
       ρ    = min(ρ, ρmax)
     else #we don't let ρmax too far from the residuals
-      ρmax = min(ρmax, max(ctol, 5primalnorm, 50dualnorm))
+      ρmax = min(ρmax, max(ϵp, 5primalnorm, 50dualnorm))
       ρ    = min(ρ, ρmax)
     end
     if Δℓₙ > -Δℓₜ / 2
@@ -145,8 +124,8 @@ function dci(nlp  :: AbstractNLPModel,
                                                         ∇ℓzλ, ℓzλ, gBg, 
                                                         ρ, γ, δ,
                                                         Δ = Δtg, 
-                                                        max_eval = max_eval, 
-                                                        max_time = max_time - eltime)
+                                                        max_eval = meta.max_eval, 
+                                                        max_time = meta.max_time - eltime)
     if tg_status == :tired
       tired  = true
       eltime = time() - start_time
@@ -187,17 +166,17 @@ function dci(nlp  :: AbstractNLPModel,
     iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time
-    tired  = evals(nlp) > max_eval || eltime > max_time || iter > max_iter
+    tired  = evals(nlp) > meta.max_eval || eltime > meta.max_time || iter > meta.max_iter
   end
 
   status = if solved
     :first_order
   elseif tired
-    if evals(nlp) > max_eval
+    if evals(nlp) > meta.max_eval
       :max_eval
-    elseif eltime > max_time
+    elseif eltime > meta.max_time
       :max_time
-    elseif iter > max_iter
+    elseif iter > meta.max_iter
       :max_iter
     else
       :exception
