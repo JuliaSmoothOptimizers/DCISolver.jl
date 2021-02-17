@@ -91,15 +91,17 @@ module DCI
 
   function compute_lx!(Jx  :: LinearOperator{T}, 
                        ∇fx :: AbstractVector{T}, 
-                       λ   :: AbstractVector{T}) where T <: AbstractFloat
+                       λ   :: AbstractVector{T};
+                       linear_solver :: Function = cgls) where T <: AbstractFloat
      
     m, n = size(Jx) 
     #(l, stats) = cgls(Jx', -∇fx, itmax = 5 * (m + n), λ = 1e-5, atol = 1e-5, rtol = 1e-5) #atol, rtol
-    (l, stats) = cgls(Jx', -∇fx)
+    (l, stats) = linear_solver(Jx', -∇fx, itmax = 5 * (m + n))
     if !stats.solved
       @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
+      print(stats)
     end
-    λ .= l
+    λ .= l #should we really update if !stats.solved
     return λ
   end
 

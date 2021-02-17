@@ -19,11 +19,13 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
     # When there is room for improvement, we try a dogleg step
     rhs = [-g; zeros(T, m)]
     dnBdn = dcpBdn = zero(T)
+    gnorm = norm(g)
+    slope = NaN
     γ_too_large = false
     status = :unknown #:γ_too_large, :success_fact, :regularize
 
     @info log_header([:stage, :gamma, :gamma_max, :delta, :delta_min, :status],
-                   [String, Float64, Float64, Float64, Float64, Symbol],
+                   [String, Float64, Float64, Float64, Float64, Float64, Symbol],
                    hdr_override=Dict(:gamma => "γ", :gamma_max => "γmax", 
                                      :delta => "δ", :delta_min => "δmin")
                   )
@@ -36,9 +38,10 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
         solve!(dζ, LDL, rhs)
         dn = dζ[1:n]
         dλ = view(dζ, n+1:n+m)
-        dnBdn  = - dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
+        slope  = dot(g, dn)
+        dnBdn  = - slope - γ * dot(dn, dn) - δ * dot(dλ, dλ)
         dcpBdn = - dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
-        if dot(dn, g) < -1e-4 #dnBdn > 0.0 #we have a descent direction
+        if dnBdn > 0.0 #slope < -1.0e-5 #4 * norm(dn) * gnorm #dnBdn > 0.0 
           status = :success
           descent = true
         else
@@ -47,7 +50,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
       else
         status = :regularize
       end
-      @info log_row(Any["Fact", γ, 1/√eps(T), δ, δmin, status])
+      @info log_row(Any["Fact", γ, 1/√eps(T), δ, δmin, slope, status])
 
       if !descent
         if γ ≥ 1/√eps(T)
@@ -151,6 +154,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
 end
 =#
 
+
 """
 2nd idea: we take the absolute value of the diagonal
 Only with LDLFactorizations, how do we get/set the diagonal with HSL?
@@ -173,25 +177,28 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
     # When there is room for improvement, we try a dogleg step
     rhs = [-g; zeros(T, m)]
     dnBdn = dcpBdn = zero(T)
+    gnorm = norm(g)
+    slope = NaN
     γ_too_large = false
     status = :unknown #:γ_too_large, :success_fact, :regularize
 
-    @info log_header([:stage, :gamma, :gamma_max, :delta, :delta_min, :status],
-                   [String, Float64, Float64, Float64, Float64, Symbol],
+    @info log_header([:stage, :gamma, :gamma_max, :delta, :delta_min, :slope, :status],
+                   [String, Float64, Float64, Float64, Float64, Float64, Symbol],
                    hdr_override=Dict(:gamma => "γ", :gamma_max => "γmax", 
                                      :delta => "δ", :delta_min => "δmin")
                   )
 
     #Dynamic regularization:
-
     LDL.factor.n_d =  n
-    LDL.factor.r1  = √eps(T) #1e-5#δmin # √eps(T) #γ
-    LDL.factor.r2  = -√eps(T)# 1e-5#-δmin  # -√eps(T) #δ
+    LDL.factor.r1  = -√eps(T) #1e-5#δmin # √eps(T) #γ
+    LDL.factor.r2  = √eps(T) #-√eps(T)# 1e-5#-δmin  # -√eps(T) #δ
     LDL.factor.tol = √eps(T) #1e-5#δmin
 
     descent = false
     while !descent
-      factorize!(LDL)
+      #if !success(LDL)
+        factorize!(LDL)
+      #end
 
       if success(LDL) #why would we fail?
         #λ = minimum(LDL.factor.d[1:n])
@@ -201,9 +208,11 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
         solve!(dζ, LDL, rhs)
         dn = dζ[1:n]
         dλ = view(dζ, n+1:n+m)
-        dnBdn  = - dot(g, dn) - γ * dot(dn, dn) - δ * dot(dλ, dλ)
+        slope  = dot(g, dn)
+        dnBdn  = - slope - γ * dot(dn, dn) - δ * dot(dλ, dλ)
         dcpBdn = - dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
-        if dot(dn, g) < -1e-4 #dnBdn > 0.0 #we have a descent direction, we should be more strict dnBdn > 1e-5
+        if dnBdn > 0.0  #slope < -1.0e-5 #4 * norm(dn) * gnorm #dnBdn > 0.0 
+                       #we have a descent direction, we should be more strict dnBdn > 1e-5
                        #we could also check dot(dn, g)
           status = :success
           descent = true
@@ -214,7 +223,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
         @warn "Why would we fail?"
         status = :regularize
       end
-      @info log_row(Any["Fact-|dyn|", γ, 1/√eps(T), δ, δmin, status])
+      @info log_row(Any["Fact-|dyn|", γ, 1/√eps(T), δ, δmin, slope, status])
 
       if !descent
         if γ ≥ 1/√eps(T)
@@ -225,16 +234,24 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
           break
         end
         γ = min(max(100γ, √eps(T)), 1/√eps(T))
-        nnz_idx = nnzh .+ nnzj .+ (1:n)
-        vals[nnz_idx] .= γ
-        nnz_idx = nnzh .+ nnzj .+ n .+ (1:m)
-        δ = δmin
-        vals[nnz_idx] .= -δ
+        δ = zero(T)#δmin #done by the regularization
+        #if success(LDL)
+        #  λ = min(minimum(LDL.factor.d[1:n]), zero(T))
+        #  LDL.factor.d .+= -λ + γ
+          #@show num_neg_eig(LDL), λ, minimum(LDL.factor.d[1:n]), γ, maximum(LDL.factor.d[n+1:n+m])
+          #LDL.factor.d[n+1:n+m] .+= -δ #already handled by the regularization
+        #else
+          nnz_idx = nnzh .+ nnzj .+ (1:n)
+          vals[nnz_idx] .= γ
+          nnz_idx = nnzh .+ nnzj .+ n .+ (1:m)
+          vals[nnz_idx] .= -δ
+        #end
       end
     end
     
     return dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals
 end
+
 
 """
 compute a step ****

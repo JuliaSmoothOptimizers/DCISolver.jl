@@ -1,5 +1,5 @@
 """
-    dci(nlp; kwargs...)
+    dci(nlp, x; kwargs...)
 
 This method implements the Dynamic Control of Infeasibility for equality-constrained
 problems described in
@@ -114,11 +114,13 @@ function dci(nlp  :: AbstractNLPModel,
 
     # TODO Comment: Tanj: not sure how this is supposed to work.
     Δℓₙ = ℓzλ - ℓxλ
-#@show Δℓₙ, Δℓₜ, (ℓᵣ - ℓxλ) / 2, ℓzλ, ℓxλ, ℓᵣ
+#@show Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2, Δℓₙ > -Δℓₜ / 2, Δℓₙ, Δℓₜ, (ℓᵣ - ℓxλ) / 2, ℓzλ, ℓxλ, ℓᵣ
     if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
-      ρmax = max(ctol, ρmax/2)
+      ρmax = max(ctol, ρmax / 2)
+      ρ    = min(ρ, ρmax)
     else #we don't let ρmax too far from the residuals
       ρmax = min(ρmax, max(ctol, 5primalnorm, 50dualnorm))
+      ρ    = min(ρ, ρmax)
     end
     if Δℓₙ > -Δℓₜ / 2
       ℓᵣ = ℓzλ
@@ -153,7 +155,8 @@ function dci(nlp  :: AbstractNLPModel,
     elseif tg_status == :small_horizontal_step
         if !small_step_rescue
           #Try something ?
-          ρ = primalnorm/2 #force a feasibility step
+          ρ = primalnorm / 2 #force a feasibility step
+                             #maybe decrease ρmax too ?
           small_step_rescue = true
         else
           stalled = true

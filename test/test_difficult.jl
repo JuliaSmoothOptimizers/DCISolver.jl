@@ -6,13 +6,11 @@ using NLPModels, NLPModelsIpopt, NLPModelsKnitro
 This file list problems from benchmarks that we didn't solve.
 =#
 
-#status is infeasible for these three problems:
 problems = ["MSS1", "S308NE", "COATINGNE"] 
 #=
-MSS1 is unknown for Knitro, and the other two are infeasible.
-Actually, we just struggle to achieve a high precision.
+S308NE and COATINGNE could really be infeasible ?
 
-The three are unknowns for Ipopt
+Actually, we just struggle to achieve a high precision with MSS1, Knitro does 1e-2 while DCI 1e-3.
 =#
 
 i=1
