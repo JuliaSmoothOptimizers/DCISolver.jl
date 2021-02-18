@@ -2,7 +2,7 @@ module DCI
 
   using LinearAlgebra, Logging
 
-  using HSL, Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
+  using HSL, Krylov, LDLFactorizations, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
 
   export dci
 
@@ -132,7 +132,7 @@ module DCI
     (l, stats) = linear_solver(Jx', -∇fx, itmax = 5 * (m + n))
     if !stats.solved
       @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
-      print(stats)
+      #print(stats)
     end
     λ .= l #should we really update if !stats.solved
     return λ

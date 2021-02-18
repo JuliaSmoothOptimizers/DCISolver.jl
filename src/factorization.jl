@@ -24,9 +24,9 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
     γ_too_large = false
     status = :unknown #:γ_too_large, :success_fact, :regularize
 
-    @info log_header([:stage, :gamma, :gamma_max, :delta, :delta_min, :status],
+    @info log_header([:stage, :gamma, :delta, :delta_min, :ndn, :slope, :status],
                    [String, Float64, Float64, Float64, Float64, Float64, Symbol],
-                   hdr_override=Dict(:gamma => "γ", :gamma_max => "γmax", 
+                   hdr_override=Dict(:gamma => "γ",
                                      :delta => "δ", :delta_min => "δmin")
                   )
 
@@ -50,7 +50,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
       else
         status = :regularize
       end
-      @info log_row(Any["Fact", γ, 1/√eps(T), δ, δmin, slope, status])
+      @info log_row(Any["Fact", γ, δ, δmin, norm(dn), slope, status])
 
       if !descent
         if γ ≥ 1/√eps(T)
@@ -182,36 +182,52 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
     γ_too_large = false
     status = :unknown #:γ_too_large, :success_fact, :regularize
 
-    @info log_header([:stage, :gamma, :gamma_max, :delta, :delta_min, :slope, :status],
+    @info log_header([:stage, :gamma, :delta, :delta_min, :ndn, :slope, :status],
                    [String, Float64, Float64, Float64, Float64, Float64, Symbol],
-                   hdr_override=Dict(:gamma => "γ", :gamma_max => "γmax", 
+                   hdr_override=Dict(:gamma => "γ", 
                                      :delta => "δ", :delta_min => "δmin")
                   )
 
     #Dynamic regularization:
+
     LDL.factor.n_d =  n
-    LDL.factor.r1  = -√eps(T) #1e-5#δmin # √eps(T) #γ
-    LDL.factor.r2  = √eps(T) #-√eps(T)# 1e-5#-δmin  # -√eps(T) #δ
+    LDL.factor.r1  = √eps(T) #1e-5#δmin # √eps(T) #γ
+    LDL.factor.r2  = -√eps(T) #-√eps(T)# 1e-5#-δmin  # -√eps(T) #δ
     LDL.factor.tol = √eps(T) #1e-5#δmin
 
+nb_fact = 0
     descent = false
     while !descent
-      #if !success(LDL)
+      if !success(LDL)
         factorize!(LDL)
-      #end
+        nb_fact += 1
+      end
 
       if success(LDL) #why would we fail?
-        #λ = minimum(LDL.factor.d[1:n])
-        #if λ < 0.0
-        #  LDL.factor.d .+= -λ + 1e-5
-        #end
+        #=
+        dd_indx = findall(x-> (1 ≤ x ≤ n), LDL.factor.P) #indices of 1st block
+        dd2 = findall(x-> (n+1 ≤ x ≤ n+m), LDL.factor.P)
+        λ = minimum(LDL.factor.d[dd_indx])
+        γreg = -λ + γ + √eps(T)
+        δreg   = √eps(T) #assuming we always regularize
+        if λ < 0.0
+          LDL.factor.d[dd_indx] .+= γreg
+        end
+@show λ, minimum(LDL.factor.d[dd_indx]), maximum(LDL.factor.d[dd_indx]), minimum(LDL.factor.d[dd2]), maximum(LDL.factor.d[dd2])
+        =#
         solve!(dζ, LDL, rhs)
         dn = dζ[1:n]
         dλ = view(dζ, n+1:n+m)
         slope  = dot(g, dn)
-        dnBdn  = - slope - γ * dot(dn, dn) - δ * dot(dλ, dλ)
-        dcpBdn = - dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
-        if dnBdn > 0.0  #slope < -1.0e-5 #4 * norm(dn) * gnorm #dnBdn > 0.0 
+        Bdζ = copy(dζ)
+        LDLFactorizations.lmul!(LDL.factor, Bdζ)
+        #dnBdn  = - slope #- γreg * dot(dn, dn) #- δreg * dot(dλ, dλ) #- slope - γ * dot(dn, dn) - δ * dot(dλ, dλ)
+#@show dnBdn, dn' * Bdζ[1:n]
+        dnBdn = dn' * Bdζ[1:n]
+        #dcpBdn = - dot(g, dcp) #- γreg * dot(dcp, dn) #- dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = (Adcp)ᵀ dλ = 0ᵀ dλ = 0
+#@show dcpBdn, dcp' * Bdζ[1:n]
+        dcpBdn = dcp' * Bdζ[1:n]
+        if slope < -1.0e-4 * gnorm#* norm(dn) * gnorm #dnBdn > 0.0  #slope < -1.0e-5 #4 * norm(dn) * gnorm #dnBdn > 0.0 
                        #we have a descent direction, we should be more strict dnBdn > 1e-5
                        #we could also check dot(dn, g)
           status = :success
@@ -223,7 +239,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
         @warn "Why would we fail?"
         status = :regularize
       end
-      @info log_row(Any["Fact-|dyn|", γ, 1/√eps(T), δ, δmin, slope, status])
+      @info log_row(Any["Fact-|dyn|", γ, δ, δmin, norm(dn), slope, status])
 
       if !descent
         if γ ≥ 1/√eps(T)
@@ -234,21 +250,25 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
           break
         end
         γ = min(max(100γ, √eps(T)), 1/√eps(T))
-        δ = zero(T)#δmin #done by the regularization
+        δ = δmin#δmin #done by the regularization
         #if success(LDL)
+        dd_indx = findall(x-> (1 ≤ x ≤ n), LDL.factor.P) #indices of 1st block
+        λ = min(minimum(LDL.factor.d[dd_indx]), zero(T))
         #  λ = min(minimum(LDL.factor.d[1:n]), zero(T))
-        #  LDL.factor.d .+= -λ + γ
+        #LDL.factor.d[dd_indx] .+= -λ #max.(LDL.factor.d[dd_indx], 0.) .+ γ #abs(LDL.factor.d[dd_indx]) #-λ + γ
+        LDL.factor.d[dd_indx] .+= -min.(LDL.factor.d[dd_indx] .- γ, zero(T))
+        #LDL.factor.d .-= min.(LDL.factor.d .- γ, zero(T)) # -λ + γ
           #@show num_neg_eig(LDL), λ, minimum(LDL.factor.d[1:n]), γ, maximum(LDL.factor.d[n+1:n+m])
           #LDL.factor.d[n+1:n+m] .+= -δ #already handled by the regularization
         #else
-          nnz_idx = nnzh .+ nnzj .+ (1:n)
-          vals[nnz_idx] .= γ
-          nnz_idx = nnzh .+ nnzj .+ n .+ (1:m)
-          vals[nnz_idx] .= -δ
+        #  nnz_idx = nnzh .+ nnzj .+ (1:n)
+        #  vals[nnz_idx] .= γ
+        #  nnz_idx = nnzh .+ nnzj .+ n .+ (1:m)
+        #  vals[nnz_idx] .= -δ
         #end
       end
     end
-    
+    if nb_fact > 1 @warn "Wait more that one factorization?" end
     return dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals
 end
 

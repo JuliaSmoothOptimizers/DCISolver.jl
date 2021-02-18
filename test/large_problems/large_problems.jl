@@ -65,8 +65,8 @@ using NLPModels, CUTEst, DCI
 # Why don't cgls work for MSS3?
 # EIGENC2 no real progress
 # EIGENCCO Maybe with more time?
-nlp = CUTEstModel("LUKVLE1")
-
+nlp = CUTEstModel("LCH") #LUKVLE11
+#EIGENBCO is a good example where HSL-DCI has to recompute the factorization
 @show nlp.meta.nvar, nlp.meta.ncon, nlp.meta.nnzh, nlp.meta.nnzj
 
 stats = dci(nlp, nlp.meta.x0, linear_solver = :ldlfact, max_time = 160., max_iter = 1000)
