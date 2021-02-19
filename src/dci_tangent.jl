@@ -1,5 +1,4 @@
 """
-
 min q(d):=¹/₂dᵀBd + dᵀg
 s.t Ad = 0
     ‖d‖ ≦ Δ
@@ -33,30 +32,30 @@ function tangent_step(nlp      :: AbstractNLPModel,
                       Δ        :: AbstractFloat = one(T), #trust-region radius
                       η₁       :: AbstractFloat = T(1e-2),
                       η₂       :: AbstractFloat = T(0.75),
-                      σ₁       :: AbstractFloat = T(0.25), #decrease trust-region radius
-                      σ₂       :: AbstractFloat = T(2.0), #increase trust-region radius after success
+                      σ₁       :: AbstractFloat = T(0.25), #decrease TR radius
+                      σ₂       :: AbstractFloat = T(2.0), #increase TR radius
                       δmin     :: T = √eps(T),
-                      small_d  :: AbstractFloat = eps(T), #below this value ||d|| is too small
-                      max_eval :: Int = 1_000, #max number of evaluation of obj + cons
-                      max_time :: AbstractFloat = 1_000., #max real time
+                      small_d  :: AbstractFloat = eps(T), #||d|| is too small
+                      max_eval :: Int = 1_000,
+                      max_time :: AbstractFloat = 1_000.
                      ) where T
 
-  m, n = nlp.meta.ncon, nlp.meta.nvar
-  
-  d = Array{T, 1}(undef, n)
+  d  = Array{T, 1}(undef, nlp.meta.nvar)
   Δℓ = zero(T)
 
-  status = :unknown
-  iter = 0
+  status     = :unknown
+  iter       = 0
   start_time = time()
-  el_time = 0.0
+  el_time    = 0.0
+
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
 
   normct, r = normcz, -one(T)
 
   while !((normct ≤ 2ρ && r ≥ η₁) || tired)
-    #Compute a descent direction d
-    d, dBd, status, γ, δ, vals = compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d) #no evals
+    #Compute a descent direction d (no evals)
+    d, dBd, status, γ, δ, vals = compute_descent_direction(nlp, gBg, g, Δ, LDL,
+                                                           γ, δ, δmin, vals, d)
     n2d = dot(d,d)
     if √n2d > Δ
       d = d * (Δ / √n2d) #Just in case.
@@ -78,7 +77,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
       Δℓ, pred = aredpred(nlp, ℓzλ, ℓxtλ, qd, xt, d, dot(g, d))
 
       r = Δℓ / qd
-      if r < η₁ #we can decrease further Δ so that ≤ ||d||
+      if r < η₁ #we decrease further Δ so that ≤ ||d||
         m = max(ceil(log(√n2d / Δ) / log(σ₁)), 1)
         Δ *= σ₁^m
       else #success
@@ -91,7 +90,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
           Δ *= σ₂
         end
       end
-    else #we can decrease further Δ so that ≤ ||d||
+    else
       m = max(ceil(log(√n2d / Δ) / log(σ₁)), 1)
       Δ *= σ₁^m
     end
@@ -139,8 +138,9 @@ function compute_descent_direction(nlp  :: AbstractNLPModel,
       dBd = dcpBdcp
       d = dcp
     else
-      dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
-#@show norm(dn), norm(dcp), Δ, dnBdn, dcpBdcp, gBg
+      dn, dnBdn, dcpBdn, 
+      γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin,
+                                                     dcp, vals)
       norm2dn = dot(dn, dn)
       if γ_too_large || dnBdn ≤ 1e-10 #or same test as gBg in _compute_gradient_step ?
           #dn = 0 here.
@@ -224,5 +224,7 @@ end
 
 include("factorization.jl")
 #=
-dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals)
+dn, dnBdn, dcpBdn, 
+γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin,
+                                                dcp, vals)
 =#

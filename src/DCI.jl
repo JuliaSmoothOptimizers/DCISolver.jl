@@ -1,15 +1,14 @@
 module DCI
 
-  using LinearAlgebra, Logging
+  using LinearAlgebra, Logging, SparseArrays
 
-  using HSL, Krylov, LDLFactorizations, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
+  using HSL, Krylov, LDLFactorizations, LinearOperators, NLPModels
+  using SolverTools, SymCOOSolverInterface
 
   export dci
 
   include("param_struct.jl")
   include("dci_feasibility.jl")
-  #using CaNNOLeS
-  #include("dci_cannoles_feasibility.jl")
   include("dci_normal.jl")
   include("dci_tangent.jl")
   include("main.jl")
@@ -17,8 +16,8 @@ module DCI
   """
       dci(nlp, x; kwargs...)
 
-  This method implements the Dynamic Control of Infeasibility for equality-constrained
-  problems described in
+  This method implements the Dynamic Control of Infeasibility for
+  equality-constrained problems described in
 
       Dynamic Control of Infeasibility in Equality Constrained Optimization
       Roberto H. Bielschowsky and Francisco A. M. Gomes
@@ -26,18 +25,6 @@ module DCI
       https://doi.org/10.1137/070679557
 
   """
-  #=
-  function dci(nlp  :: AbstractNLPModel,
-              x    :: AbstractVector{T};# = nlp.meta.x0,
-              atol :: AbstractFloat = 1e-5,
-              rtol :: AbstractFloat = 1e-5,
-              ctol :: AbstractFloat = 1e-5,
-              linear_solver :: Symbol = :ldlfact,  # :ma57,#
-              max_eval :: Int = 50000,
-              max_time :: Float64 = 10.,
-              max_iter :: Int = 500,
-              ) where T
-  =#
   function dci(nlp  :: AbstractNLPModel,
               x    :: AbstractVector{T};
               kwargs...
@@ -61,14 +48,16 @@ module DCI
     gBg = zero(T)
     for k = 1:nlp.meta.nnzh
       i, j, v = rows[k], cols[k], vals[k]
-      gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2) #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+       #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+      gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2)
     end
     return gBg
   end
 
   """
   `regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)`
-    Compute the structure for the saddle system [H + γI  [Jᵀ]; J -δI] in COO-format in the following order:
+    Compute the structure for the saddle system [H + γI  [Jᵀ]; J -δI]
+    in COO-format in the following order:
     H J γ -δ
   """
   function regularized_coo_saddle_system!(nlp  :: AbstractNLPModel,
@@ -128,13 +117,12 @@ module DCI
                        linear_solver :: Function = cgls) where T <: AbstractFloat
      
     m, n = size(Jx) 
-    #(l, stats) = cgls(Jx', -∇fx, itmax = 5 * (m + n), λ = 1e-5, atol = 1e-5, rtol = 1e-5) #atol, rtol
     (l, stats) = linear_solver(Jx', -∇fx, itmax = 5 * (m + n))
     if !stats.solved
       @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
       #print(stats)
     end
-    λ .= l #should we really update if !stats.solved
+    λ .= l #Should we really update if !stats.solved?
     return λ
   end
 

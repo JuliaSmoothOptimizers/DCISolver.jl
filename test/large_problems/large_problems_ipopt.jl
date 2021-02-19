@@ -18,9 +18,16 @@ Results with IPOPT
 
 using NLPModels, CUTEst, NLPModelsIpopt
 
-nlp = CUTEstModel("SPINOP")
+nlp = CUTEstModel("COATINGNE")
 
-stats = ipopt(nlp)
+#stats = ipopt(nlp, max_cpu_time = 600., x0 = nlp.meta.x0)
+
+stats = ipopt(nlp, tol = 1e-5, dual_inf_tol = 1e-5,
+                    constr_viol_tol = 1e-5,
+                    compl_inf_tol = 1e-5, 
+                    #acceptable_iter = 0,
+                    max_cpu_time = 600.,
+                    x0 = nlp.meta.x0)
 
 finalize(nlp)
 

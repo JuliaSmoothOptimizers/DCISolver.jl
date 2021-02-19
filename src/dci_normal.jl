@@ -15,7 +15,7 @@ function normal_step(nlp        :: AbstractNLPModel,
                      max_eval   :: Int = 1_000,
                      max_time   :: AbstractFloat = 1_000.,
                      max_iter   :: Int = typemax(Int64),
-                     feas_step  :: Function = feasibility_step #feasibility_step or cannoles_step
+                     feas_step  :: Function = feasibility_step
                      ) where T
 
   #assign z variable:
@@ -65,7 +65,7 @@ function normal_step(nlp        :: AbstractNLPModel,
 
     if infeasible && !restoration && !(primalnorm ≤ ρ || tired) 
     #Enter restoration phase to avoid infeasible stationary points.
-    #Very simple heuristic that forces a random move from z
+    #Heuristic that forces a random move from z
       restoration, infeasible = true, false
       perturbation_length = min(primalnorm, √ϵp) / norm(z) #sqrt(ϵp)/norm(z)
       z += (2 .* rand(T, nlp.meta.nvar) .- 1) * perturbation_length
@@ -102,13 +102,12 @@ function normal_step(nlp        :: AbstractNLPModel,
 end
 
 #Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
-#Should really check whether 3/4ρmax < ngp ρmax 10^-4 ?
 #No evaluations of functions here.
 # ρ = O(‖g_p(z)‖) and 
 #in the paper ρ = ν n_p(z) ρ_max with n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)
 #
-# Tangi, 2021 Feb. 5th: what if dualnorm is excessively small ?
-#             Feb. 8th: don't let ρ decrease too crazy
+# T.M., 2021 Feb. 5th: what if dualnorm is excessively small ?
+#            Feb. 8th: don't let ρ decrease too crazy
 function compute_ρ(dualnorm   :: T, 
                    primalnorm :: T, 
                    norm∇fx    :: T, 
@@ -125,6 +124,6 @@ function compute_ρ(dualnorm   :: T,
   #elseif ngp ≤ 5ϵ
   #  ρ = ϵ
   end
-#@show ρ, ngp, max(min(ngp, 0.75) * ρmax, 0.75 * ϵ)
+
   return ρ
 end

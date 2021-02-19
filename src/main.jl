@@ -3,27 +3,19 @@ function dci(nlp  :: AbstractNLPModel,
              meta :: MetaDCI
             ) where T
 
-  if !equality_constrained(nlp)
+  if !(equality_constrained(nlp) || unconstrained(nlp))
     error("DCI only works for equality constrained problems")
   end
 
   evals(nlp) = neval_obj(nlp) + neval_cons(nlp)
 
-  ##########################
-  #This is not really useful?
-  f(x) = obj(nlp, x)
-  ∇f(x) = grad(nlp, x)
-  c(x) = cons(nlp, x)
-  J(x) = jac_op(nlp, x)
-  #########################
-
-  z = copy(x)
-  fz = fx = f(x)
-  ∇fx = ∇f(x)
-  cx = c(x)
+  z   = copy(x)
+  fz  = fx = obj(nlp, x)
+  ∇fx = grad(nlp, x)
+  cx  = cons(nlp, x)
   
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
-  Jx   = J(x)
+  Jx   = jac_op(nlp, x)
   λ    = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
   ℓxλ  = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
@@ -31,18 +23,19 @@ function dci(nlp  :: AbstractNLPModel,
   primalnorm = norm(cx)
 
   # Regularization
+  δmin = √eps(T)
   γ = zero(T)
-  δmin = T(1e-8) #√eps(T)
   δ = zero(T)
 
   # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
-  nnz = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon # H, J, γI, -δI
+  n, m = nlp.meta.nvar, nlp.meta.ncon
+  nnz = nlp.meta.nnzh + nlp.meta.nnzj + n + m # H, J, γI, -δI
   rows = zeros(Int, nnz)
   cols = zeros(Int, nnz)
   vals = zeros(nnz)
   regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
 
-  LDL = solver_correspondence[meta.linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
+  LDL = solver_correspondence[meta.linear_solver](n + m, rows, cols, vals)
 
   Δℓₜ = T(Inf)
   Δℓₙ = zero(T)
@@ -51,11 +44,11 @@ function dci(nlp  :: AbstractNLPModel,
   start_time = time()
   eltime = 0.0
 
-  ϵd = meta.atol + meta.rtol * max(dualnorm, norm(∇fx)) # dualnorm OR max(dualnorm, primalnorm, norm(∇fx))
+  ϵd = meta.atol + meta.rtol * max(dualnorm, norm(∇fx))
   ϵp = meta.ctol
 
   ρmax = max(ϵp, 5primalnorm, 50dualnorm)
-  ρ = NaN #not needed
+  ρ = NaN #not needed at iteration 0
 
   Δtg = one(T)
 
@@ -64,13 +57,17 @@ function dci(nlp  :: AbstractNLPModel,
   tired      = evals(nlp) > meta.max_eval || eltime > meta.max_time
   infeasible = false
   small_step_rescue = false
-  stalled = false
+  stalled    = false
 
   iter = 0
 
-  @info log_header([:stage, :iter, :nf, :fx, :lag, :dual, :primal, :ρmax, :ρ, :status, :nd, :Δ],
-                   [String, Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, String, Float64, Float64],
-                   hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)", :lag => "ℓ", :dual => "‖∇L‖", :primal => "‖c(x)‖", :nd => "‖d‖")
+  @info log_header([:stage, :iter, :nf, :fx, :lag, :dual, :primal,
+                     :ρmax, :ρ, :status, :nd, :Δ],
+                   [String, Int, Int, Float64, Float64, Float64, Float64,
+                     Float64, Float64, String, Float64, Float64],
+                   hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)",
+                                     :lag => "ℓ", :dual => "‖∇L‖", 
+                                     :primal => "‖c(x)‖", :nd => "‖d‖")
                   )
   @info log_row(Any["init", iter, evals(nlp), fx, ℓxλ, 
                             dualnorm, primalnorm, ρmax, ρ])
@@ -80,10 +77,10 @@ function dci(nlp  :: AbstractNLPModel,
     z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, 
       primalnorm, dualnorm, 
       normal_status = normal_step(nlp, x, cx, Jx, fx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
-                                              dualnorm, primalnorm, ρmax, 
-                                              ϵp,
-                                              max_eval = meta.max_eval, 
-                                              max_time = meta.max_time - eltime)
+                                            dualnorm, primalnorm, ρmax, 
+                                            ϵp,
+                                            max_eval = meta.max_eval, 
+                                            max_time = meta.max_time - eltime)
     # Convergence test
     solved = primalnorm < ϵp && dualnorm < ϵd
     infeasible = normal_status == :infeasible
@@ -91,9 +88,7 @@ function dci(nlp  :: AbstractNLPModel,
       break
     end
 
-    # TODO Comment: Tanj: not sure how this is supposed to work.
     Δℓₙ = ℓzλ - ℓxλ
-#@show Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2, Δℓₙ > -Δℓₜ / 2, Δℓₙ, Δℓₜ, (ℓᵣ - ℓxλ) / 2, ℓzλ, ℓxλ, ℓᵣ
     if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
       ρmax = max(ϵp, ρmax / 2)
       ρ    = min(ρ, ρmax)
@@ -105,27 +100,25 @@ function dci(nlp  :: AbstractNLPModel,
       ℓᵣ = ℓzλ
     end
 
-    #Update matrix system if we moved
-    #if normal_status != :init_success
+    #Update matrix system
     @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)])
     if γ != 0.0 && γ != √eps(T)
-      γ = max(γ / 10, √eps(T)) #use tolerances
+      γ = max(γ / 10, √eps(T))
       vals[nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)] .= γ
     end
-    # TODO: Update δ here?
-    #end
 
     gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
     
+    rmng_time = meta.max_time - (time() - start_time)
     x, cx, fx, tg_status, Δtg, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, cz, 
-                                                        primalnorm, fz,
-                                                        LDL, vals, 
-                                                        ∇ℓzλ, ℓzλ, gBg, 
-                                                        ρ, γ, δ,
-                                                        Δ = Δtg, 
-                                                        max_eval = meta.max_eval, 
-                                                        max_time = meta.max_time - eltime)
+                                                      primalnorm, fz,
+                                                      LDL, vals, 
+                                                      ∇ℓzλ, ℓzλ, gBg, 
+                                                      ρ, γ, δ,
+                                                      Δ = Δtg, 
+                                                      max_eval = meta.max_eval, 
+                                                      max_time = rmng_time)
     if tg_status == :tired
       tired  = true
       eltime = time() - start_time
@@ -150,10 +143,11 @@ function dci(nlp  :: AbstractNLPModel,
 
     if tg_status == :unknown #nothing happened in tangent_step
       # skip some computations z, cz, fz, ℓzλ,  ∇ℓzλ
-      #@show "Pass here sometimes?"
+      #@warn "Pass here sometimes?"
     end
-    ∇fx = ∇f(x)
-    Jx  = J(x)
+
+    ∇fx = grad(nlp, x)
+    Jx  = jac_op(nlp, x)
     compute_lx!(Jx, ∇fx, λ)
     ℓxλ  = fx + dot(λ, cx) #differs from the tangent step as λ is different
     ∇ℓxλ = ∇fx + Jx'*λ
@@ -169,6 +163,7 @@ function dci(nlp  :: AbstractNLPModel,
     tired  = evals(nlp) > meta.max_eval || eltime > meta.max_time || iter > meta.max_iter
   end
 
+  #check unboundedness
   status = if solved
     :first_order
   elseif tired

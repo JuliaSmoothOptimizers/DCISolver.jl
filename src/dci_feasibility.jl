@@ -1,11 +1,3 @@
-#December, 9th, T.M. comments:
-# iii) as suggest in 2008 paper, maybe don't update Jx if we reduced 
-# the Infeasibility by 10%.
-# iv) analyze the case with 3 consecutive_bad_steps
-# vi) regroup the algorithmic parameters at the beginning
-# vii) typing
-# viii) the precision of lsmr should depend on the other parameters?
-# viv) fix the evaluation counter.
 """    feasibility_step(nls, x, cx, Jx)
 
 Approximately solves min ‖c(x)‖.
@@ -16,7 +8,8 @@ function feasibility_step(nlp             :: AbstractNLPModel,
                           x               :: AbstractVector{T}, 
                           cx              :: AbstractVector{T}, 
                           normcx          :: T,
-                          Jx              :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
+                          Jx              :: Union{LinearOperator{T}, 
+                                                   AbstractMatrix{T}}, 
                           ρ               :: T,
                           ctol            :: AbstractFloat;
                           η₁              :: AbstractFloat = 1e-3, 
@@ -26,7 +19,7 @@ function feasibility_step(nlp             :: AbstractNLPModel,
                           Δ0              :: T = one(T),
                           max_eval        :: Int = 1_000, 
                           max_time        :: AbstractFloat = 60.,
-                          max_feas_iter   :: Int = typemax(Int64), #try something smarter?
+                          max_feas_iter   :: Int = typemax(Int64),
                           TR_compute_step :: Function = TR_lsmr #dogleg
                           ) where T
   
@@ -41,14 +34,12 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
   failed_step_comp = false         
 
-  start_time = time()
-  el_time    = 0.0
-  tired      = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
-  infeasible = false
-  status     = :unknown
+  el_time = 0.0
+  tired   = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
+  status  = :unknown
 
-  #tolerances for the agressive step: (default parameters in Krylov.jl)
-  agg_atol, agg_rtol, agg_itmax = √eps(T), √eps(T), 2 * length(z) #2n by default
+  start_time = time()
+  infeasible = false
   
   while !(normcz ≤ ρ || tired || infeasible)
     
@@ -87,15 +78,12 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     end
 
     @info log_row(Any["F", feas_iter, neval_obj(nlp) + neval_cons(nlp), 
-                           NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
+                          NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
 
     # Safeguard: agressive normal step
     if normcz > ρ && (consecutive_bad_steps ≥ 3 || failed_step_comp)
         Hz = hess_op(nlp, z, cz, obj_weight = zero(T))
-        (d, stats) = cg(Hz + Jz' * Jz, Jz' * cz, 
-                        atol  = agg_atol, 
-                        rtol  = agg_rtol, 
-                        itmax = agg_itmax) #or cg, cgls, lsqr
+        (d, stats) = cg(Hz + Jz' * Jz, Jz' * cz)
         if !stats.solved
             @warn "Fail cg in feasibility_step: $(stats.status)"
         end
@@ -112,17 +100,9 @@ function feasibility_step(nlp             :: AbstractNLPModel,
         elseif norm(d) < ctol * min(nczp, one(T))
           infeasible = true
           status = :agressive_fail
-        else #not successful, nczp > normcz, infeasible = true, status = :too_small
+        else #unsuccessful,nczp > normcz,infeasible = true,status = :too_small
           cg_iter = length(stats.residuals)
-#@show cg_iter, stats.residuals[end], agg_atol, agg_rtol, nczp, normcz, norm(Jz' * czp)
-          if cg_iter < agg_itmax #need more precise solve
-            agg_atol = min(agg_atol/10, 1e-10)
-            agg_rtol = min(agg_rtol/10, 1e-10)
-            agg_itmax += length(z)
-            if agg_atol ≥ 1e-10
-              infeasible, failed_step_comp = false, false
-            end
-          end
+          #@show cg_iter, stats.residuals[end], nczp, normcz, norm(Jz' * czp)
           #should we increase the iteration limit if we busted it?
           #Adding regularization might be more efficient
         end
@@ -131,7 +111,7 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     end
 
     el_time      = time() - start_time
-    feas_iter += 1
+    feas_iter   += 1
     many_evals   = neval_obj(nlp) + neval_cons(nlp) > max_eval
     iter_limit   = feas_iter > max_feas_iter
     tired        = many_evals || el_time > max_time || iter_limit
@@ -204,7 +184,6 @@ function dogleg(cz     :: AbstractVector{T},
       d = dn
     else
       v = dn - dcp 
-      #τ = (-dot(dcp, v) + sqrt(dot(dcp, v)^2 + 4 * dot(v, v) * (Δ^2 - dot(dcp, dcp)))) / dot(v, v)
       nv2  = dot(v, v)
       dcpv = dot(dcp, v)
       τ    = (-dcpv + sqrt(dcpv^2 + 4 * nv2 * (Δ^2 - ndcp2))) / nv2

@@ -25,20 +25,7 @@ ctol = 1e-5
     x  = [0.; 1.; 0.]
     cx = cons(nlp, x)
     Jx = jac(nlp, x)
-    #=
-    ∇fx = grad(nlp, x)
-    # λ = argmin ‖∇f + Jᵀλ‖
-    λ = cgls(Jx', -∇fx)[1]
 
-     ∇ℓxλ = ∇fx + Jx'*λ
-
-    dualnorm = norm(∇ℓxλ)
-    primalnorm = norm(cx)
-
-    ρmax = max(ctol, 5primalnorm, 50dualnorm)
-    ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol)
-    @show primalnorm, dualnorm, ρmax, ρ
-    =#
     ρ = 0.5
 
     z, cz, ncz, Jz, status = feasibility_step(nlp, x, cx, norm(cx), Jx, ρ, ctol;
