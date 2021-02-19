@@ -1,303 +1,134 @@
 module DCI
 
-using LinearAlgebra, Logging
+  using LinearAlgebra, Logging, SparseArrays
 
-using Krylov, LinearOperators, NLPModels, SolverTools, SparseArrays, SymCOOSolverInterface
+  using HSL, Krylov, LDLFactorizations, LinearOperators, NLPModels
+  using SolverTools, SymCOOSolverInterface
 
-export dci
+  export dci
 
-include("dci_normal.jl")
-include("dci_tangent.jl")
+  include("param_struct.jl")
+  include("dci_feasibility.jl")
+  include("dci_normal.jl")
+  include("dci_tangent.jl")
+  include("main.jl")
 
-const solver_correspondence = Dict(#:ma57 => MA57Struct, 
-                                   :ldlfact => LDLFactorizationStruct)
-"""
-    dci(nlp; kwargs...)
+  """
+      dci(nlp, x; kwargs...)
 
-This method implements the Dynamic Control of Infeasibility for equality-constrained
-problems described in
+  This method implements the Dynamic Control of Infeasibility for
+  equality-constrained problems described in
 
-    Dynamic Control of Infeasibility in Equality Constrained Optimization
-    Roberto H. Bielschowsky and Francisco A. M. Gomes
-    SIAM J. Optim., 19(3), 1299–1325.
-    https://doi.org/10.1137/070679557
+      Dynamic Control of Infeasibility in Equality Constrained Optimization
+      Roberto H. Bielschowsky and Francisco A. M. Gomes
+      SIAM J. Optim., 19(3), 1299–1325.
+      https://doi.org/10.1137/070679557
 
-"""
-function dci(nlp :: AbstractNLPModel;
-             atol = 1e-5,
-             rtol = 1e-5,
-             ctol = 1e-5,
-             linear_solver = :ldlfact,#:ma57,
-             max_eval = 50000,
-             max_time = 60
-            )
-  if !equality_constrained(nlp)
-    error("DCI only works for equality constrained problems")
-  end
-  if !(linear_solver ∈ keys(solver_correspondence))
-    @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
-    linear_solver = :ldlfact
+  """
+  function dci(nlp  :: AbstractNLPModel,
+              x    :: AbstractVector{T};
+              kwargs...
+              ) where T
+    meta = MetaDCI(x, nlp.meta.y0; kwargs...)
+    return dci(nlp, x, meta)
   end
 
-  evals(nlp) = neval_obj(nlp) + neval_cons(nlp)
 
-  f(x) = obj(nlp, x)
-  ∇f(x) = grad(nlp, x)
-  c(x) = cons(nlp, x)
-  J(x) = jac_op(nlp, x)
+  """compute_gBg
+    B is a symmetric sparse matrix 
+    whose lower triangular given in COO: (rows, cols, vals)
 
-  x = nlp.meta.x0
-  z = copy(x)
-  fz = fx = f(x)
-  ∇fx = ∇f(x)
-  cx = c(x)
-  
-  #T.M: we probably don't want to compute Jx and λ, if cx > ρ
-  Jx = J(x)
-  λ = compute_lx(Jx, ∇fx)#cgls(Jx', -∇fx)[1] # λ = argmin ‖∇f + Jᵀλ‖
-
-  # Regularization
-  γ = 0.0
-  δmin = 1e-8
-  δ = 0.0
-
-  # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
-  nnz = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon # H, J, γI, -δI
-  rows = zeros(Int, nnz)
-  cols = zeros(Int, nnz)
-  vals = zeros(nnz)
-  # H (1:nvar, 1:nvar)
-  nnz_idx = 1:nlp.meta.nnzh
-  @views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
-  # J (nvar .+ 1:ncon, 1:nvar)
-  nnz_idx = nlp.meta.nnzh .+ (1:nlp.meta.nnzj)
-  @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
-  @views jac_coord!(nlp, x, vals[nnz_idx])
-  rows[nnz_idx] .+= nlp.meta.nvar
-  # γI (1:nvar, 1:nvar)
-  nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:nlp.meta.nvar)
-  rows[nnz_idx] .= 1:nlp.meta.nvar
-  cols[nnz_idx] .= 1:nlp.meta.nvar
-  vals[nnz_idx] .= 0.0
-  # -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
-  nnz_idx = nlp.meta.nnzh .+ nlp.meta.nnzj .+ nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  rows[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  cols[nnz_idx] .= nlp.meta.nvar .+ (1:nlp.meta.ncon)
-  vals[nnz_idx] .= - δ
-
-  LDL = solver_correspondence[linear_solver](nlp.meta.nvar + nlp.meta.ncon, rows, cols, vals)
-
-  #ℓ(x,λ) = f(x) + λᵀc(x)
-  ℓxλ = fx + dot(λ, cx)
-  ∇ℓxλ = ∇fx + Jx'*λ
-
-  Δℓₜ = Inf
-  Δℓₙ = 0.0
-  ℓᵣ = Inf
-
-  dualnorm = norm(∇ℓxλ)
-  primalnorm = norm(cx)
-
-  ρmax = max(ctol, 5primalnorm, 50dualnorm)
-  ρ = NaN #not needed
-
-  start_time = time()
-  eltime = 0.0
-
-  ϵd = atol + rtol * dualnorm
-  ϵp = ctol
-
-  Δtangent = 1.0
-
-  solved = primalnorm < ϵp && dualnorm < ϵd
-  tired = evals(nlp) > max_eval || eltime > max_time
-  infeasible = false
-
-  iter = 0
-
-  @info log_header([:stage, :iter, :nf, :fx, :dual, :primal, :ρmax, :ρ, :status],
-                   [String, Int, Int, Float64, Float64, Float64, Float64, Float64, String],
-                   hdr_override=Dict(:nf => "#f+#c", :fx => "f(x)", :dual => "‖∇L‖", :primal => "‖c(x)‖")
-                  )
-  @info log_row(Any["init", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ])
-
-  while !(solved || tired || infeasible)
-    # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
-    @time z, ℓzλ,  ∇ℓzλ, ρ, 
-      primalnorm, dualnorm, 
-      tired, infeasible = trust_the_cylinder(nlp, x, cx, Jx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
-                                             dualnorm, primalnorm, ρmax, 
-                                             ctol, ϵp, 
-                                             max_eval, max_time, 
-                                             eltime, start_time)
-    # Convergence test
-    solved = primalnorm < ϵp && dualnorm < ϵd
-
-    if solved || tired || infeasible
-      break
-    end
-
-    # TODO Comment
-    Δℓₙ = ℓzλ - ℓxλ
-    if Δℓₙ ≥ (ℓᵣ - ℓxλ) / 2
-      ρmax /= 2
-    end
-    if Δℓₙ > -Δℓₜ / 2
-      ℓᵣ = ℓzλ
-    end
-
-    gBg = 0.0 #T.M.: ∇ℓxλ' * B * ∇ℓxλ (recall the only the lower triangular is in vals)
+    Compute ∇ℓxλ' * B * ∇ℓxλ
+  """
+  function compute_gBg(nlp  :: AbstractNLPModel, 
+                       rows :: AbstractVector, 
+                       cols :: AbstractVector, 
+                       vals :: AbstractVector{T}, 
+                       ∇ℓzλ :: AbstractVector{T}) where T
+    gBg = zero(T)
     for k = 1:nlp.meta.nnzh
       i, j, v = rows[k], cols[k], vals[k]
-      gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2) #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+       #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+      gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2)
     end
+    return gBg
+  end
 
-    @views hess_coord!(nlp, z, λ, vals[1:nlp.meta.nnzh])
-    # TODO: Don't compute every time
-    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:nlp.meta.nnzj)]) #T.M.: redundant with previous loop
-    # TODO: Update γ and δ here
-    x, tg_status, Δtangent, Δℓₜ, γ, δ = tangent_step(nlp, z, λ, LDL, vals, ∇ℓzλ, ℓzλ, gBg, ρ, γ, δ, # ∇ℓxλ
-                                                     Δ=Δtangent, max_eval=max_eval, max_time=max_time-eltime)
-    #γ
-    if tg_status == :tired
-      tired = true
-      #now it depends whether we are feasibility or not.
-      continue
-    elseif tg_status == :small_horizontal_step
-        #Try something ?
-    else
-        #success :)
+  """
+  `regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)`
+    Compute the structure for the saddle system [H + γI  [Jᵀ]; J -δI]
+    in COO-format in the following order:
+    H J γ -δ
+  """
+  function regularized_coo_saddle_system!(nlp  :: AbstractNLPModel,
+                                          rows :: AbstractVector{S},
+                                          cols :: AbstractVector{S},
+                                          vals :: AbstractVector{T};
+                                          γ    :: T = zero(T),
+                                          δ    :: T = zero(T),
+                                         ) where {S <: Int, T <: AbstractFloat}
+    #n = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon
+    #Test length rows, cols, vals
+    #@lencheck n rows cols vals
+    nnzh, nnzj = nlp.meta.nnzh, nlp.meta.nnzj
+    nvar, ncon = nlp.meta.nvar, nlp.meta.ncon
+
+    # H (1:nvar, 1:nvar)
+    nnz_idx = 1:nnzh
+    @views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+    # J (nvar .+ 1:ncon, 1:nvar)
+    nnz_idx = nnzh .+ (1:nnzj)
+    @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+    rows[nnz_idx] .+= nvar
+    # γI (1:nvar, 1:nvar)
+    nnz_idx = nnzh .+ nnzj .+ (1:nvar)
+    rows[nnz_idx] .= 1:nvar
+    cols[nnz_idx] .= 1:nvar
+    vals[nnz_idx] .= γ
+    # -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
+    nnz_idx = nnzh .+ nnzj .+ nvar .+ (1:ncon)
+    rows[nnz_idx] .= nvar .+ (1:ncon)
+    cols[nnz_idx] .= nvar .+ (1:ncon)
+    vals[nnz_idx] .= - δ
+
+    return rows, cols, vals
+  end
+
+  """
+  Compute the solution of ‖Jx' λ - ∇fx‖
+  """
+  function compute_lx(Jx  :: LinearOperator{T}, 
+                      ∇fx :: AbstractVector{T}) where T <: AbstractFloat
+    m, n = size(Jx) 
+    (λ, stats) = cgls(Jx', -∇fx)#, itmax = 10 * (m + n)) #atol, rtol
+    if !stats.solved
+      @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
     end
-    
-    γ = γ / 10
-    Δtangent *= 10
-
-    fx = f(x)
-    cx = c(x)
-    ∇fx = ∇f(x)
-    Jx = J(x)
-    compute_lx!(Jx, ∇fx, λ) #cgls(Jx', -∇fx)[1]
-    ℓxλ = fx + dot(λ, cx)
-    ∇ℓxλ = ∇fx + Jx'*λ
-    
-    primalnorm = norm(cx)
-    dualnorm = norm(∇ℓxλ)
-    
-    @info log_row(Any["T", iter, evals(nlp), fx, dualnorm, primalnorm, ρmax, ρ, tg_status])
-    iter += 1
-    solved = primalnorm < ϵp && dualnorm < ϵd
-    eltime = time() - start_time
-    tired = evals(nlp) > max_eval || eltime > max_time
-  end
-
-  status = if solved
-    :first_order
-  elseif tired
-    if evals(nlp) > max_eval
-      :max_eval
-    elseif eltime > max_time
-      :max_time
-    else
-      :exception
-    end
-  elseif infeasible
-    :infeasible
-  else
-    :unknown
-  end
-
-  return GenericExecutionStats(status, nlp, solution=z, objective=fz, dual_feas=dualnorm, primal_feas=primalnorm, elapsed_time=eltime)
-end
-
-function trust_the_cylinder(nlp, x, cx, Jx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
-                            dualnorm, primalnorm, 
-                            ρmax, ctol, ϵp, 
-                            max_eval, max_time, 
-                            eltime, start_time)
-  #assign z variable:
-  z, cz, Jz, ∇fz = x, cx, Jx, ∇fx
-  ℓzλ, ∇ℓzλ      = ℓxλ, ∇ℓxλ
-
-  infeasible = false
-  tired      = false
-  
-  #Initialize ρ at x
-  ρ = compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ctol, 0)
-  
-  done_with_normal_step = primalnorm ≤ ρ
-  iter_normal_step      = 0
-
-  while !done_with_normal_step
-      
-    #primalnorm = norm(cz)
-    z, cz, primalnorm, normal_status = normal_step(nlp, ϵp, z, cz, Jz, ρ, 
-                                                   max_eval = max_eval, 
-                                                   max_time = max_time - eltime)
-    
-    fz, ∇fz    = objgrad(nlp, z)
-    Jz         = jac_op(nlp, z)
-    compute_lx!(Jz, ∇fz, λ) #cgls(Jx', -∇fx)[1] #T.M.: Jx?
-    ℓzλ        = fz + dot(λ, cz)
-    ∇ℓzλ       = ∇fz + Jz'*λ
-    dualnorm   = norm(∇ℓzλ)
-    
-    #update rho
-    iter_normal_step += 1
-    ρ = compute_ρ(dualnorm, primalnorm, ∇fz, ρmax, ctol, iter_normal_step)
-    
-    @info log_row(Any["N", iter_normal_step, neval_obj(nlp) + neval_cons(nlp), 
-                           fz, dualnorm, primalnorm, ρmax, ρ, normal_status])
-    
-    eltime     = time() - start_time
-    tired      = neval_obj(nlp) + neval_cons(nlp) > max_eval || eltime > max_time
-    infeasible = normal_status == :infeasible
-    
-    done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
-  end
-
-  return z, ℓzλ,  ∇ℓzλ, ρ, primalnorm, dualnorm, tired, infeasible
-end
-
-#Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
-#Should really check whether 3/4ρmax < ngp ρmax 10^-4 ?
-#No evaluations of functions here.
-# ρ = O(||g_p(z)||) and 
-#in the paper ρ = ν n_p(z) ρ_max with n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)
-function compute_ρ(dualnorm, primalnorm, ∇fx, ρmax, ϵ, iter)
-  if iter > 100
-      return 0.75 * ρmax
-  end
-  ngp = dualnorm / (norm(∇fx) + 1)
-  ρ = min(ngp, 0.75) * ρmax
-  if ρ < ϵ && primalnorm > 100ϵ
-    ρ = primalnorm / 10
-  elseif ngp ≤ 5ϵ
-    ρ = ϵ
-  end
-  return ρ
-end
-
-"""
-Compute the solution of || Jx' λ - ∇fx ||
-"""
-function compute_lx(Jx :: LinearOperator, ∇fx)
-    return cgls(Jx', -∇fx)[1]
-end
-
-function compute_lx(Jx, ∇fx)
-    return Jx' \ ( - ∇fx)
-end
-
-function compute_lx!(Jx :: LinearOperator, ∇fx, λ)
-    λ .= cgls(Jx', -∇fx)[1]
     return λ
-end
+  end
 
-function compute_lx!(Jx, ∇fx, λ)
+  function compute_lx(Jx, ∇fx)
+    return Jx' \ ( - ∇fx)
+  end
+
+  function compute_lx!(Jx  :: LinearOperator{T}, 
+                       ∇fx :: AbstractVector{T}, 
+                       λ   :: AbstractVector{T};
+                       linear_solver :: Function = cgls) where T <: AbstractFloat
+     
+    m, n = size(Jx) 
+    (l, stats) = linear_solver(Jx', -∇fx, itmax = 5 * (m + n))
+    if !stats.solved
+      @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
+      #print(stats)
+    end
+    λ .= l #Should we really update if !stats.solved?
+    return λ
+  end
+
+  function compute_lx!(Jx, ∇fx, λ)
     λ .= Jx' \ ( - ∇fx)
     return λ
-end
+  end
 
-#include("dciv2.jl")
-
-end # module
+end # end of module

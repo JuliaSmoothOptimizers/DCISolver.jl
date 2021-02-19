@@ -1,130 +1,129 @@
-#December, 9th, T.M. comments:
-# i) The sequence σ₁ = 0.25, σ₂ = 4.0 is strange as we just cycle.
-# in the 2008 paper they suggest σ₁ = 0.25, σ₂ = 2.0
-# iii) as suggest in 2008 paper, maybe don't update Jx if we reduced 
-# the Infeasibility by 10%.
-# iv) analyze the case with 3 consecutive_bad_steps
-# v) normal_iter is not used
-# vi) regroup the algorithmic parameters at the beginning
-# vii) typing
-# viii) the precision of lsmr should depend on the other parameters?
-"""    normal_step(nls, x, cx, Jx)
+# Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
+function normal_step(nlp        :: AbstractNLPModel, 
+                     x          :: AbstractVector{T}, 
+                     cx         :: AbstractVector{T},
+                     Jx         :: LinearOperator{T},  
+                     fx         :: T,
+                     ∇fx        :: AbstractVector{T}, 
+                     λ          :: AbstractVector{T}, 
+                     ℓxλ        :: T, 
+                     ∇ℓxλ       :: AbstractVector{T}, 
+                     dualnorm   :: T, 
+                     primalnorm :: T, #norm(cx)
+                     ρmax       :: T, 
+                     ϵp         :: T;
+                     max_eval   :: Int = 1_000,
+                     max_time   :: AbstractFloat = 1_000.,
+                     max_iter   :: Int = typemax(Int64),
+                     feas_step  :: Function = feasibility_step
+                     ) where T
 
-Approximately solves min ‖c(x)‖.
+  #assign z variable:
+  z, cz, Jz, fz, ∇fz = x, cx, Jx, fx, ∇fx
+  norm∇fz        = norm(∇fx) #can be avoided if we use dualnorm
+  ℓzλ, ∇ℓzλ      = ℓxλ, ∇ℓxλ
 
-Given xₖ, finds min ‖cₖ + Jₖd‖
-"""
-function normal_step(nlp :: AbstractNLPModel, ctol, x, cx, Jx, ρ;
-                     η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                     max_eval = 1_000, 
-                     max_time :: Float64 = 60.,
-                     max_normal_iter = typemax(Int64),
-                     )
+  infeasible  = false
+  restoration = false
+  tired       = false
+  start_time  = time()
+  eltime      = 0.0
 
-  c(x) = cons(nlp, x) #redefine the function
-  
-  z      = copy(x)
-  cz     = copy(cx)
-  normcz = norm(cz)
+  #Initialize ρ at x
+  ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0)
 
-  Δ = 1.0
+  done_with_normal_step = primalnorm ≤ ρ
+  iter_normal_step      = 0
 
-  normal_iter = 0
-  consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
-  normcx = normcz           # c(x) = normcx = normcz for the first z
+  while !done_with_normal_step
 
-  start_time = time()
-  el_time    = 0.0
-  tired      = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
-  infeasible = false
-  
-  while !(normcz ≤ ρ || tired || infeasible)
-      
-    d     = -Jx' * cz
-    nd2   = dot(d, d)
-    
-    if sqrt(nd2) < ctol * normcz #norm(d) < ctol * normcz
-      infeasible = true
-      break
+    #primalnorm = norm(cz)
+    z, cz, primalnorm, Jz, normal_status = feas_step(nlp, z, cz, primalnorm,
+                                                     Jz, ρ, ϵp, 
+                                                     max_eval = max_eval, 
+                                                     max_time = max_time)
+
+    fz, ∇fz    = objgrad(nlp, z)
+    norm∇fz    = norm(∇fz) #can be avoided if we use dualnorm
+    compute_lx!(Jz, ∇fz, λ)
+    ℓzλ        = fz + dot(λ, cz)
+    ∇ℓzλ       = ∇fz + Jz'*λ
+    dualnorm   = norm(∇ℓzλ)
+
+    #update rho
+    iter_normal_step += 1
+    ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, iter_normal_step)
+
+    @info log_row(Any["N", iter_normal_step, neval_obj(nlp) + neval_cons(nlp), 
+                           fz, ℓzλ, dualnorm, primalnorm, 
+                           ρmax, ρ, normal_status, "", ""])
+
+    eltime     = time() - start_time
+    many_evals = neval_obj(nlp) + neval_cons(nlp) > max_eval
+    tired      = many_evals || eltime > max_time || iter_normal_step > max_iter
+    infeasible = normal_status == :infeasible
+
+    if infeasible && !restoration && !(primalnorm ≤ ρ || tired) 
+    #Enter restoration phase to avoid infeasible stationary points.
+    #Heuristic that forces a random move from z
+      restoration, infeasible = true, false
+      perturbation_length = min(primalnorm, √ϵp) / norm(z) #sqrt(ϵp)/norm(z)
+      z += (2 .* rand(T, nlp.meta.nvar) .- 1) * perturbation_length
+      cz = cons(nlp, z)
+      Jz = jac_op(nlp, z)
+      primalnorm = norm(cz)
+      ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0)
     end
-    
-    Jd    = Jx * d
-    
-    t     = nd2 / dot(Jd, Jd) #dot(d, d) / dot(Jd, Jd)
-    dcp   = t * d
-    ndcp2 = t^2 * nd2 #dot(dcp, dcp)
-    
-    if sqrt(ndcp2) > Δ
-      d   = dcp * Δ / sqrt(ndcp2) #so ||d||=Δ
-    else
-      dn  = lsmr(Jx, -cz)[1]
-      if norm(dn) <= Δ
-        d = dn
+
+    done_with_normal_step = primalnorm ≤ ρ || tired || infeasible 
+  end
+
+  status = if primalnorm ≤ ρ && iter_normal_step == 0
+      :init_success
+    elseif primalnorm ≤ ρ
+      :success
+    elseif tired
+      if neval_obj(nlp) + neval_cons(nlp) > max_eval
+        :max_eval
+      elseif eltime > max_time
+        :max_time
+      elseif iter_normal_step > max_iter
+        :max_iter
       else
-        v = dn - dcp 
-        #τ = (-dot(dcp, v) + sqrt(dot(dcp, v)^2 + 4 * dot(v, v) * (Δ^2 - dot(dcp, dcp)))) / dot(v, v)
-        nv2  = dot(v, v)
-        dcpv = dot(dcp, v)
-        τ    = (-dcpv + sqrt(dcpv^2 + 4 * nv2 * (Δ^2 - ndcp2))) / nv2
-        d    = dcp + τ * v
+        :unknown_tired
       end
-    end
-    
-    Jd   = Jx * d
-    zp   = z + d
-    czp  = c(zp)
-    normczp = norm(czp)
-    Pred = 0.5*(normcz^2 - norm(Jd + cz)^2)
-    Ared = 0.5*(normcz^2 - normczp^2)
-
-    if Ared/Pred < η₁
-      Δ = max(1e-8, Δ * σ₁)
+    elseif infeasible
+      :infeasible
     else
-      z  = zp
-      Jx = jac_op(nlp, z)
-      cz = czp
-      normcz = normczp
-      if Ared/Pred > η₂ && norm(d) >= 0.99Δ
-        Δ *= σ₂
-      end
+      :unknown
     end
 
-    if normcz / normcx > 0.95
-      consecutive_bad_steps += 1
-    else
-      consecutive_bad_steps = 0
-    end
+  return z, cz, fz, ℓzλ,  ∇ℓzλ, ρ, primalnorm, dualnorm, status
+end
 
-    # Safeguard AKA agressive normal step - Loses robustness, doesn't seem to fix any
-    # if normcz > ρ && consecutive_bad_steps ≥ 3
-    #   d = cg(hess_op(nlp, z, cz, obj_weight=0.0), Jx' * cz)[1]
-    #   z -= d
-    #   cz = c(z)
-    #   normcz = norm(cz)
-    # end
-
-    el_time = time() - start_time
-    normal_iter += 1
-    tired   = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time || normal_iter > max_normal_iter
+#Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
+#No evaluations of functions here.
+# ρ = O(‖g_p(z)‖) and 
+#in the paper ρ = ν n_p(z) ρ_max with n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)
+#
+# T.M., 2021 Feb. 5th: what if dualnorm is excessively small ?
+#            Feb. 8th: don't let ρ decrease too crazy
+function compute_ρ(dualnorm   :: T, 
+                   primalnorm :: T, 
+                   norm∇fx    :: T, 
+                   ρmax       :: T, 
+                   ϵ          :: T, #ctol
+                   iter       :: Int) where T
+  if iter > 100
+    return 0.75 * ρmax
+  end
+  ngp = dualnorm / (norm∇fx + 1)
+  ρ = max(min(ngp, 0.75) * ρmax, ϵ)
+  if ρ ≤ ϵ && primalnorm > 100ϵ
+    ρ = primalnorm * 0.90 #/ 10
+  #elseif ngp ≤ 5ϵ
+  #  ρ = ϵ
   end
 
-  status = if normcz ≤ ρ
-    :success
-  elseif tired
-    if neval_obj(nlp) + neval_cons(nlp) > max_eval
-      :max_eval
-    elseif el_time > max_time
-      :max_time
-    elseif normal_iter > max_normal_iter
-      :max_iter
-    else
-      :unknown_tired
-    end
-  elseif infeasible
-    :infeasible
-  else
-    :unknown
-  end
-
-  return z, cz, normcz, status
+  return ρ
 end
