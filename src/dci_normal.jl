@@ -55,7 +55,8 @@ function normal_step(nlp        :: AbstractNLPModel,
     ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, iter_normal_step)
 
     @info log_row(Any["N", iter_normal_step, neval_obj(nlp) + neval_cons(nlp), 
-                           fz, ℓzλ, dualnorm, primalnorm, ρmax, ρ, normal_status, "", ""])
+                           fz, ℓzλ, dualnorm, primalnorm, 
+                           ρmax, ρ, normal_status, "", ""])
 
     eltime     = time() - start_time
     many_evals = neval_obj(nlp) + neval_cons(nlp) > max_eval
@@ -66,7 +67,8 @@ function normal_step(nlp        :: AbstractNLPModel,
     #Enter restoration phase to avoid infeasible stationary points.
     #Very simple heuristic that forces a random move from z
       restoration, infeasible = true, false
-      z += rand(nlp.meta.nvar) * min(primalnorm, √ϵp) / norm(z) #sqrt(ϵp)/norm(z)
+      perturbation_length = min(primalnorm, √ϵp) / norm(z) #sqrt(ϵp)/norm(z)
+      z += (2 .* rand(T, nlp.meta.nvar) .- 1) * perturbation_length
       cz = cons(nlp, z)
       Jz = jac_op(nlp, z)
       primalnorm = norm(cz)

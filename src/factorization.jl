@@ -154,7 +154,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
 end
 =#
 
-
+#=
 """
 2nd idea: we take the absolute value of the diagonal
 Only with LDLFactorizations, how do we get/set the diagonal with HSL?
@@ -271,7 +271,7 @@ nb_fact = 0
     if nb_fact > 1 @warn "Wait more that one factorization?" end
     return dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals
 end
-
+=#
 
 """
 compute a step ****
