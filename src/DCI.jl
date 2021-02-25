@@ -1,8 +1,7 @@
 module DCI
 
-  using LinearAlgebra, Logging, SparseArrays
-
-  using HSL, Krylov, LDLFactorizations, LinearOperators, NLPModels
+  using LinearAlgebra, SparseArrays
+  using HSL, Krylov, LinearOperators, NLPModels
   using SolverTools, SymCOOSolverInterface
 
   export dci
