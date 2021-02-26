@@ -24,8 +24,8 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
   γ_too_large = false
   status = :unknown #:γ_too_large, :success_fact, :regularize
 
-  @info log_header([:stage, :gamma, :delta, :delta_min, :ndn, :slope, :status],
-                  [String, Float64, Float64, Float64, Float64, Float64, Symbol],
+  @info log_header([:stage, :-, :-, :gamma, :delta, :delta_min, :-, :slope, :-, :-, :-, :-],
+                  [String, Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Symbol],
                   hdr_override=Dict(:gamma => "γ",
                                     :delta => "δ", :delta_min => "δmin")
                   )
@@ -50,7 +50,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
     else
       status = :regularize
     end
-    @info log_row(Any["Fact", γ, δ, δmin, norm(dn), slope, status])
+    @info log_row(Any["Fact", Int, Int, γ, δ, δmin, Float64, slope, Float64, status, norm(dn), Float64])
 
     if !descent
       if γ ≥ 1/√eps(T)

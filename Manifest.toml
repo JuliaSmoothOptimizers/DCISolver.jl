@@ -21,18 +21,6 @@ git-tree-sha1 = "ecdec412a9abc8db54c0efc5548c64dfce072058"
 uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
 version = "0.5.10"
 
-[[CUTEst]]
-deps = ["CUTEst_jll", "DataStructures", "JSON", "Libdl", "LinearAlgebra", "NLPModels", "Pkg", "SparseArrays"]
-git-tree-sha1 = "d437ce353c21f18b41ffb3266609c0814bc37e1c"
-uuid = "1b53aba6-35b6-5f92-a507-53c67d53f819"
-version = "0.10.3"
-
-[[CUTEst_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "4169deb7cdb1de1803a36288dcdb5ace252f6d34"
-uuid = "bb5f6f25-f23d-57fd-8f90-3ef7bad1d825"
-version = "2.0.4+1"
-
 [[CategoricalArrays]]
 deps = ["DataAPI", "Future", "JSON", "Missings", "Printf", "Statistics", "StructTypes", "Unicode"]
 git-tree-sha1 = "2ac27f59196a68070e132b25713f9a5bbc5fa0d2"
@@ -310,7 +298,7 @@ uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [[SolverTools]]
 deps = ["DataFrames", "JLD2", "LinearAlgebra", "LinearOperators", "Logging", "NLPModels", "Printf"]
-git-tree-sha1 = "dfde508e9da4e53feb4128c189a2d216567e3693"
+git-tree-sha1 = "c378d83fa3e889e21408ce0e9ada6be4b24496c9"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaSmoothOptimizers/SolverTools.jl"
 uuid = "b5612192-2639-5dc1-abfe-fbedd65fab29"

@@ -56,7 +56,7 @@ function normal_step(nlp        :: AbstractNLPModel,
 
     @info log_row(Any["N", iter_normal_step, neval_obj(nlp) + neval_cons(nlp), 
                            fz, ℓzλ, dualnorm, primalnorm, 
-                           ρmax, ρ, normal_status, "", ""])
+                           ρmax, ρ, normal_status, Float64, Float64])
 
     eltime     = time() - start_time
     many_evals = neval_obj(nlp) + neval_cons(nlp) > max_eval

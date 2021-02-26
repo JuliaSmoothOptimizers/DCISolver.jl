@@ -70,7 +70,7 @@ function dci(nlp  :: AbstractNLPModel,
                                      :primal => "‖c(x)‖", :nd => "‖d‖")
                   )
   @info log_row(Any["init", iter, evals(nlp), fx, ℓxλ, 
-                            dualnorm, primalnorm, ρmax, ρ])
+                            dualnorm, primalnorm, ρmax, ρ, Symbol, Float64, Float64])
 
   while !(solved || tired || infeasible || stalled)
     # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
@@ -156,7 +156,7 @@ function dci(nlp  :: AbstractNLPModel,
     dualnorm   = norm(∇ℓxλ)
     
     @info log_row(Any["T", iter, evals(nlp), fx, ℓxλ,
-                           dualnorm, primalnorm, ρmax, ρ, tg_status, "", ""])
+                           dualnorm, primalnorm, ρmax, ρ, tg_status, Float64, Float64])
     iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time

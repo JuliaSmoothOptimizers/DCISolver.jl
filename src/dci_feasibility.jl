@@ -78,7 +78,7 @@ function feasibility_step(nlp             :: AbstractNLPModel,
     end
 
     @info log_row(Any["F", feas_iter, neval_obj(nlp) + neval_cons(nlp), 
-                          NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
+                          Float64, Float64, Float64, normcz, Float64, Float64, status, norm(d), Δ])
 
     # Safeguard: agressive normal step
     if normcz > ρ && (consecutive_bad_steps ≥ 3 || failed_step_comp)
@@ -107,7 +107,7 @@ function feasibility_step(nlp             :: AbstractNLPModel,
           #Adding regularization might be more efficient
         end
       @info log_row(Any["F-safe", feas_iter, neval_obj(nlp) + neval_cons(nlp), 
-                          NaN, NaN, NaN, normcz, NaN, NaN, status, norm(d), Δ])
+                          Float64, Float64, Float64, normcz, Float64, Float64, status, norm(d), Δ])
     end
 
     el_time      = time() - start_time
