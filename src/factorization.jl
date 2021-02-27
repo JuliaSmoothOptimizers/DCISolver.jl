@@ -22,6 +22,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
   gnorm = norm(g)
   slope = NaN
   γ_too_large = false
+  γ0 = copy(γ)
   status = :unknown #:γ_too_large, :success_fact, :regularize
 
   @info log_header([:stage, :-, :-, :gamma, :delta, :delta_min, :-, :slope, :-, :-, :-, :-],
@@ -55,6 +56,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
     if !descent
       if γ ≥ 1/√eps(T)
         γ_too_large = true
+        γ = γ0 #regularization failed
         dnBdn = zero(T)
         dcpBdn = zero(T)
         dn = zeros(n)

@@ -338,7 +338,7 @@ version = "1.4.0"
 
 [[SymCOOSolverInterface]]
 deps = ["HSL", "LDLFactorizations", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "36675c8a481faa422d05ae1f71784a47a71a50ba"
+git-tree-sha1 = "ac5b9161c59d9533b47a3684647facbe6214202d"
 repo-rev = "ldl070"
 repo-url = "https://github.com/tmigot/SymCOOSolverInterface.jl"
 uuid = "ae3c181e-ed7e-43c0-ab5d-b5d0cb097c72"
