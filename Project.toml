@@ -16,9 +16,8 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SymCOOSolverInterface = "ae3c181e-ed7e-43c0-ab5d-b5d0cb097c72"
 
 [extras]
-CUTEst = "1b53aba6-35b6-5f92-a507-53c67d53f819"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["CUTEst", "Logging", "Test"]
+test = ["Logging", "Test"]
