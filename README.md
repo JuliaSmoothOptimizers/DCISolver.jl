@@ -39,3 +39,7 @@ nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0],
                  x->[x[1] * x[2] - 1], [0.0], [0.0])
 stats = dci(nlp, nlp.meta.x0)
 ```
+
+## Versions [On hold]
+
+This package relies on unofficial versions of [HSL](https://github.com/tmigot/HSL.jl#tmigot-patch-1) and [SymCOOSolverInterface](https://github.com/tmigot/SymCOOSolverInterface.jl#ldl070).

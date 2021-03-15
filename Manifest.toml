@@ -298,11 +298,9 @@ uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [[SolverTools]]
 deps = ["DataFrames", "JLD2", "LinearAlgebra", "LinearOperators", "Logging", "NLPModels", "Printf"]
-git-tree-sha1 = "c378d83fa3e889e21408ce0e9ada6be4b24496c9"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaSmoothOptimizers/SolverTools.jl"
+git-tree-sha1 = "06c88810a679bbca1016e759eef74016b4c9318c"
 uuid = "b5612192-2639-5dc1-abfe-fbedd65fab29"
-version = "0.3.0"
+version = "0.3.2"
 
 [[SortingAlgorithms]]
 deps = ["DataStructures", "Random", "Test"]
