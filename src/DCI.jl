@@ -99,36 +99,44 @@ module DCI
   """
   Compute the solution of ‖Jx' λ - ∇fx‖
   """
-  function compute_lx(Jx  :: LinearOperator{T}, 
-                      ∇fx :: AbstractVector{T}) where T <: AbstractFloat
+  function compute_lx(Jx   :: LinearOperator{T}, 
+                      ∇fx  :: AbstractVector{T},
+                      meta :: MetaDCI) where T <: AbstractFloat
     m, n = size(Jx) 
-    (λ, stats) = cgls(Jx', -∇fx)#, itmax = 10 * (m + n)) #atol, rtol
-    if !stats.solved
-      @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
-    end
+    λ = Array{T}(undef, m)
+    #(λ, stats) = cgls(Jx', -∇fx)#, itmax = 10 * (m + n)) #atol, rtol
+    #if !stats.solved
+    #  @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
+    #end
+    compute_lx!(Jx, ∇fx, λ, meta)
     return λ
   end
 
-  function compute_lx(Jx, ∇fx)
-    return Jx' \ ( - ∇fx)
-  end
-
-  function compute_lx!(Jx  :: LinearOperator{T}, 
-                       ∇fx :: AbstractVector{T}, 
-                       λ   :: AbstractVector{T};
-                       linear_solver :: Function = cgls) where T <: AbstractFloat
+  function compute_lx!(Jx   :: LinearOperator{T}, 
+                       ∇fx  :: AbstractVector{T}, 
+                       λ    :: AbstractVector{T},
+                       meta :: MetaDCI) where T <: AbstractFloat
      
     m, n = size(Jx) 
-    (l, stats) = linear_solver(Jx', -∇fx, itmax = 5 * (m + n))
+    #(l, stats) = linear_solver(Jx', -∇fx, itmax = 5 * (m + n))
+    (l, stats) = eval(meta.comp_λ)(Jx', -∇fx, M     = meta.λ_struct.M, 
+                                              λ     = meta.λ_struct.λ, 
+                                              atol  = meta.λ_struct.atol, 
+                                              rtol  = meta.λ_struct.rtol, 
+                                              itmax = meta.λ_struct.itmax)
     if !stats.solved
-      @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
+      @warn "Fail $(meta.comp_λ) computation Lagrange multiplier: $(stats.status)"
       #print(stats)
     end
     λ .= l #Should we really update if !stats.solved?
     return λ
   end
 
-  function compute_lx!(Jx, ∇fx, λ)
+  function compute_lx(Jx, ∇fx, meta :: MetaDCI)
+    return Jx' \ ( - ∇fx)
+  end
+
+  function compute_lx!(Jx, ∇fx, λ, meta :: MetaDCI)
     λ .= Jx' \ ( - ∇fx)
     return λ
   end

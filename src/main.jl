@@ -16,7 +16,7 @@ function dci(nlp  :: AbstractNLPModel,
   
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
   Jx   = jac_op(nlp, x)
-  λ    = compute_lx(Jx, ∇fx)  # λ = argmin ‖∇f + Jᵀλ‖
+  λ    = compute_lx(Jx, ∇fx, meta)  # λ = argmin ‖∇f + Jᵀλ‖
   ℓxλ  = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
   dualnorm   = norm(∇ℓxλ)
@@ -152,7 +152,7 @@ function dci(nlp  :: AbstractNLPModel,
 
     ∇fx = grad(nlp, x)
     Jx  = jac_op(nlp, x)
-    compute_lx!(Jx, ∇fx, λ)
+    compute_lx!(Jx, ∇fx, λ, meta)
     ℓxλ  = fx + dot(λ, cx) #differs from the tangent step as λ is different
     ∇ℓxλ = ∇fx + Jx'*λ
     
