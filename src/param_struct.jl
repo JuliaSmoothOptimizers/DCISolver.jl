@@ -13,9 +13,9 @@ struct comp_λ_cgls{T <: AbstractFloat}
 end
 
 function comp_λ_cgls(m, n, :: T; M = opEye(), 
-                                 λ :: T=zero(T), 
-                                 atol :: T = √eps(T), 
-                                 rtol :: T = √eps(T),
+                                 λ     :: T=zero(T), 
+                                 atol  :: T = √eps(T), 
+                                 rtol  :: T = √eps(T),
                                  itmax :: Integer = 5 * (m + n)
                                  ) where T
   return comp_λ_cgls(M, λ, atol, rtol, itmax)

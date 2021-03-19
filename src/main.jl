@@ -7,7 +7,9 @@ function dci(nlp  :: AbstractNLPModel,
     error("DCI only works for equality constrained problems")
   end
 
-  evals(nlp) = neval_obj(nlp) + neval_cons(nlp)
+  tired_check(nlp, eltime, iter, meta) = begin 
+    (neval_obj(nlp) + neval_cons(nlp) > meta.max_eval || eltime > meta.max_time || iter > meta.max_iter)
+  end
 
   z   = copy(x)
   fz  = fx = obj(nlp, x)
@@ -19,6 +21,7 @@ function dci(nlp  :: AbstractNLPModel,
   λ    = compute_lx(Jx, ∇fx, meta)  # λ = argmin ‖∇f + Jᵀλ‖
   ℓxλ  = fx + dot(λ, cx)
   ∇ℓxλ = ∇fx + Jx'*λ
+
   dualnorm   = norm(∇ℓxλ)
   primalnorm = norm(cx)
 
@@ -29,7 +32,7 @@ function dci(nlp  :: AbstractNLPModel,
 
   # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
   n, m = nlp.meta.nvar, nlp.meta.ncon
-  nnz = nlp.meta.nnzh + nlp.meta.nnzj + n + m # H, J, γI, -δI
+  nnz  = nlp.meta.nnzh + nlp.meta.nnzj + n + m # H, J, γI, -δI
   rows = zeros(Int, nnz)
   cols = zeros(Int, nnz)
   vals = zeros(nnz)
@@ -54,7 +57,7 @@ function dci(nlp  :: AbstractNLPModel,
 
   #stopping statuses
   solved     = primalnorm < ϵp && dualnorm < ϵd
-  tired      = evals(nlp) > meta.max_eval || eltime > meta.max_time
+  tired      = tired_check(nlp, eltime, 0, meta)
   infeasible = false
   small_step_rescue = false
   stalled    = false
@@ -70,7 +73,8 @@ function dci(nlp  :: AbstractNLPModel,
                                      :primal => "‖c(x)‖", :nd => "‖d‖")
                   )
   @info log_row(Any["init", iter, evals(nlp), fx, ℓxλ, 
-                            dualnorm, primalnorm, ρmax, ρ, Symbol, Float64, Float64])
+                            dualnorm, primalnorm, ρmax,
+                            ρ, Symbol, Float64, Float64])
 
   while !(solved || tired || infeasible || stalled)
     # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
@@ -86,8 +90,8 @@ function dci(nlp  :: AbstractNLPModel,
     infeasible = normal_status == :infeasible
     if solved || infeasible || (normal_status ∉ (:init_success, :success))
       eltime = time() - start_time
-      tired  = evals(nlp) > meta.max_eval || eltime > meta.max_time
-      #stalled
+      tired  = tired_check(nlp, eltime, iter, meta)
+      #stalled?
       break
     end
 
@@ -160,11 +164,12 @@ function dci(nlp  :: AbstractNLPModel,
     dualnorm   = norm(∇ℓxλ)
     
     @info log_row(Any["T", iter, evals(nlp), fx, ℓxλ,
-                           dualnorm, primalnorm, ρmax, ρ, tg_status, Float64, Float64])
+                           dualnorm, primalnorm, ρmax, ρ, 
+                           tg_status, Float64, Float64])
     iter  += 1
     solved = primalnorm < ϵp && dualnorm < ϵd
     eltime = time() - start_time
-    tired  = evals(nlp) > meta.max_eval || eltime > meta.max_time || iter > meta.max_iter
+    tired  = tired_check(nlp, eltime, iter, meta)
   end
 
   #check unboundedness
@@ -188,10 +193,13 @@ function dci(nlp  :: AbstractNLPModel,
     :unknown
   end
 
-  return GenericExecutionStats(status, nlp, solution     = z, 
-                                            objective    = fz, 
-                                            dual_feas    = dualnorm, 
-                                            primal_feas  = primalnorm, 
-                                            iter         = iter,
-                                            elapsed_time = eltime)
+  return GenericExecutionStats(status, nlp, 
+                               solution        = z, 
+                               objective       = fz, 
+                               dual_feas       = dualnorm, 
+                               primal_feas     = primalnorm, 
+                               iter            = iter,
+                               elapsed_time    = eltime,
+                               solver_specific = Dict(:multiplier => λ,
+                                                      :lagrangian => ℓxλ)) #add more?
 end

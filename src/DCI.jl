@@ -104,10 +104,6 @@ module DCI
                       meta :: MetaDCI) where T <: AbstractFloat
     m, n = size(Jx) 
     λ = Array{T}(undef, m)
-    #(λ, stats) = cgls(Jx', -∇fx)#, itmax = 10 * (m + n)) #atol, rtol
-    #if !stats.solved
-    #  @warn "Fail cgls computation Lagrange multiplier: $(stats.status)"
-    #end
     compute_lx!(Jx, ∇fx, λ, meta)
     return λ
   end
@@ -116,9 +112,7 @@ module DCI
                        ∇fx  :: AbstractVector{T}, 
                        λ    :: AbstractVector{T},
                        meta :: MetaDCI) where T <: AbstractFloat
-     
-    m, n = size(Jx) 
-    #(l, stats) = linear_solver(Jx', -∇fx, itmax = 5 * (m + n))
+
     (l, stats) = eval(meta.comp_λ)(Jx', -∇fx, M     = meta.λ_struct.M, 
                                               λ     = meta.λ_struct.λ, 
                                               atol  = meta.λ_struct.atol, 
