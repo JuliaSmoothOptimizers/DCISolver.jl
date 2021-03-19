@@ -85,6 +85,9 @@ function dci(nlp  :: AbstractNLPModel,
     solved = primalnorm < ϵp && dualnorm < ϵd
     infeasible = normal_status == :infeasible
     if solved || infeasible || (normal_status ∉ (:init_success, :success))
+      eltime = time() - start_time
+      tired  = evals(nlp) > meta.max_eval || eltime > meta.max_time
+      #stalled
       break
     end
 
