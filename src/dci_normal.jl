@@ -15,8 +15,7 @@ function normal_step(nlp        :: AbstractNLPModel,
                      meta       :: MetaDCI;
                      max_eval   :: Int = 1_000,
                      max_time   :: AbstractFloat = 1_000.,
-                     max_iter   :: Int = typemax(Int64),
-                     feas_step  :: Function = feasibility_step
+                     max_iter   :: Int = typemax(Int64)
                      ) where T
 
   #assign z variable:

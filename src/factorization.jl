@@ -52,7 +52,8 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
     else
       status = :regularize
     end
-    @info log_row(Any["Fact", Int, Int, γ, δ, δmin, Float64, slope, Float64, status, norm(dn), Float64])
+    @info log_row(Any["Fact", Int, Int, γ, δ, δmin, Float64, slope, 
+                              Float64, status, norm(dn), Float64])
 
     if !descent
       if γ ≥ 1/√eps(T)

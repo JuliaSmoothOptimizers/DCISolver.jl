@@ -237,7 +237,7 @@ version = "1.0.1"
 
 [[DCI]]
 deps = ["HSL", "Krylov", "LDLFactorizations", "LinearAlgebra", "LinearOperators", "NLPModels", "Printf", "SolverTools", "SparseArrays"]
-git-tree-sha1 = "f7e918ab92a2dfed9cc5a0d62e2f091ea68dab65"
+git-tree-sha1 = "5671067524b273b88339dee6a00a837832329f3f"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaSmoothOptimizers/DCI.jl"
 uuid = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
@@ -1044,7 +1044,7 @@ version = "8.42.0+4"
 
 [[PDENLPModels]]
 deps = ["BenchmarkTools", "DataFrames", "FastClosures", "FiniteDiff", "ForwardDiff", "Gridap", "Ipopt", "JSOSolvers", "Krylov", "LineSearches", "LinearAlgebra", "LinearOperators", "NLPModels", "NLPModelsIpopt", "Pluto", "Printf", "ReverseDiff", "SparseArrays", "Test"]
-git-tree-sha1 = "33c0b1807821ede3011c51136d049654f05ebfbc"
+git-tree-sha1 = "3868cbf1867b5e4fc30a705c8f23b76201768be9"
 repo-rev = "H2-lag"
 repo-url = "https://github.com/tmigot/PDENLPModels.jl"
 uuid = "80da258d-c172-4540-9646-64f172512520"
