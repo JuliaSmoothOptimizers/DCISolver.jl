@@ -12,6 +12,7 @@ optimization problems of the form
 It uses other JuliaSmoothOptimizers packages for development.
 In particular, [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) is used for defining the problem, and [SolverTools](https://github.com/JuliaSmoothOptimizers/SolverTools.jl) for the output.
 It also uses [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl)'s `MA57` as main solver, but you can pass `linsolve=:ldlfactorizations` to use [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl).
+The feasibility steps are factorization-free and use iterative methods from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl)
 
 ## References
 
@@ -39,7 +40,3 @@ nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0],
                  x->[x[1] * x[2] - 1], [0.0], [0.0])
 stats = dci(nlp, nlp.meta.x0)
 ```
-
-## Versions [On hold]
-
-This package relies on unofficial versions of [HSL](https://github.com/tmigot/HSL.jl#tmigot-patch-1) and [SymCOOSolverInterface](https://github.com/tmigot/SymCOOSolverInterface.jl#ldl070).

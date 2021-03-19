@@ -2,7 +2,7 @@
 1st idea: we stop whenever the fonction looks convex-ish
 """
 function _compute_newton_step!(nlp  :: AbstractNLPModel, 
-                               LDL  :: SymCOOSolverInterface.SymCOOSolver, 
+                               LDL  :: SymCOOSolver, 
                                g    :: AbstractVector{T}, 
                                γ    :: T, 
                                δ    :: T, 

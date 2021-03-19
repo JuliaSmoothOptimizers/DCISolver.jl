@@ -1,8 +1,11 @@
 module DCI
 
+  #using SymCOOSolverInterface
+  include("SymCOOSolverInterface/SymCOOSolverInterface.jl")
+
   using LinearAlgebra, SparseArrays
-  using HSL, Krylov, LinearOperators, NLPModels
-  using SolverTools, SymCOOSolverInterface
+  #JSO packages
+  using HSL, Krylov, LinearOperators, NLPModels, SolverTools
 
   export dci
 
