@@ -28,7 +28,8 @@ function tangent_step(nlp      :: AbstractNLPModel,
                       gBg      :: T, 
                       ρ        :: AbstractFloat, 
                       γ        :: T, 
-                      δ        :: T;
+                      δ        :: T,
+                      meta     :: MetaDCI;
                       Δ        :: AbstractFloat = one(T), #trust-region radius
                       η₁       :: AbstractFloat = T(1e-2),
                       η₂       :: AbstractFloat = T(0.75),
@@ -55,7 +56,8 @@ function tangent_step(nlp      :: AbstractNLPModel,
   while !((normct ≤ 2ρ && r ≥ η₁) || tired)
     #Compute a descent direction d (no evals)
     d, dBd, status, γ, δ, vals = compute_descent_direction(nlp, gBg, g, Δ, LDL,
-                                                           γ, δ, δmin, vals, d)
+                                                           γ, δ, δmin, vals, d,
+                                                           meta)
     n2d = dot(d,d)
     if √n2d > Δ
       d = d * (Δ / √n2d) #Just in case.
@@ -127,7 +129,8 @@ function compute_descent_direction(nlp  :: AbstractNLPModel,
                                    δ    :: T, 
                                    δmin :: T, 
                                    vals :: AbstractVector{T}, 
-                                   d    :: AbstractVector{T}) where T
+                                   d    :: AbstractVector{T},
+                                   meta :: MetaDCI) where T
     m, n = nlp.meta.ncon, nlp.meta.nvar
     
     #first compute a gradient step
@@ -140,7 +143,7 @@ function compute_descent_direction(nlp  :: AbstractNLPModel,
     else
       dn, dnBdn, dcpBdn, 
       γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin,
-                                                     dcp, vals)
+                                                     dcp, vals, meta)
       norm2dn = dot(dn, dn)
       if γ_too_large || dnBdn ≤ 1e-10 #or same test as gBg in _compute_gradient_step ?
           #dn = 0 here.

@@ -78,7 +78,7 @@ function dci(nlp  :: AbstractNLPModel,
       primalnorm, dualnorm, 
       normal_status = normal_step(nlp, x, cx, Jx, fx, ∇fx, λ, ℓxλ, ∇ℓxλ, 
                                             dualnorm, primalnorm, ρmax, 
-                                            ϵp,
+                                            ϵp, meta,
                                             max_eval = meta.max_eval, 
                                             max_time = meta.max_time - eltime)
     # Convergence test
@@ -119,6 +119,7 @@ function dci(nlp  :: AbstractNLPModel,
                                                       LDL, vals, 
                                                       ∇ℓzλ, ℓzλ, gBg, 
                                                       ρ, γ, δ,
+                                                      meta,
                                                       Δ = Δtg, 
                                                       max_eval = meta.max_eval, 
                                                       max_time = rmng_time)

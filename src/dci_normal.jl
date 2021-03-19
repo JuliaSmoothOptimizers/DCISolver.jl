@@ -11,7 +11,8 @@ function normal_step(nlp        :: AbstractNLPModel,
                      dualnorm   :: T, 
                      primalnorm :: T, #norm(cx)
                      ρmax       :: T, 
-                     ϵp         :: T;
+                     ϵp         :: T,
+                     meta       :: MetaDCI;
                      max_eval   :: Int = 1_000,
                      max_time   :: AbstractFloat = 1_000.,
                      max_iter   :: Int = typemax(Int64),
@@ -38,10 +39,11 @@ function normal_step(nlp        :: AbstractNLPModel,
   while !done_with_normal_step
 
     #primalnorm = norm(cz)
-    z, cz, primalnorm, Jz, normal_status = feas_step(nlp, z, cz, primalnorm,
-                                                     Jz, ρ, ϵp, 
-                                                     max_eval = max_eval, 
-                                                     max_time = max_time)
+    z, cz, primalnorm, Jz, normal_status = eval(meta.feas_step)(nlp, z, cz,
+                                                            primalnorm,
+                                                            Jz, ρ, ϵp, meta,
+                                                            max_eval = max_eval, 
+                                                            max_time = max_time)
 
     fz, ∇fz    = objgrad(nlp, z)
     norm∇fz    = norm(∇fz) #can be avoided if we use dualnorm

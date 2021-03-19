@@ -8,7 +8,8 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
                                δ    :: T, 
                                δmin :: T, 
                                dcp  :: AbstractVector{T}, 
-                               vals :: AbstractVector{T}) where T
+                               vals :: AbstractVector{T},
+                               meta :: MetaDCI) where T
 
   m, n = nlp.meta.ncon, nlp.meta.nvar
   nnzh, nnzj = nlp.meta.nnzh, nlp.meta.nnzj

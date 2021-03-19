@@ -11,16 +11,16 @@ function feasibility_step(nlp             :: AbstractNLPModel,
                           Jx              :: Union{LinearOperator{T}, 
                                                    AbstractMatrix{T}}, 
                           ρ               :: T,
-                          ctol            :: AbstractFloat;
+                          ctol            :: AbstractFloat,
+                          meta            :: MetaDCI;
                           η₁              :: AbstractFloat = 1e-3, 
                           η₂              :: AbstractFloat = 0.66, 
                           σ₁              :: AbstractFloat = 0.25, 
                           σ₂              :: AbstractFloat = 2.0,
-                          Δ0              :: T = one(T),
+                          Δ₀              :: T = one(T),
                           max_eval        :: Int = 1_000, 
                           max_time        :: AbstractFloat = 60.,
-                          max_feas_iter   :: Int = typemax(Int64),
-                          TR_compute_step :: Function = TR_lsmr #dogleg
+                          max_feas_iter   :: Int = typemax(Int64)
                           ) where T
   
   z      = x
@@ -28,7 +28,7 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   Jz     = Jx
   normcz = normcx # cons(nlp, x) = normcx = normcz for the first z
   
-  Δ = Δ0
+  Δ = Δ₀
 
   feas_iter = 0
   consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
@@ -44,7 +44,9 @@ function feasibility_step(nlp             :: AbstractNLPModel,
   while !(normcz ≤ ρ || tired || infeasible)
     
     #Compute the a direction satisfying the trust-region constraint
-    d, Jd, infeasible, solved = TR_compute_step(cz, Jz, ctol, Δ, normcz)
+    (m, n) = size(Jz)
+    d, Jd, infeasible, solved = eval(meta.TR_compute_step)(cz, Jz, ctol, Δ, normcz, 
+                                                           meta.TR_compute_step_struct)
 
     if infeasible #the direction is too small
       failed_step_comp = true #too small step
@@ -149,11 +151,12 @@ Also checks if problem is infeasible.
 Returns 4 entries:
 (d, Jd, solved, infeasible)
 """
-function dogleg(cz     :: AbstractVector{T}, 
-                Jz     :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
-                ctol   :: AbstractFloat, 
-                Δ      :: T, 
-                normcz :: AbstractFloat) where T
+function TR_dogleg(cz     :: AbstractVector{T}, 
+                   Jz     :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
+                   ctol   :: AbstractFloat, 
+                   Δ      :: T, 
+                   normcz :: AbstractFloat,
+                   meta   :: TR_dogleg_struct) where T
 
   infeasible, solved = false, true
 
@@ -175,9 +178,9 @@ function dogleg(cz     :: AbstractVector{T},
     Jd  = Jd * t * Δ / √ndcp2  #avoid recomputing Jd
   else
     (dn, stats)  = lsmr(Jz, -cz)
-    solved =stats.solved
+    solved = stats.solved
     if !stats.solved #stats.status ∈ ("maximum number of iterations exceeded")
-      @warn "Fail lsmr in dogleg: $(stats.status)"
+      @warn "Fail lsmr in TR_dogleg: $(stats.status)"
     end
 
     if norm(dn) <= Δ
@@ -199,9 +202,14 @@ function TR_lsmr(cz     :: AbstractVector{T},
                  Jz     :: Union{LinearOperator{T}, AbstractMatrix{T}}, 
                  ctol   :: AbstractFloat, 
                  Δ      :: T, 
-                 normcz :: AbstractFloat) where T
+                 normcz :: AbstractFloat,
+                 meta   :: TR_lsmr_struct) where T
 
-  (d, stats)  = lsmr(Jz, -cz, radius = Δ)
+  (d, stats)  = lsmr(Jz, -cz, radius = Δ, 
+                              M = meta.M, λ = meta.λ, 
+                              axtol = meta.axtol, btol = meta.btol, 
+                              atol = meta.atol, rtol = meta.rtol, 
+                              etol = meta.etol, itmax = meta.itmax)
 
   infeasible = norm(d) < ctol * min(normcz, one(T))
   solved = stats.solved
