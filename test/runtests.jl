@@ -5,6 +5,9 @@ using ADNLPModels, Krylov, NLPModels
 # This package
 using DCI
 
+#using SymCOOSolverInterface #tests
+include("symcoo_runtests.jl")
+
 function test_dci(;tol = 1e-5)
 
   #Test if it has equality constraints
