@@ -25,7 +25,8 @@ SolverTools = "0.4"
 [extras]
 ADNLPModels = "54578032-b7ea-4c30-94aa-7cbd1cce6c9a"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["ADNLPModels", "Logging", "Test"]
+test = ["ADNLPModels", "Logging", "Random", "Test"]
