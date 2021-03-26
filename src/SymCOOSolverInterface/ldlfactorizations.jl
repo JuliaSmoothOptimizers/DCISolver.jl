@@ -31,13 +31,10 @@ function LDLFactorizationStruct(ndim :: Int,
 end
 
 function factorize!(M :: LDLFactorizationStruct)
-  try
     A = Symmetric(sparse(M.cols, M.rows, M.vals, M.ndim, M.ndim), :U)
     M.factor = ldl_factorize!(A, M.factor)
-    M.factorized = true
-  catch ex
-    M.factorized = false
-  end
+    M.factorized = factorized(M.factor)
+    return M.factorized
 end
 
 function solve!(x, M :: LDLFactorizationStruct, b)
