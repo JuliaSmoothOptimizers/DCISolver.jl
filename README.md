@@ -23,7 +23,7 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 
 ## Installation
 
-1. Follow [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl)'s `MA57` installation if possible. Otherwise [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) will be used.
+1. [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) is used by default. Follow [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl)'s `MA57` installation for an alternative.
 2. `pkg> add https://github.com/JuliaSmoothOptimizers/DCI.jl`
 
 ## Example

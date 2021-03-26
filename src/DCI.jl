@@ -28,8 +28,8 @@ module DCI
 
   """
   function dci(nlp  :: AbstractNLPModel,
-              x    :: AbstractVector{T};
-              kwargs...
+               x    :: AbstractVector{T};
+               kwargs...
               ) where T
     meta = MetaDCI(x, nlp.meta.y0; kwargs...)
     return dci(nlp, x, meta)
