@@ -5,7 +5,7 @@ module DCI
 
   using LinearAlgebra, SparseArrays
   #JSO packages
-  using HSL, Krylov, LinearOperators, NLPModels, SolverTools
+  using HSL, Krylov, LinearOperators, NLPModels, SolverCore, SolverTools
 
   export dci
 
@@ -37,15 +37,15 @@ module DCI
 
 
   """compute_gBg
-    B is a symmetric sparse matrix 
+    B is a symmetric sparse matrix
     whose lower triangular given in COO: (rows, cols, vals)
 
     Compute ∇ℓxλ' * B * ∇ℓxλ
   """
-  function compute_gBg(nlp  :: AbstractNLPModel, 
-                       rows :: AbstractVector, 
-                       cols :: AbstractVector, 
-                       vals :: AbstractVector{T}, 
+  function compute_gBg(nlp  :: AbstractNLPModel,
+                       rows :: AbstractVector,
+                       cols :: AbstractVector,
+                       vals :: AbstractVector{T},
                        ∇ℓzλ :: AbstractVector{T}) where T
     gBg = zero(T)
     for k = 1:nlp.meta.nnzh
@@ -99,24 +99,24 @@ module DCI
   """
   Compute the solution of ‖Jx' λ - ∇fx‖
   """
-  function compute_lx(Jx   :: LinearOperator{T}, 
+  function compute_lx(Jx   :: LinearOperator{T},
                       ∇fx  :: AbstractVector{T},
                       meta :: MetaDCI) where T <: AbstractFloat
-    m, n = size(Jx) 
+    m, n = size(Jx)
     λ = Array{T}(undef, m)
     compute_lx!(Jx, ∇fx, λ, meta)
     return λ
   end
 
-  function compute_lx!(Jx   :: LinearOperator{T}, 
-                       ∇fx  :: AbstractVector{T}, 
+  function compute_lx!(Jx   :: LinearOperator{T},
+                       ∇fx  :: AbstractVector{T},
                        λ    :: AbstractVector{T},
                        meta :: MetaDCI) where T <: AbstractFloat
 
-    (l, stats) = eval(meta.comp_λ)(Jx', -∇fx, M     = meta.λ_struct.M, 
-                                              λ     = meta.λ_struct.λ, 
-                                              atol  = meta.λ_struct.atol, 
-                                              rtol  = meta.λ_struct.rtol, 
+    (l, stats) = eval(meta.comp_λ)(Jx', -∇fx, M     = meta.λ_struct.M,
+                                              λ     = meta.λ_struct.λ,
+                                              atol  = meta.λ_struct.atol,
+                                              rtol  = meta.λ_struct.rtol,
                                               itmax = meta.λ_struct.itmax)
     if !stats.solved
       @warn "Fail $(meta.comp_λ) computation Lagrange multiplier: $(stats.status)"

@@ -5,8 +5,8 @@ s.t Ad = 0
 where B is an approximation of hessian of the Lagrangian, A is the jacobian
 matrix and `g` is the projected gradient.
 
-Return status with outcomes: 
-- :cauchy_step, :newton, :dogleg, 
+Return status with outcomes:
+- :cauchy_step, :newton, :dogleg,
 - :unknown if we didn't enter the loop.
 - :small_horizontal_step
 - :tired if we stop due to max_eval or max_time
@@ -15,19 +15,19 @@ Return status with outcomes:
 See https://github.com/JuliaSmoothOptimizers/SolverTools.jl/blob/78f6793f161c3aac2234aee8a27aa07f1df3e8ee/src/trust-region/trust-region.jl#L37
 for `SolverTools.aredpred`
 """
-function tangent_step(nlp      :: AbstractNLPModel, 
-                      z        :: AbstractVector{T}, 
-                      λ        :: AbstractVector{T}, 
+function tangent_step(nlp      :: AbstractNLPModel,
+                      z        :: AbstractVector{T},
+                      λ        :: AbstractVector{T},
                       cz       :: AbstractVector{T},
                       normcz   :: T,
                       fz       :: T,
-                      LDL      :: SymCOOSolver, 
-                      vals     :: AbstractVector{T}, 
-                      g        :: AbstractVector{T}, 
-                      ℓzλ      :: T, 
-                      gBg      :: T, 
-                      ρ        :: AbstractFloat, 
-                      γ        :: T, 
+                      LDL      :: SymCOOSolver,
+                      vals     :: AbstractVector{T},
+                      g        :: AbstractVector{T},
+                      ℓzλ      :: T,
+                      gBg      :: T,
+                      ρ        :: AbstractFloat,
+                      γ        :: T,
                       δ        :: T,
                       meta     :: MetaDCI;
                       Δ        :: AbstractFloat = one(T), #trust-region radius
@@ -104,7 +104,7 @@ function tangent_step(nlp      :: AbstractNLPModel,
     el_time = time() - start_time
     tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   end
-  
+
   if tired
       status = :tired
   end
@@ -120,19 +120,19 @@ Compute a direction `d` with three possible outcomes:
 - `:interior_cauchy_step` when γ is too large.
 for `min_d q(d) s.t. ‖d‖ ≤ Δ`.
 """
-function compute_descent_direction(nlp  :: AbstractNLPModel, 
-                                   gBg  :: T, 
-                                   g    :: AbstractVector{T}, 
-                                   Δ    :: T, 
-                                   LDL  :: SymCOOSolver, 
-                                   γ    :: T, 
-                                   δ    :: T, 
-                                   δmin :: T, 
-                                   vals :: AbstractVector{T}, 
+function compute_descent_direction(nlp  :: AbstractNLPModel,
+                                   gBg  :: T,
+                                   g    :: AbstractVector{T},
+                                   Δ    :: T,
+                                   LDL  :: SymCOOSolver,
+                                   γ    :: T,
+                                   δ    :: T,
+                                   δmin :: T,
+                                   vals :: AbstractVector{T},
                                    d    :: AbstractVector{T},
                                    meta :: MetaDCI) where T
     m, n = nlp.meta.ncon, nlp.meta.nvar
-    
+
     #first compute a gradient step
     dcp_on_boundary, dcp, dcpBdcp, α = _compute_gradient_step(nlp, gBg, g, Δ)
 
@@ -141,7 +141,7 @@ function compute_descent_direction(nlp  :: AbstractNLPModel,
       dBd = dcpBdcp
       d = dcp
     else
-      dn, dnBdn, dcpBdn, 
+      dn, dnBdn, dcpBdn,
       γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin,
                                                      dcp, vals, meta)
       norm2dn = dot(dn, dn)
@@ -154,7 +154,7 @@ function compute_descent_direction(nlp  :: AbstractNLPModel,
               return d, dBd, status, γ, δ, vals
           end
       end
-      
+
       if √norm2dn < Δ # Both Newton and Cauchy are inside the TR.
         status = :newton
         dBd = dnBdn
@@ -180,9 +180,9 @@ return `dcp = - α g`
 return `dcpBdcp = α^2 gBg`
 and `α` the solution.
 """
-function _compute_gradient_step(nlp :: AbstractNLPModel, 
-                                gBg :: T, 
-                                g   :: AbstractVector{T}, 
+function _compute_gradient_step(nlp :: AbstractNLPModel,
+                                gBg :: T,
+                                g   :: AbstractVector{T},
                                 Δ   :: T) where T
 
     dcp_on_boundary = false
@@ -199,7 +199,7 @@ function _compute_gradient_step(nlp :: AbstractNLPModel,
     end
     dcp = -α * g
     dcpBdcp = α^2 * gBg
-    
+
     return dcp_on_boundary, dcp, dcpBdcp, α
 end
 
@@ -207,9 +207,9 @@ end
 Given two directions dcp and dn, compute the largest 0 ≤ τ ≤ 1 such that
 ‖dn + τ (dcp -dn)‖ = Δ
 """
-function _compute_step_length(norm2dn  :: T, 
-                              dotdndcp :: T, 
-                              norm2dcp :: T, 
+function _compute_step_length(norm2dn  :: T,
+                              dotdndcp :: T,
+                              norm2dcp :: T,
                               Δ        :: T) where T <: AbstractFloat
     # d = τ dcp + (1 - τ) * dn = dn + τ * (dcp - dn)
     # ‖d‖² = Δ² => τ² ‖dcp - dn‖² + 2τ dnᵀ(dcp - dn) + ‖dn‖² - Δ² = 0
@@ -221,13 +221,13 @@ function _compute_step_length(norm2dn  :: T,
     q₀, q₁, q₂ = [q₀, q₁, q₂] / q₂ #so the first coefficient is 1.
     roots = Krylov.roots_quadratic(q₂, q₁, q₀) #Is this type stable?
     τ = length(roots) == 0 ? one(T) : min(one(T), roots...)
-    
+
     return τ
 end
 
 include("factorization.jl")
 #=
-dn, dnBdn, dcpBdn, 
+dn, dnBdn, dcpBdn,
 γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin,
                                                 dcp, vals)
 =#
