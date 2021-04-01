@@ -1,7 +1,7 @@
 # stdlib
 using Plots, Test
 #JSO
-using CUTEst, NLPModels, NLPModelsIpopt, NLPModelsKnitro, SolverBenchmark, SolverTools
+using CUTEst, NLPModels, NLPModelsIpopt, NLPModelsKnitro, SolverBenchmark, SolverCore
 #This package
 using DCI
 gr()

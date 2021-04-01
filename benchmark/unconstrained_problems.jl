@@ -1,7 +1,7 @@
 # stdlib
 using Plots, Test
 #JSO
-using NLPModels, NLPModelsIpopt, NLPModelsKnitro, NLPModelsJuMP, OptimizationProblems, SolverBenchmark, SolverTools
+using NLPModels, NLPModelsIpopt, NLPModelsKnitro, NLPModelsJuMP, OptimizationProblems, SolverBenchmark, SolverCore
 #This package
 using DCI
 

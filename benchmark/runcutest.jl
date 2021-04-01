@@ -1,5 +1,5 @@
 using Pkg; Pkg.activate("bench")
-using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverTools
+using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
 #This package
 using DCI
 #
@@ -18,10 +18,10 @@ function runcutest(; today :: String = string(today()))
   #Same time limit for all the solvers
   max_time = 60.
 
-  solvers = Dict(:ipopt => nlp -> ipopt(nlp, print_level = 0, 
+  solvers = Dict(:ipopt => nlp -> ipopt(nlp, print_level = 0,
                                              dual_inf_tol = Inf,
                                              constr_viol_tol = Inf,
-                                             compl_inf_tol = Inf, 
+                                             compl_inf_tol = Inf,
                                              acceptable_iter = 0,
                                              max_cpu_time = max_time,
                                              x0 = nlp.meta.x0),
@@ -32,13 +32,13 @@ function runcutest(; today :: String = string(today()))
                                              opttol_abs = 1e-5,
                                              maxtime_cpu = max_time,
                                              x0 = nlp.meta.x0),
-                :DCILDL => nlp -> dci(nlp, nlp.meta.x0, linear_solver = :ldlfact, 
-                                                          max_time = max_time, 
-                                                          max_iter = typemax(Int64), 
+                :DCILDL => nlp -> dci(nlp, nlp.meta.x0, linear_solver = :ldlfact,
+                                                          max_time = max_time,
+                                                          max_iter = typemax(Int64),
                                                           max_eval = typemax(Int64)),
-                :DCIMA57 => nlp -> dci(nlp, nlp.meta.x0, linear_solver = :ma57, 
-                                                          max_time = max_time, 
-                                                          max_iter = typemax(Int64), 
+                :DCIMA57 => nlp -> dci(nlp, nlp.meta.x0, linear_solver = :ma57,
+                                                          max_time = max_time,
+                                                          max_iter = typemax(Int64),
                                                           max_eval = typemax(Int64)))
 
   list=""; for solver in keys(solvers) list=string(list,"_$(solver)") end
