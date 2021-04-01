@@ -7,8 +7,9 @@ function dci(nlp  :: AbstractNLPModel,
     error("DCI only works for equality constrained problems")
   end
 
+  evals(nlp) = neval_obj(nlp) + neval_cons(nlp)
   tired_check(nlp, eltime, iter, meta) = begin 
-    (neval_obj(nlp) + neval_cons(nlp) > meta.max_eval || eltime > meta.max_time || iter > meta.max_iter)
+    (evals(nlp) > meta.max_eval || eltime > meta.max_time || iter > meta.max_iter)
   end
 
   z   = copy(x)
