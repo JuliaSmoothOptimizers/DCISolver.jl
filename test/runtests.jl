@@ -8,6 +8,10 @@ using DCISolver
 #using SymCOOSolverInterface #tests
 include("symcoo_runtests.jl")
 
+@testset "Unconstrained tests" begin
+  unconstrained_nlp(nlp -> dci(nlp, nlp.meta.x0, atol = 1e-8, rtol = 1e-8))
+end
+
 function test_dci(;tol = 1e-5)
 
   #Test if it has equality constraints
