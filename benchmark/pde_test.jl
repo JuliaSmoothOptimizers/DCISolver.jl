@@ -1,5 +1,5 @@
 using Pkg; Pkg.activate("bench")
-using Gridap, PDENLPModels, NLPModelsIpopt, DCI
+using Gridap, PDENLPModels, NLPModelsIpopt, DCISolver
 
 function Burger1d(;n :: Int = 512, kwargs...)
 
@@ -81,11 +81,11 @@ nlp = Burger1d()
 
 reset!(nlp)
 m, n = nlp.meta.ncon, nlp.meta.nvar
-meta = DCI.MetaDCI(nlp.meta.x0, nlp.meta.y0,
+meta = DCISolver.MetaDCI(nlp.meta.x0, nlp.meta.y0,
                max_time = 600., 
                linear_solver = :ldlfact, 
                TR_compute_step = :TR_lsmr, 
-               TR_struct = DCI.TR_lsmr_struct(m, n, 1., itmax = 4*(m+n)))
+               TR_struct = DCISolver.TR_lsmr_struct(m, n, 1., itmax = 4*(m+n)))
 @time stats2 = dci(nlp, nlp.meta.x0, meta)
 
 @show nlp.counters

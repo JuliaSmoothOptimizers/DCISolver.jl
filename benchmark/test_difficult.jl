@@ -1,4 +1,4 @@
-using CUTEst, DCI, LinearAlgebra, Test
+using CUTEst, DCISolver, LinearAlgebra, Test
 
 using NLPModels, NLPModelsIpopt, NLPModelsKnitro
 

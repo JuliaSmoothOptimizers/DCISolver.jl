@@ -1,7 +1,7 @@
 using Pkg; Pkg.activate("bench")
 using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
 #This package
-using DCI
+using DCISolver
 #
 using Dates, JLD2
 

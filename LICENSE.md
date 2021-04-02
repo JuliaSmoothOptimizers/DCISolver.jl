@@ -1,6 +1,6 @@
 Copyright (c) 2015-2021: Tangi Migot, Dominique Orban and Abel Soares Siqueira
 
-DCI.jl is licensed under the [MPL version 2.0](https://www.mozilla.org/MPL/2.0/).
+DCISolver.jl is licensed under the [MPL version 2.0](https://www.mozilla.org/MPL/2.0/).
 
 ## License
 

@@ -1,6 +1,6 @@
 [deps]
 CUTEst = "1b53aba6-35b6-5f92-a507-53c67d53f819"
-DCI = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
+DCISolver = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
 GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 HSL = "34c5aeac-e683-54a6-a0e9-6e0fdc586c50"

@@ -1,6 +1,6 @@
 using HSL, LinearAlgebra, Random, SparseArrays, Test
 
-using DCI: factorize!, solve!, success, isposdef, num_neg_eig
+using DCISolver: factorize!, solve!, success, isposdef, num_neg_eig
 
 function tests()
   if isdefined(HSL, :libhsl_ma57)

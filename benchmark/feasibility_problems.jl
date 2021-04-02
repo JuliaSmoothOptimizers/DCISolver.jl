@@ -3,7 +3,7 @@ using Plots, Test
 #JSO
 using CUTEst, NLPModels, NLPModelsIpopt, NLPModelsKnitro, SolverBenchmark, SolverCore
 #This package
-using DCI
+using DCISolver
 gr()
 
 #=

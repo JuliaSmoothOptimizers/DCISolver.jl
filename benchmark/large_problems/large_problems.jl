@@ -60,7 +60,7 @@ pnames = CUTEst.select(max_var=10000, min_var=3000, min_con=1, only_free_var=tru
 19/27 problems (3000-10 000) + 5/8 1000-3000 (hors LCH) = 24/35 :-)
 =#
 
-using NLPModels, CUTEst, DCI
+using NLPModels, CUTEst, DCISolver
 # Solved: SPINOP, EIGENA2, EIGENBCO, LCH, EIGENB2, EIGENACO
 # Why don't cgls work for MSS3?
 # EIGENC2 no real progress

@@ -1,4 +1,4 @@
-# DCI - Dynamic Control of Infeasibility
+# DCISolver - Dynamic Control of Infeasibility Solver
 
 ![CI](https://github.com/JuliaSmoothOptimizers/DCI.jl/workflows/CI/badge.svg?branch=master)
 [![codecov](https://codecov.io/gh/JuliaSmoothOptimizers/DCI.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaSmoothOptimizers/DCI.jl)
@@ -24,12 +24,12 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 ## Installation
 
 1. [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) is used by default. Follow [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl)'s `MA57` installation for an alternative.
-2. `pkg> add https://github.com/JuliaSmoothOptimizers/DCI.jl`
+2. `pkg> add https://github.com/JuliaSmoothOptimizers/DCISolver.jl`
 
 ## Example
 
 ```julia
-using DCI, NLPModels
+using DCISolver, NLPModels
 
 # Rosenbrock
 nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0])

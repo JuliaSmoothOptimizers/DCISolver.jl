@@ -3,7 +3,7 @@ using Plots, Test
 #JSO
 using NLPModels, NLPModelsIpopt, NLPModelsKnitro, NLPModelsJuMP, OptimizationProblems, SolverBenchmark, SolverCore
 #This package
-using DCI
+using DCISolver
 
 # Test that every problem can be instantiated.
 global pnames = setdiff(names(OptimizationProblems), [:OptimizationProblems])

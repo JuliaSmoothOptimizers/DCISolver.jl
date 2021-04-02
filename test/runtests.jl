@@ -3,7 +3,7 @@ using LinearAlgebra, Logging, Test
 # JSO
 using ADNLPModels, Krylov, NLPModels
 # This package
-using DCI
+using DCISolver
 
 #using SymCOOSolverInterface #tests
 include("symcoo_runtests.jl")

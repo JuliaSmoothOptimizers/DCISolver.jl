@@ -1,4 +1,4 @@
-using Main.DCI, NLPModels, CUTEst
+using DCISolver, NLPModels, CUTEst
 
 function test_dci(S :: String)
     nlp = ADNLPModel(

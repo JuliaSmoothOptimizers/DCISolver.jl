@@ -1,4 +1,4 @@
-module DCI
+module DCISolver
 
   #using SymCOOSolverInterface
   include("SymCOOSolverInterface/SymCOOSolverInterface.jl")
