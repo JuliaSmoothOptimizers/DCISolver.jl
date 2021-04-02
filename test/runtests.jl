@@ -1,7 +1,7 @@
 # stdlib
 using LinearAlgebra, Logging, Test
 # JSO
-using ADNLPModels, Krylov, NLPModels
+using ADNLPModels, Krylov, NLPModels, SolverTest
 # This package
 using DCISolver
 
