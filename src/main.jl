@@ -92,6 +92,7 @@ function dci(nlp  :: AbstractNLPModel,
     if solved || infeasible || (normal_status ∉ (:init_success, :success))
       eltime = time() - start_time
       tired  = tired_check(nlp, eltime, iter, meta)
+      x, fx  = z, fz
       #stalled?
       break
     end
@@ -195,8 +196,8 @@ function dci(nlp  :: AbstractNLPModel,
   end
 
   return GenericExecutionStats(status, nlp, 
-                               solution        = z, 
-                               objective       = fz, 
+                               solution        = x, 
+                               objective       = fx, 
                                dual_feas       = dualnorm, 
                                primal_feas     = primalnorm, 
                                iter            = iter,
