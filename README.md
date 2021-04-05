@@ -1,8 +1,8 @@
 # DCISolver - Dynamic Control of Infeasibility Solver
 
-![CI](https://github.com/JuliaSmoothOptimizers/DCI.jl/workflows/CI/badge.svg?branch=master)
-[![codecov](https://codecov.io/gh/JuliaSmoothOptimizers/DCI.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaSmoothOptimizers/DCI.jl)
-[![GitHub](https://img.shields.io/github/release/JuliaSmoothOptimizers/DCI.svg?style=flat-square)](https://github.com/JuliaSmoothOptimizers/DCI/releases)
+![CI](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/workflows/CI/badge.svg?branch=master)
+[![codecov](https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl)
+[![GitHub](https://img.shields.io/github/v/release/JuliaSmoothOptimizers/DCISolver.jl.svg?style=flat-square)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/releases)
 
 DCI is a solver for equality-constrained nonlinear problems, i.e.,
 optimization problems of the form
