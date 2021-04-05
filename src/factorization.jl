@@ -52,6 +52,7 @@ function _compute_newton_step!(nlp  :: AbstractNLPModel,
     else
       status = :regularize
     end
+    #T.M: to be included in the main logging.
     @info log_row(Any["Fact", Int, Int, γ, δ, δmin, Float64, slope, 
                               Float64, status, norm(dn), Float64])
 
