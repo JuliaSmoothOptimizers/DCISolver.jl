@@ -1,7 +1,8 @@
 # stdlib
 using Plots, Test
 #JSO
-using NLPModels, NLPModelsIpopt, NLPModelsKnitro, NLPModelsJuMP, OptimizationProblems, SolverBenchmark, SolverCore
+using NLPModels,
+  NLPModelsIpopt, NLPModelsKnitro, NLPModelsJuMP, OptimizationProblems, SolverBenchmark, SolverCore
 #This package
 using DCISolver
 
@@ -17,7 +18,17 @@ end
 
 op_problems = (MathOptNLPModel(eval(p)(), name = string(p)) for p in pnames)
 
-solvers = Dict(:DCI_LDL => nlp -> dci(nlp, nlp.meta.x0, linear_solver = :ldlfact, max_time = 60., max_iter = 5000, max_eval = typemax(Int64)))
+solvers = Dict(
+  :DCI_LDL =>
+    nlp -> dci(
+      nlp,
+      nlp.meta.x0,
+      linear_solver = :ldlfact,
+      max_time = 60.0,
+      max_iter = 5000,
+      max_eval = typemax(Int64),
+    ),
+)
 
 stats = bmark_solvers(solvers, op_problems)
 
