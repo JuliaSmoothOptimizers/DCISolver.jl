@@ -13,20 +13,23 @@ end
 
 function _test_factorization(A, S; tol = 1e-15)
   (n, n) = size(A)
-  __P = zeros(n, n); for i=1:n __P[S.P[i],i] = 1. end
-  In  = spdiagm(0 => ones(n))
+  __P = zeros(n, n)
+  for i = 1:n
+    __P[S.P[i], i] = 1.0
+  end
+  In = spdiagm(0 => ones(n))
   nrm = norm(__P * (S.L + In) * S.D * (S.L + In)' * __P' - A, Inf)
   test = nrm ≤ tol
 
- return test
+  return test
 end
 
 function test_solver(LinearSolver)
   Random.seed!(0)
   nvar, ncon = 5, 3
-  Q = spdiagm(nvar, nvar, 0 => 2 * ones(nvar), -1 => -ones(nvar-1), 1 => -ones(nvar-1))
+  Q = spdiagm(nvar, nvar, 0 => 2 * ones(nvar), -1 => -ones(nvar - 1), 1 => -ones(nvar - 1))
   Qt = tril(Q)
-  A = spdiagm(ncon, nvar, (i => ones(ncon) for i = (0:nvar-ncon))...)
+  A = spdiagm(ncon, nvar, (i => ones(ncon) for i in (0:(nvar - ncon)))...)
 
   @testset "Positive definite systems" begin
     rows, cols, vals = findnz(Qt)
@@ -89,16 +92,18 @@ end
 tests()
 
 @testset "LDLFactorizations with regularization" begin
-  B = [0.   0.   0.   0.   0.   0.   0.   0.   4.   0.
-       0.   0.   0.   0.   0.   0.   0.   0.   5.   0.
-       2.   4.   5.   -2   4.   1.   2.   2.   2.   0.
-       0.   0.   0.   0.   1.   9.   9.   1.   7.   1.
-       0.   0.   0.   0.   0.   0.   0.   0.   1.   0.
-       1.   3.   2.   1.   4.   3.   1.   0.   0.   7.
-       -3.  8.   0.   0.   0.   0.   -2.  0.   0.   1.
-       0.   0.   0.   5.   7.   9.   0.   2.   7.   1.
-       3.   2.   0.   0.   0.   0.   1.   3.   3.   2.
-       0.   0.   0.   0.  -3   -4    0.   0.   0.   0. ]
+  B = [
+    0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 4.0 0.0
+    0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 5.0 0.0
+    2.0 4.0 5.0 -2 4.0 1.0 2.0 2.0 2.0 0.0
+    0.0 0.0 0.0 0.0 1.0 9.0 9.0 1.0 7.0 1.0
+    0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0
+    1.0 3.0 2.0 1.0 4.0 3.0 1.0 0.0 0.0 7.0
+    -3.0 8.0 0.0 0.0 0.0 0.0 -2.0 0.0 0.0 1.0
+    0.0 0.0 0.0 5.0 7.0 9.0 0.0 2.0 7.0 1.0
+    3.0 2.0 0.0 0.0 0.0 0.0 1.0 3.0 3.0 2.0
+    0.0 0.0 0.0 0.0 -3 -4 0.0 0.0 0.0 0.0
+  ]
   A = B * B'
   (rows, cols, vals) = findnz(tril(sparse(A)))
   ϵ = sqrt(eps(eltype(A)))
