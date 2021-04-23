@@ -5,70 +5,118 @@ ctol = 1e-5
 # when adding a perturbation is enough :).
 #
 @testset "Example 1" begin
-    nlp = ADNLPModel(
-        x->0.01 * (x[1] - 1)^2 + (x[2] - x[1]^2)^2,
-        [2.0; 2.0; 2.0],
-        #x->[x[1]^2 + x[3]^2 + 1.0],
-        x->[x[1]^2 - x[3]^2 - 1.0],
-        zeros(1),
-        zeros(1)
-    )
-    meta_dci = DCISolver.MetaDCI(nlp.meta.x0, nlp.meta.y0)
+  nlp = ADNLPModel(
+    x -> 0.01 * (x[1] - 1)^2 + (x[2] - x[1]^2)^2,
+    [2.0; 2.0; 2.0],
+    #x->[x[1]^2 + x[3]^2 + 1.0],
+    x -> [x[1]^2 - x[3]^2 - 1.0],
+    zeros(1),
+    zeros(1),
+  )
+  meta_dci = DCISolver.MetaDCI(nlp.meta.x0, nlp.meta.y0)
 
-    x  = [0.; 1.; 0.]
-    cx = cons(nlp, x)
-    Jx = jac(nlp, x)
+  x = [0.0; 1.0; 0.0]
+  cx = cons(nlp, x)
+  Jx = jac(nlp, x)
 
-    ρ = 0.5
+  ρ = 0.5
 
-    z, cz, ncz, Jz, status = DCISolver.feasibility_step(nlp, x, cx, norm(cx), Jx, ρ, ctol, meta_dci;
-                                η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60.,
-                                )
-    @test status == :infeasible
+  z, cz, ncz, Jz, status = DCISolver.feasibility_step(
+    nlp,
+    x,
+    cx,
+    norm(cx),
+    Jx,
+    ρ,
+    ctol,
+    meta_dci;
+    η₁ = 1e-3,
+    η₂ = 0.66,
+    σ₁ = 0.25,
+    σ₂ = 2.0,
+    max_eval = 1_000,
+    max_time = 60.0,
+  )
+  @test status == :infeasible
 
-    xϵ = [0.; 1.; 0.] .+ rand(3) * sqrt(ctol)/norm(x)
-    cxϵ = cons(nlp, xϵ)
-    Jxϵ = jac(nlp, xϵ)
-    zϵ, czϵ, ncz, Jz, statusϵ = DCISolver.feasibility_step(nlp, xϵ, cxϵ, norm(cxϵ), Jxϵ, ρ, ctol, meta_dci;
-                                η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60.,
-                                )
-    @test statusϵ == :success
+  xϵ = [0.0; 1.0; 0.0] .+ rand(3) * sqrt(ctol) / norm(x)
+  cxϵ = cons(nlp, xϵ)
+  Jxϵ = jac(nlp, xϵ)
+  zϵ, czϵ, ncz, Jz, statusϵ = DCISolver.feasibility_step(
+    nlp,
+    xϵ,
+    cxϵ,
+    norm(cxϵ),
+    Jxϵ,
+    ρ,
+    ctol,
+    meta_dci;
+    η₁ = 1e-3,
+    η₂ = 0.66,
+    σ₁ = 0.25,
+    σ₂ = 2.0,
+    max_eval = 1_000,
+    max_time = 60.0,
+  )
+  @test statusϵ == :success
 end
 
 ##
 # 2nd problem: check the case of an "infeasible" **stable** initial point
 #
 @testset "Example 2, Mission: Impossible " begin
-    nlp = ADNLPModel(
-        x->0.01 * (x[1] - 1)^2 + (x[2] - x[1]^2)^2,
-        [2.0; 2.0; 2.0],
-        x->[x[1]^2 + x[3]^2 - 1.0],
-        zeros(1),
-        zeros(1)
-    )
-    meta_dci = DCISolver.MetaDCI(nlp.meta.x0, nlp.meta.y0)
+  nlp = ADNLPModel(
+    x -> 0.01 * (x[1] - 1)^2 + (x[2] - x[1]^2)^2,
+    [2.0; 2.0; 2.0],
+    x -> [x[1]^2 + x[3]^2 - 1.0],
+    zeros(1),
+    zeros(1),
+  )
+  meta_dci = DCISolver.MetaDCI(nlp.meta.x0, nlp.meta.y0)
 
-    x  = [0.; 1.; 0.]
-    cx = cons(nlp, x)
-    Jx = jac(nlp, x)
-    ρ = 0.5
+  x = [0.0; 1.0; 0.0]
+  cx = cons(nlp, x)
+  Jx = jac(nlp, x)
+  ρ = 0.5
 
-    z, cz, ncz, Jz, status = DCISolver.feasibility_step(nlp, x, cx, norm(cx), Jx, ρ, ctol, meta_dci;
-                                η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60.,
-                                )
-    @test status == :infeasible
+  z, cz, ncz, Jz, status = DCISolver.feasibility_step(
+    nlp,
+    x,
+    cx,
+    norm(cx),
+    Jx,
+    ρ,
+    ctol,
+    meta_dci;
+    η₁ = 1e-3,
+    η₂ = 0.66,
+    σ₁ = 0.25,
+    σ₂ = 2.0,
+    max_eval = 1_000,
+    max_time = 60.0,
+  )
+  @test status == :infeasible
 
-    xϵ = [0.; 1.; 0.] + rand(3)*sqrt(ctol)/norm(x)
-    cx = cons(nlp, xϵ)
-    Jx = jac(nlp, xϵ)
-    z, cz, ncz, Jz, status = DCISolver.feasibility_step(nlp, xϵ, cx, norm(cx), Jx, ρ, ctol, meta_dci;
-                                η₁ = 1e-3, η₂ = 0.66, σ₁ = 0.25, σ₂ = 2.0,
-                                max_eval = 1_000, max_time = 60.,
-                                )
-    @test status == :success
+  xϵ = [0.0; 1.0; 0.0] + rand(3) * sqrt(ctol) / norm(x)
+  cx = cons(nlp, xϵ)
+  Jx = jac(nlp, xϵ)
+  z, cz, ncz, Jz, status = DCISolver.feasibility_step(
+    nlp,
+    xϵ,
+    cx,
+    norm(cx),
+    Jx,
+    ρ,
+    ctol,
+    meta_dci;
+    η₁ = 1e-3,
+    η₂ = 0.66,
+    σ₁ = 0.25,
+    σ₂ = 2.0,
+    max_eval = 1_000,
+    max_time = 60.0,
+  )
+  @test status == :success
 end
 
 #=

@@ -22,12 +22,16 @@ nlp = CUTEstModel("COATINGNE")
 
 #stats = ipopt(nlp, max_cpu_time = 600., x0 = nlp.meta.x0)
 
-stats = ipopt(nlp, tol = 1e-5, dual_inf_tol = 1e-5,
-                    constr_viol_tol = 1e-5,
-                    compl_inf_tol = 1e-5, 
-                    #acceptable_iter = 0,
-                    max_cpu_time = 600.,
-                    x0 = nlp.meta.x0)
+stats = ipopt(
+  nlp,
+  tol = 1e-5,
+  dual_inf_tol = 1e-5,
+  constr_viol_tol = 1e-5,
+  compl_inf_tol = 1e-5,
+  #acceptable_iter = 0,
+  max_cpu_time = 600.0,
+  x0 = nlp.meta.x0,
+)
 
 finalize(nlp)
 
@@ -321,7 +325,6 @@ Constraint violation....:   2.9553029424393467e-11    2.9553029424393467e-11
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   5.0232221430319052e-11    5.0232221430319052e-11
 
-
 Number of objective function evaluations             = 1298
 Number of objective gradient evaluations             = 234
 Number of equality constraint evaluations            = 1313
@@ -340,8 +343,6 @@ julia> nlp.counters
             jcon: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                jgrad: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                  jac: ████⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 236   
            jprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jtprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                 hess: ████⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 232   
            hprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jhprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0     
-
-
 
 =#
 
@@ -376,7 +377,6 @@ Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   0.0000000000000000e+00    0.0000000000000000e+00
 
-
 Number of objective function evaluations             = 4
 Number of objective gradient evaluations             = 4
 Number of equality constraint evaluations            = 4
@@ -395,7 +395,6 @@ julia> nlp.counters
             jcon: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                jgrad: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                  jac: ████████████████████ 5     
            jprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jtprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                 hess: ████████████⋅⋅⋅⋅⋅⋅⋅⋅ 3     
            hprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jhprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0     
-
 
 =#
 
@@ -796,7 +795,6 @@ Constraint violation....:   1.7757704855367549e-15    1.7757704855367549e-15
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   8.4872429084725809e-09    1.7568592820538241e-07
 
-
 Number of objective function evaluations             = 367
 Number of objective gradient evaluations             = 265
 Number of equality constraint evaluations            = 367
@@ -815,7 +813,6 @@ julia> nlp.counters
             jcon: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                jgrad: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                  jac: ███████████████████⋅ 336   
            jprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jtprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                 hess: ███████████████████⋅ 332   
            hprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jhprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0     
-
 
 =#
 
@@ -1093,7 +1090,6 @@ Constraint violation....:   1.4349979537975344e-13    1.4349979537975344e-13
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   1.5639166537023526e-11    1.5639166537023526e-11
 
-
 Number of objective function evaluations             = 369
 Number of objective gradient evaluations             = 238
 Number of equality constraint evaluations            = 369
@@ -1112,7 +1108,6 @@ julia> nlp.counters
             jcon: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                jgrad: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                  jac: █████████████⋅⋅⋅⋅⋅⋅⋅ 239   
            jprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jtprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                 hess: █████████████⋅⋅⋅⋅⋅⋅⋅ 237   
            hprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jhprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0     
-
 
 =#
 
@@ -1156,7 +1151,6 @@ Dual infeasibility......:   5.0031440060761129e-09    6.5040872078989476e-06
 Constraint violation....:   8.1673010021710013e-10    8.1673010021710013e-10
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   5.0031440060761129e-09    6.5040872078989476e-06
-
 
 Number of objective function evaluations             = 27
 Number of objective gradient evaluations             = 27
@@ -1333,7 +1327,6 @@ Constraint violation....:   2.8508237437385731e-12    2.8508237437385731e-12
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   2.8508237437385731e-12    2.8508237437385731e-12
 
-
 Number of objective function evaluations             = 155
 Number of objective gradient evaluations             = 136
 Number of equality constraint evaluations            = 160
@@ -1382,7 +1375,6 @@ Dual infeasibility......:   1.0944005128471225e-10    1.4818182943950037e-09
 Constraint violation....:   4.9178994210308247e-12    4.9178994210308247e-12
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   1.0944005128471225e-10    1.4818182943950037e-09
-
 
 Number of objective function evaluations             = 15
 Number of objective gradient evaluations             = 15
@@ -1460,7 +1452,6 @@ iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
   46  1.4336352e-13 7.49e-09 1.15e-05  -5.7 7.19e-05 -16.8 1.00e+00 1.00e+00h  1
   47  8.7223237e-25 1.40e-15 2.80e-12  -8.6 2.94e-08 -17.2 1.00e+00 1.00e+00h  1
 
-
 Number of Iterations....: 47
 
                                    (scaled)                 (unscaled)
@@ -1469,7 +1460,6 @@ Dual infeasibility......:   2.7985794640460956e-12    2.9105226426079395e-12
 Constraint violation....:   1.4041117950948999e-15    1.4041117950948999e-15
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   2.7985794640460956e-12    2.9105226426079395e-12
-
 
 Number of objective function evaluations             = 99
 Number of objective gradient evaluations             = 48
@@ -1490,7 +1480,6 @@ julia> nlp.counters
            jprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jtprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                 hess: ██████████⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 47    
            hprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jhprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0     
 
-
 =#
 
 #= EIGENACO
@@ -1508,7 +1497,6 @@ Dual infeasibility......:   0.0000000000000000e+00    0.0000000000000000e+00
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
 Overall NLP error.......:   0.0000000000000000e+00    0.0000000000000000e+00
-
 
 Number of objective function evaluations             = 4
 Number of objective gradient evaluations             = 4
@@ -1528,6 +1516,5 @@ julia> nlp.counters
             jcon: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                jgrad: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                  jac: ████████████████████ 5     
            jprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jtprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0                 hess: ████████████⋅⋅⋅⋅⋅⋅⋅⋅ 3     
            hprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0               jhprod: ⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅ 0     
-
 
 =#

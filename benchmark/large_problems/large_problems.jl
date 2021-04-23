@@ -69,14 +69,14 @@ nlp = CUTEstModel("LCH") #LUKVLE11
 #EIGENBCO is a good example where HSL-DCI has to recompute the factorization
 @show nlp.meta.nvar, nlp.meta.ncon, nlp.meta.nnzh, nlp.meta.nnzj
 
-stats = dci(nlp, nlp.meta.x0, linear_solver = :ldlfact, max_time = 160., max_iter = 1000)
+stats = dci(nlp, nlp.meta.x0, linear_solver = :ldlfact, max_time = 160.0, max_iter = 1000)
 
 @show nlp.counters
 @show (stats.status, stats.elapsed_time, neval_obj(nlp))
 
 reset!(nlp)
 
-stats = dci(nlp, nlp.meta.x0, linear_solver = :ma57, max_time = 160., max_iter = 1000)
+stats = dci(nlp, nlp.meta.x0, linear_solver = :ma57, max_time = 160.0, max_iter = 1000)
 
 @show nlp.counters
 @show (stats.status, stats.elapsed_time, neval_obj(nlp))
