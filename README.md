@@ -5,6 +5,7 @@
 [![GitHub](https://img.shields.io/github/v/release/JuliaSmoothOptimizers/DCISolver.jl.svg?style=flat-square)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/releases)
 [![docs-latest](https://img.shields.io/badge/docs-latest-3f51b5.svg)](https://JuliaSmoothOptimizers.github.io/DCISolver.jl/latest)
 [![docs-dev](https://img.shields.io/badge/docs-dev-3f51b5.svg)](https://JuliaSmoothOptimizers.github.io/DCISolver.jl/dev)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4742979.svg)](https://doi.org/10.5281/zenodo.4742979)
 
 DCI is a solver for equality-constrained nonlinear problems, i.e.,
 optimization problems of the form
@@ -22,6 +23,10 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 > Dynamic control of infeasibility in equality constrained optimization.
 > SIAM Journal on Optimization, 19(3), 1299-1325 (2008).
 > [10.1007/s10589-020-00201-2](https://doi.org/10.1007/s10589-020-00201-2)
+
+## How to Cite
+
+If you use DCISolver.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/master/CITATION.bib).
 
 ## Installation
 
