@@ -1,4 +1,8 @@
 function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {T}
+
+  if !(nlp.meta.minimize)
+    error("DCI only works for minimization problem")
+  end
   if !(equality_constrained(nlp) || unconstrained(nlp))
     error("DCI only works for equality constrained problems")
   end
