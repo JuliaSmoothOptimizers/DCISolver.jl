@@ -88,12 +88,18 @@ end
   end
 end
 ##################################################################################
+mutable struct DummyModel <: AbstractNLPModel
+  meta::NLPModelMeta
+end
 
 function test_dci(; tol = 1e-6)
 
   #Test if it has equality constraints
   nlp = ADNLPModel(x -> dot(x, x), zeros(5), zeros(5), ones(5))
   @test_throws ErrorException("DCI only works for equality constrained problems") dci(nlp, zeros(5))
+
+  nlp = DummyModel(NLPModelMeta(1, minimize = false))
+  @test_throws ErrorException("DCI only works for minimization problem") dci(nlp, zeros(1))
 
   @testset "HS7" begin
     nlp = ADNLPModel(
