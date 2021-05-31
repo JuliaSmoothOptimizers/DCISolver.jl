@@ -2,7 +2,7 @@
 `comp_λ_cgls{<: AbstractFloat}` attributes correspond to input parameters of `cgls` used in the computation of Lagrange multipliers.
 """
 struct comp_λ_cgls{T <: AbstractFloat}
-  M # =opEye(), 
+  M # =I,
   λ::T # =zero(T), 
   atol::T # =√eps(T), 
   rtol::T # =√eps(T),
@@ -16,7 +16,7 @@ function comp_λ_cgls(
   m,
   n,
   ::T;
-  M = opEye(),
+  M = I,
   λ::T = zero(T),
   atol::T = √eps(T),
   rtol::T = √eps(T),
@@ -34,8 +34,8 @@ else
 end
 
 struct TR_lsmr_struct{T <: AbstractFloat}
-  M # =opEye(), 
-  #N=opEye(), #unnecessary
+  M # =I,
+  #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
   λ::T # =zero(T), 
   axtol::T # =√eps(T), 
@@ -55,7 +55,7 @@ function TR_lsmr_struct(
   m,
   n,
   ::T;
-  M = opEye(),
+  M = I,
   λ::T = zero(T),
   axtol::T = √eps(T),
   btol::T = √eps(T),
