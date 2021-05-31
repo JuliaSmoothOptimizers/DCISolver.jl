@@ -9,7 +9,7 @@ function feasibility_step(
   x::AbstractVector{T},
   cx::AbstractVector{T},
   normcx::T,
-  Jx::Union{LinearOperator{T}, AbstractMatrix{T}},
+  Jx,
   ρ::T,
   ctol::AbstractFloat,
   meta::MetaDCI;
@@ -180,7 +180,7 @@ Returns 4 entries:
 """
 function TR_dogleg(
   cz::AbstractVector{T},
-  Jz::Union{LinearOperator{T}, AbstractMatrix{T}},
+  Jz,
   ctol::AbstractFloat,
   Δ::T,
   normcz::AbstractFloat,
@@ -228,7 +228,7 @@ end
 
 function TR_lsmr(
   cz::AbstractVector{T},
-  Jz::Union{LinearOperator{T}, AbstractMatrix{T}},
+  Jz,
   ctol::AbstractFloat,
   Δ::T,
   normcz::AbstractFloat,

@@ -5,7 +5,7 @@ include("SymCOOSolverInterface/SymCOOSolverInterface.jl")
 
 using LinearAlgebra, SparseArrays
 #JSO packages
-using HSL, Krylov, LinearOperators, NLPModels, SolverCore, SolverTools
+using HSL, Krylov, NLPModels, SolverCore, SolverTools
 
 export dci
 
@@ -99,7 +99,7 @@ end
 Compute the solution of ‖Jx' λ - ∇fx‖
 """
 function compute_lx(
-  Jx::LinearOperator{T},
+  Jx,
   ∇fx::AbstractVector{T},
   meta::MetaDCI,
 ) where {T <: AbstractFloat}
@@ -110,7 +110,7 @@ function compute_lx(
 end
 
 function compute_lx!(
-  Jx::LinearOperator{T},
+  Jx,
   ∇fx::AbstractVector{T},
   λ::AbstractVector{T},
   meta::MetaDCI,

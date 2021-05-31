@@ -3,7 +3,7 @@ function normal_step(
   nlp::AbstractNLPModel,
   x::AbstractVector{T},
   cx::AbstractVector{T},
-  Jx::LinearOperator{T},
+  Jx,
   fx::T,
   ∇fx::AbstractVector{T},
   λ::AbstractVector{T},
