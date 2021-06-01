@@ -1,10 +1,8 @@
 # DCISolver - Dynamic Control of Infeasibility Solver
 
-[![GitHub](https://img.shields.io/github/v/release/JuliaSmoothOptimizers/DCISolver.jl.svg?style=flat-square)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/releases)
-
-| **Documentation** | **CI** | **Coverage** | **DOI** |
-|:-----------------:|:------:|:------------:|:-------:|
-| [![docs-stable][docs-stable-img]][docs-stable-url] [![docs-dev][docs-dev-img]][docs-dev-url] | [![build-ci][build-ci-img]][build-ci-url] | [![codecov][codecov-img]][codecov-url] | [![doi][doi-img]][doi-url] |
+| **Documentation** | **CI** | **Coverage** | **Release** | **DOI** |
+|:-----------------:|:------:|:------------:|:-----------:|:-------:|
+| [![docs-stable][docs-stable-img]][docs-stable-url] [![docs-dev][docs-dev-img]][docs-dev-url] | [![build-ci][build-ci-img]][build-ci-url] | [![codecov][codecov-img]][codecov-url] | [![release][release-img]][release-url] | [![doi][doi-img]][doi-url] |
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://JuliaSmoothOptimizers.github.io/DCISolver.jl/stable
@@ -14,6 +12,8 @@
 [build-ci-url]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/actions
 [codecov-img]: https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl
+[release-img]: https://img.shields.io/github/v/release/JuliaSmoothOptimizers/DCISolver.jl.svg?style=flat-square
+[release-url]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/releases
 [doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.4742979.svg
 [doi-url]: https://doi.org/10.5281/zenodo.4742979
 
