@@ -1,11 +1,21 @@
 # DCISolver - Dynamic Control of Infeasibility Solver
 
-![CI](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/workflows/CI/badge.svg?branch=master)
-[![codecov](https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl)
 [![GitHub](https://img.shields.io/github/v/release/JuliaSmoothOptimizers/DCISolver.jl.svg?style=flat-square)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/releases)
-[![docs-latest](https://img.shields.io/badge/docs-latest-3f51b5.svg)](https://JuliaSmoothOptimizers.github.io/DCISolver.jl/latest)
-[![docs-dev](https://img.shields.io/badge/docs-dev-3f51b5.svg)](https://JuliaSmoothOptimizers.github.io/DCISolver.jl/dev)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4742979.svg)](https://doi.org/10.5281/zenodo.4742979)
+
+| **Documentation** | **CI** | **Coverage** | **DOI** |
+|:-----------------:|:------:|:------------:|:-------:|
+| [![docs-stable][docs-stable-img]][docs-stable-url] [![docs-dev][docs-dev-img]][docs-dev-url] | [![build-ci][build-ci-img]][build-ci-url] | [![codecov][codecov-img]][codecov-url] | [![doi][doi-img]][doi-url] |
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://JuliaSmoothOptimizers.github.io/DCISolver.jl/stable
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-purple.svg
+[docs-dev-url]: https://JuliaSmoothOptimizers.github.io/DCISolver.jl/dev
+[build-ci-img]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/workflows/CI/badge.svg?branch=master
+[build-ci-url]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/actions
+[codecov-img]: https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl
+[doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.4742979.svg
+[doi-url]: https://doi.org/10.5281/zenodo.4742979
 
 DCI is a solver for equality-constrained nonlinear problems, i.e.,
 optimization problems of the form
