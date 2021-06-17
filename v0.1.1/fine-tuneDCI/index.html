@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Fine-tune DCI · DCISolver.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">DCISolver.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Introduction</a></li><li class="is-active"><a class="tocitem" href>Fine-tune DCI</a><ul class="internal"><li><a class="tocitem" href="#Contents"><span>Contents</span></a></li><li><a class="tocitem" href="#Examples"><span>Examples</span></a></li><li><a class="tocitem" href="#List-of-possible-options"><span>List of possible options</span></a></li></ul></li><li><a class="tocitem" href="../reference/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Fine-tune DCI</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Fine-tune DCI</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/master/docs/src/fine-tuneDCI.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Advanced-usage-of-DCI"><a class="docs-heading-anchor" href="#Advanced-usage-of-DCI">Advanced-usage of DCI</a><a id="Advanced-usage-of-DCI-1"></a><a class="docs-heading-anchor-permalink" href="#Advanced-usage-of-DCI" title="Permalink"></a></h1><h2 id="Contents"><a class="docs-heading-anchor" href="#Contents">Contents</a><a id="Contents-1"></a><a class="docs-heading-anchor-permalink" href="#Contents" title="Permalink"></a></h2><ul><li><a href="#Advanced-usage-of-DCI">Advanced-usage of DCI</a></li><ul><li><a href="#Contents">Contents</a></li><li><a href="#Examples">Examples</a></li><li><a href="#List-of-possible-options">List of possible options</a></li></ul></ul><p>The main function exported by this package is the function <code>dci</code> whose basic usage has been illustrated previously. It is also possible to fine-tune the parameters used in the implementation in two different ways.</p><h2 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h2><p>DCISolver.jl exports the function <code>dci</code>:</p><pre><code class="language-none">dci(nlp :: AbstractNLPModel, x :: AbstractVector{T}, meta :: MetaDCI) where T</code></pre><p>where <code>MetaDCI</code> is a structure handling all the parameters used in the algorithm.</p><p>It is therefore possible to either call <code>dci(nlp, x, kwargs...)</code> and the keywords arguments are passed to the <code>MetaDCI</code> constructor or build an instance of <code>MetaDCI</code> directly.</p><pre><code class="language-julia">using ADNLPModels, DCISolver
+
+nlp = ADNLPModel(
+  x -&gt; 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
+  [-1.2; 1.0],
+  x-&gt;[x[1] * x[2] - 1],
+  [0.0], [0.0],
+  name = &quot;Rosenbrock with x₁x₂=1&quot;
+)
+
+m, n = nlp.meta.ncon, nlp.meta.nvar
+meta = DCISolver.MetaDCI(
+  nlp.meta.x0, nlp.meta.y0,
+  max_time = 600.,
+  linear_solver = :ldlfact,
+  TR_compute_step = :TR_lsmr
+)
+stats = dci(nlp, nlp.meta.x0, meta)
+
+#The alternative would be:
+stats2 = dci(
+  nlp, nlp.meta.x0,
+  max_time = 600.,
+  linear_solver = :ldlfact,
+  TR_compute_step = :TR_lsmr
+)</code></pre><pre class="documenter-example-output">&quot;Execution stats: first-order stationary&quot;</pre><h2 id="List-of-possible-options"><a class="docs-heading-anchor" href="#List-of-possible-options">List of possible options</a><a id="List-of-possible-options-1"></a><a class="docs-heading-anchor-permalink" href="#List-of-possible-options" title="Permalink"></a></h2><p>Find below a list of the main options of <code>dci</code>:</p><pre><code class="language-none"># Tolerances on the problem: in general, we use `ϵ = atol + rtol * dualnorm`
+atol :: AbstractFloat # default: 1e-5 ; absolute tolerance.
+rtol :: AbstractFloat # default: 1e-5 ; relative tolerance.
+ctol :: AbstractFloat # default: 1e-5 ; feasibility tolerance.
+
+# Evaluation limits
+max_eval :: Integer # default: 50000 ; maximum number of cons + obj evaluations.
+max_time :: AbstractFloat # default: 120 ; maximum number of seconds.
+max_iter :: Integer # default: 500 ; maximum number of iterations.
+
+# Compute Lagrange multipliers
+comp_λ :: Symbol # default: :cgls ; eval(comp_λ) is used to compute Lagrange multipliers.
+λ_struct :: comp_λ_cgls # default: comp_λ_cgls(length(x0), length(y0), atol) ; companion structure of `comp_λ`.
+   
+# Tangent step
+# Solver for the factorization
+linear_solver :: Symbol # default: :ldlfact, options: :ma57.
+
+# Normal step
+feas_step :: Symbol # default: :feasibility_step
+# Feasibility step in the normal step
+TR_compute_step :: Symbol # default: :TR_lsmr, options: :TR_dogleg.
+TR_compute_step_struct :: Union{TR_lsmr_struct, TR_dogleg_struct} # default: TR_lsmr_struct(length(x0), length(y0), atol), options: TR_dogleg_struct(length(x0), length(y0), atol).</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 17 June 2021 20:26">Thursday 17 June 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
