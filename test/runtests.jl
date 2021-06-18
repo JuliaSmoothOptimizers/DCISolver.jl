@@ -88,8 +88,8 @@ end
   end
 end
 ##################################################################################
-mutable struct DummyModel <: AbstractNLPModel
-  meta::NLPModelMeta
+mutable struct DummyModel{T, S} <: AbstractNLPModel{T, S}
+  meta::NLPModelMeta{T, S}
 end
 
 function test_dci(; tol = 1e-6)
