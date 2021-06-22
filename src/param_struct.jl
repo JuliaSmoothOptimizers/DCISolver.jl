@@ -16,14 +16,13 @@ end
 function comp_λ_cgls(
   m,
   n,
-  ::Type{T},
   ::Type{S};
   M = I,
   λ::T = zero(T),
   atol::T = √eps(T),
   rtol::T = √eps(T),
   itmax::Integer = 5 * (m + n),
-) where {T, S}
+) where {T, S <: AbstractVector{T}}
   comp_λ_solver = CglsSolver(m, n, S)
   return comp_λ_cgls(comp_λ_solver, M, λ, atol, rtol, itmax)
 end
@@ -58,7 +57,6 @@ end
 function TR_lsmr_struct(
   m,
   n,
-  ::Type{T},
   ::Type{S};
   M = I,
   λ::T = zero(T),
@@ -68,7 +66,7 @@ function TR_lsmr_struct(
   rtol::T = zero(T),
   etol::T = √eps(T),
   itmax::Integer = m + n,
-) where {T, S}
+) where {T, S <: AbstractVector{T}}
   lsmr_solver = LsmrSolver(n, m, S)
   return TR_lsmr_struct(lsmr_solver, M, λ, axtol, btol, atol, rtol, etol, itmax)
 end
@@ -79,7 +77,7 @@ struct TR_dogleg_struct{T <: AbstractFloat, S <: AbstractVector{T}}
   lsmr_solver::LsmrSolver{T, S}
 end
 
-function TR_dogleg_struct(m, n, ::Type{T}, ::Type{S}; kwargs...) where {T, S}
+function TR_dogleg_struct(m, n, ::Type{S}; kwargs...) where {T, S <: AbstractVector{T}}
   lsmr_solver = LsmrSolver(n, m, S)
   return TR_dogleg_struct(lsmr_solver)
 end
@@ -125,11 +123,11 @@ function MetaDCI(
   max_time::AbstractFloat = 120.0,
   max_iter::Integer = 500,
   comp_λ::Symbol = :cgls!,
-  λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), T, S),
+  λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), S),
   linear_solver::Symbol = :ldlfact,
   feas_step::Symbol = :feasibility_step,
   TR_compute_step::Symbol = :TR_lsmr, #:TR_dogleg
-  TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), T, S),
+  TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), S),
 ) where {T <: AbstractFloat, S <: AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
