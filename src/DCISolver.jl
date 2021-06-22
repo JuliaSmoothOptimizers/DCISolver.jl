@@ -112,6 +112,7 @@ function compute_lx!(
   meta::MetaDCI,
 ) where {T <: AbstractFloat}
   (l, stats) = eval(meta.comp_λ)(
+    meta.λ_struct.comp_λ_solver,
     Jx',
     -∇fx,
     M = meta.λ_struct.M,

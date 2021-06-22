@@ -1,7 +1,8 @@
 """
 `comp_λ_cgls{<: AbstractFloat}` attributes correspond to input parameters of `cgls` used in the computation of Lagrange multipliers.
 """
-struct comp_λ_cgls{T <: AbstractFloat}
+struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
+  comp_λ_solver::CglsSolver{T, S}
   M # =I,
   λ::T # =zero(T), 
   atol::T # =√eps(T), 
@@ -15,14 +16,16 @@ end
 function comp_λ_cgls(
   m,
   n,
-  ::T;
+  ::Type{T},
+  ::Type{S};
   M = I,
   λ::T = zero(T),
   atol::T = √eps(T),
   rtol::T = √eps(T),
   itmax::Integer = 5 * (m + n),
-) where {T}
-  return comp_λ_cgls(M, λ, atol, rtol, itmax)
+) where {T, S}
+  comp_λ_solver = CglsSolver(m, n, S)
+  return comp_λ_cgls(comp_λ_solver, M, λ, atol, rtol, itmax)
 end
 
 const comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
@@ -108,7 +111,7 @@ struct MetaDCI
 end
 
 function MetaDCI(
-  x0::AbstractVector{T},
+  x0::S,
   y0::AbstractVector{T};
   atol::AbstractFloat = T(1e-5),
   rtol::AbstractFloat = T(1e-5),
@@ -116,13 +119,13 @@ function MetaDCI(
   max_eval::Integer = 50000,
   max_time::AbstractFloat = 120.0,
   max_iter::Integer = 500,
-  comp_λ::Symbol = :cgls,
-  λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), atol),
+  comp_λ::Symbol = :cgls!,
+  λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), T, S),
   linear_solver::Symbol = :ldlfact,
   feas_step::Symbol = :feasibility_step,
   TR_compute_step::Symbol = :TR_lsmr, #:TR_dogleg
   TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), atol),
-) where {T <: AbstractFloat}
+) where {T <: AbstractFloat, S <: AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
     linear_solver = :ldlfact
