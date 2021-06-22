@@ -234,7 +234,8 @@ function TR_lsmr(
   normcz::AbstractFloat,
   meta::TR_lsmr_struct,
 ) where {T}
-  (d, stats) = lsmr(
+  (d, stats) = lsmr!(
+    meta.lsmr_solver,
     Jz,
     -cz,
     radius = Δ,

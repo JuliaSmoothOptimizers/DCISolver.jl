@@ -36,7 +36,8 @@ else
   Dict(:ldlfact => LDLFactorizationStruct)
 end
 
-struct TR_lsmr_struct{T <: AbstractFloat}
+struct TR_lsmr_struct{T <: AbstractFloat, S <: AbstractVector{T}}
+  lsmr_solver::LsmrSolver{T, S}
   M # =I,
   #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
@@ -57,7 +58,8 @@ end
 function TR_lsmr_struct(
   m,
   n,
-  ::T;
+  ::Type{T},
+  ::Type{S};
   M = I,
   λ::T = zero(T),
   axtol::T = √eps(T),
@@ -66,8 +68,9 @@ function TR_lsmr_struct(
   rtol::T = zero(T),
   etol::T = √eps(T),
   itmax::Integer = m + n,
-) where {T}
-  return TR_lsmr_struct(M, λ, axtol, btol, atol, rtol, etol, itmax)
+) where {T, S}
+  lsmr_solver = LsmrSolver(n, m, S)
+  return TR_lsmr_struct(lsmr_solver, M, λ, axtol, btol, atol, rtol, etol, itmax)
 end
 
 struct TR_dogleg_struct
@@ -124,7 +127,7 @@ function MetaDCI(
   linear_solver::Symbol = :ldlfact,
   feas_step::Symbol = :feasibility_step,
   TR_compute_step::Symbol = :TR_lsmr, #:TR_dogleg
-  TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), atol),
+  TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), T, S),
 ) where {T <: AbstractFloat, S <: AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
