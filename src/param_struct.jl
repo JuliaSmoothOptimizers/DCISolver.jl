@@ -73,13 +73,15 @@ function TR_lsmr_struct(
   return TR_lsmr_struct(lsmr_solver, M, λ, axtol, btol, atol, rtol, etol, itmax)
 end
 
-struct TR_dogleg_struct
+struct TR_dogleg_struct{T <: AbstractFloat, S <: AbstractVector{T}}
   # :-)
   # There is another lsmr call here
+  lsmr_solver::LsmrSolver{T, S}
 end
 
-function TR_dogleg_struct(args...; kwargs...)
-  return TR_dogleg_struct()
+function TR_dogleg_struct(m, n, ::Type{T}, ::Type{S}; kwargs...) where {T, S}
+  lsmr_solver = LsmrSolver(n, m, S)
+  return TR_dogleg_struct(lsmr_solver)
 end
 
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)

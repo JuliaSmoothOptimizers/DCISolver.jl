@@ -205,7 +205,7 @@ function TR_dogleg(
     d = dcp * Δ / √ndcp2  #so ||d||=Δ
     Jd = Jd * t * Δ / √ndcp2  #avoid recomputing Jd
   else
-    (dn, stats) = lsmr(Jz, -cz)
+    (dn, stats) = lsmr!(meta.lsmr_solver, Jz, -cz)
     solved = stats.solved
     if !stats.solved #stats.status ∈ ("maximum number of iterations exceeded")
       @warn "Fail lsmr in TR_dogleg: $(stats.status)"
