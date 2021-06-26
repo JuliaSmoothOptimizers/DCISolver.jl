@@ -64,7 +64,7 @@ max_iter :: Integer # default: 500 ; maximum number of iterations.
 
 # Compute Lagrange multipliers
 comp_λ :: Symbol # default: :cgls ; eval(comp_λ) is used to compute Lagrange multipliers.
-λ_struct :: comp_λ_cgls # default: comp_λ_cgls(length(x0), length(y0), atol) ; companion structure of `comp_λ`.
+λ_struct :: comp_λ_cgls # default: comp_λ_cgls(length(x0), length(y0), typeof(x0)) ; companion structure of `comp_λ`.
    
 # Tangent step
 # Solver for the factorization
@@ -74,5 +74,5 @@ linear_solver :: Symbol # default: :ldlfact, options: :ma57.
 feas_step :: Symbol # default: :feasibility_step
 # Feasibility step in the normal step
 TR_compute_step :: Symbol # default: :TR_lsmr, options: :TR_dogleg.
-TR_compute_step_struct :: Union{TR_lsmr_struct, TR_dogleg_struct} # default: TR_lsmr_struct(length(x0), length(y0), atol), options: TR_dogleg_struct(length(x0), length(y0), atol).
+TR_compute_step_struct :: Union{TR_lsmr_struct, TR_dogleg_struct} # default: TR_lsmr_struct(length(x0), length(y0), typeof(x0)), options: TR_dogleg_struct(length(x0), length(y0), typeof(x0)).
 ```

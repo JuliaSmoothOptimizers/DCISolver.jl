@@ -1,7 +1,8 @@
 """
 `comp_λ_cgls{<: AbstractFloat}` attributes correspond to input parameters of `cgls` used in the computation of Lagrange multipliers.
 """
-struct comp_λ_cgls{T <: AbstractFloat}
+struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
+  comp_λ_solver::CglsSolver{T, S}
   M # =I,
   λ::T # =zero(T), 
   atol::T # =√eps(T), 
@@ -15,14 +16,15 @@ end
 function comp_λ_cgls(
   m,
   n,
-  ::T;
+  ::Type{S};
   M = I,
   λ::T = zero(T),
   atol::T = √eps(T),
   rtol::T = √eps(T),
   itmax::Integer = 5 * (m + n),
-) where {T}
-  return comp_λ_cgls(M, λ, atol, rtol, itmax)
+) where {T, S <: AbstractVector{T}}
+  comp_λ_solver = CglsSolver(m, n, S)
+  return comp_λ_cgls(comp_λ_solver, M, λ, atol, rtol, itmax)
 end
 
 const comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
@@ -33,7 +35,8 @@ else
   Dict(:ldlfact => LDLFactorizationStruct)
 end
 
-struct TR_lsmr_struct{T <: AbstractFloat}
+struct TR_lsmr_struct{T <: AbstractFloat, S <: AbstractVector{T}}
+  lsmr_solver::LsmrSolver{T, S}
   M # =I,
   #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
@@ -54,7 +57,7 @@ end
 function TR_lsmr_struct(
   m,
   n,
-  ::T;
+  ::Type{S};
   M = I,
   λ::T = zero(T),
   axtol::T = √eps(T),
@@ -63,17 +66,20 @@ function TR_lsmr_struct(
   rtol::T = zero(T),
   etol::T = √eps(T),
   itmax::Integer = m + n,
-) where {T}
-  return TR_lsmr_struct(M, λ, axtol, btol, atol, rtol, etol, itmax)
+) where {T, S <: AbstractVector{T}}
+  lsmr_solver = LsmrSolver(n, m, S)
+  return TR_lsmr_struct(lsmr_solver, M, λ, axtol, btol, atol, rtol, etol, itmax)
 end
 
-struct TR_dogleg_struct
+struct TR_dogleg_struct{T <: AbstractFloat, S <: AbstractVector{T}}
   # :-)
   # There is another lsmr call here
+  lsmr_solver::LsmrSolver{T, S}
 end
 
-function TR_dogleg_struct(args...; kwargs...)
-  return TR_dogleg_struct()
+function TR_dogleg_struct(m, n, ::Type{S}; kwargs...) where {T, S <: AbstractVector{T}}
+  lsmr_solver = LsmrSolver(n, m, S)
+  return TR_dogleg_struct(lsmr_solver)
 end
 
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
@@ -108,7 +114,7 @@ struct MetaDCI
 end
 
 function MetaDCI(
-  x0::AbstractVector{T},
+  x0::S,
   y0::AbstractVector{T};
   atol::AbstractFloat = T(1e-5),
   rtol::AbstractFloat = T(1e-5),
@@ -116,13 +122,13 @@ function MetaDCI(
   max_eval::Integer = 50000,
   max_time::AbstractFloat = 120.0,
   max_iter::Integer = 500,
-  comp_λ::Symbol = :cgls,
-  λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), atol),
+  comp_λ::Symbol = :cgls!,
+  λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), S),
   linear_solver::Symbol = :ldlfact,
   feas_step::Symbol = :feasibility_step,
   TR_compute_step::Symbol = :TR_lsmr, #:TR_dogleg
-  TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), atol),
-) where {T <: AbstractFloat}
+  TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), S),
+) where {T <: AbstractFloat, S <: AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
     linear_solver = :ldlfact
