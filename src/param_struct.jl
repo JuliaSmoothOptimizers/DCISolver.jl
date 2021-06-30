@@ -92,8 +92,7 @@ struct MetaDCI
   rtol::AbstractFloat # = 1e-5, #ϵd = atol + rtol * dualnorm
   ctol::AbstractFloat # = 1e-5, #feasibility tolerance
 
-  #Bounded threshold
-  unbounded_threshold::AbstractFloat #-1/atol
+  unbounded_threshold::AbstractFloat # = -1e5
 
   #Evaluation limits
   max_eval::Integer # = 50000,

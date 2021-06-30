@@ -57,6 +57,8 @@ atol :: AbstractFloat # default: 1e-5 ; absolute tolerance.
 rtol :: AbstractFloat # default: 1e-5 ; relative tolerance.
 ctol :: AbstractFloat # default: 1e-5 ; feasibility tolerance.
 
+unbounded_threshold :: AbstractFloat # default: -1e5 ; below this threshold the problem is unbounded.
+
 # Evaluation limits
 max_eval :: Integer # default: 50000 ; maximum number of cons + obj evaluations.
 max_time :: AbstractFloat # default: 120 ; maximum number of seconds.
