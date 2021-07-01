@@ -92,6 +92,8 @@ struct MetaDCI
   rtol::AbstractFloat # = 1e-5, #ϵd = atol + rtol * dualnorm
   ctol::AbstractFloat # = 1e-5, #feasibility tolerance
 
+  unbounded_threshold::AbstractFloat # = -1e5
+
   #Evaluation limits
   max_eval::Integer # = 50000,
   max_time::AbstractFloat # = 60.
@@ -119,6 +121,7 @@ function MetaDCI(
   atol::AbstractFloat = T(1e-5),
   rtol::AbstractFloat = T(1e-5),
   ctol::AbstractFloat = T(1e-5),
+  unbounded_threshold::AbstractFloat = -T(1e5),
   max_eval::Integer = 50000,
   max_time::AbstractFloat = 120.0,
   max_iter::Integer = 500,
@@ -138,6 +141,7 @@ function MetaDCI(
     atol,
     rtol,
     ctol,
+    unbounded_threshold,
     max_eval,
     max_time,
     max_iter,

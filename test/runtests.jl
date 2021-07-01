@@ -8,6 +8,12 @@ using DCISolver
 #using SymCOOSolverInterface #tests
 include("symcoo_runtests.jl")
 
+@testset "Unbounded tests" begin
+  nlp = ADNLPModel(x -> sum(x), zeros(2))
+  stats = dci(nlp, nlp.meta.x0)
+  @test stats.status == :unbounded
+end
+
 @testset "Unconstrained tests" begin
   unconstrained_nlp(nlp -> dci(nlp, nlp.meta.x0, atol = 1e-6, rtol = 1e-6))
 end

@@ -114,7 +114,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
       max_time = meta.max_time - eltime,
     )
     # Convergence test
-    solved = primalnorm < ϵp && dualnorm < ϵd
+    solved = primalnorm < ϵp && (dualnorm < ϵd || fz < meta.unbounded_threshold)
     infeasible = normal_status == :infeasible
     if solved || infeasible || (normal_status ∉ (:init_success, :success))
       eltime = time() - start_time
@@ -220,14 +220,14 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
       ],
     )
     iter += 1
-    solved = primalnorm < ϵp && dualnorm < ϵd
+    solved = primalnorm < ϵp && (dualnorm < ϵd || fx < meta.unbounded_threshold)
     eltime = time() - start_time
     tired = tired_check(nlp, eltime, iter, meta)
   end
 
   #check unboundedness
   status = if solved
-    :first_order
+    fx < meta.unbounded_threshold ? :unbounded : :first_order
   elseif tired
     if evals(nlp) > meta.max_eval
       :max_eval
