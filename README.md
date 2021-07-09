@@ -8,9 +8,9 @@
 [docs-stable-url]: https://JuliaSmoothOptimizers.github.io/DCISolver.jl/stable
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-purple.svg
 [docs-dev-url]: https://JuliaSmoothOptimizers.github.io/DCISolver.jl/dev
-[build-ci-img]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/workflows/CI/badge.svg?branch=master
+[build-ci-img]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/workflows/CI/badge.svg?branch=main
 [build-ci-url]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/actions
-[codecov-img]: https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl/branch/master/graph/badge.svg
+[codecov-img]: https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl/branch/main/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl
 [release-img]: https://img.shields.io/github/v/release/JuliaSmoothOptimizers/DCISolver.jl.svg?style=flat-square
 [release-url]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/releases
@@ -36,7 +36,7 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 
 ## How to Cite
 
-If you use DCISolver.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/master/CITATION.bib).
+If you use DCISolver.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/main/CITATION.bib).
 
 ## Installation
 
