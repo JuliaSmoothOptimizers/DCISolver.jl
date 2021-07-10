@@ -16,4 +16,8 @@ makedocs(
   pages = pages,
 )
 
-deploydocs(repo = "github.com/JuliaSmoothOptimizers/DCISolver.jl.git", push_preview = true, devbranch = "main")
+deploydocs(
+  repo = "github.com/JuliaSmoothOptimizers/DCISolver.jl.git",
+  push_preview = true,
+  devbranch = "main",
+)
