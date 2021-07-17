@@ -10,6 +10,7 @@ using HSL, Krylov, NLPModels, SolverCore, SolverTools
 export dci
 
 include("param_struct.jl")
+include("workspace.jl")
 include("dci_feasibility.jl")
 include("dci_normal.jl")
 include("dci_tangent.jl")
@@ -29,7 +30,8 @@ equality-constrained problems described in
 """
 function dci(nlp::AbstractNLPModel, x::AbstractVector{T}; kwargs...) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)
-  return dci(nlp, x, meta)
+  workspace = DCIWorkspace(nlp, meta, x)
+  return dci(nlp, meta, workspace)
 end
 dci(nlp::AbstractNLPModel; kwargs...) = dci(nlp, nlp.meta.x0; kwargs...)
 
