@@ -43,6 +43,7 @@ function tangent_step(
 ) where {T}
   d = Array{T, 1}(undef, nlp.meta.nvar)
   Δℓ = zero(T)
+  tr = TrustRegion(nlp.meta.nvar, Δℓ)
 
   status = :unknown
   iter = 0
@@ -75,7 +76,7 @@ function tangent_step(
       ℓxtλ = ft + dot(λ, ct)
       qd = dBd / 2 + dot(g, d)
 
-      Δℓ, pred = aredpred(nlp, ℓzλ, ℓxtλ, qd, xt, d, dot(g, d))
+      Δℓ, pred = aredpred!(tr, nlp, ℓzλ, ℓxtλ, qd, xt, d, dot(g, d))
 
       r = Δℓ / qd
       if r < η₁ #we decrease further Δ so that ≤ ||d||
