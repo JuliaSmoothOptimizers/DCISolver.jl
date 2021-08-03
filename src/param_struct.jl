@@ -98,6 +98,7 @@ struct MetaDCI
   max_eval::Integer # = 50000,
   max_time::AbstractFloat # = 60.
   max_iter::Integer #:: Int = 500
+  max_iter_normal_step::Integer #:: Int = typemax(Int) 
 
   #Compute Lagrange multipliers
   comp_λ::Symbol
@@ -125,6 +126,7 @@ function MetaDCI(
   max_eval::Integer = 50000,
   max_time::AbstractFloat = 120.0,
   max_iter::Integer = 500,
+  max_iter_normal_step::Integer = typemax(Int),
   comp_λ::Symbol = :cgls!,
   λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), S),
   linear_solver::Symbol = :ldlfact,
@@ -145,6 +147,7 @@ function MetaDCI(
     max_eval,
     max_time,
     max_iter,
+    max_iter_normal_step,
     comp_λ,
     λ_struct,
     linear_solver,

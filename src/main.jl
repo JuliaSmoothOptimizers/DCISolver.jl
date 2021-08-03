@@ -109,9 +109,10 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
       primalnorm,
       ρmax,
       ϵp,
+      meta.max_eval,
+      meta.max_time - eltime,
+      meta.max_iter_normal_step,
       meta,
-      max_eval = meta.max_eval,
-      max_time = meta.max_time - eltime,
     )
     # Convergence test
     solved = primalnorm < ϵp && (dualnorm < ϵd || fz < meta.unbounded_threshold)

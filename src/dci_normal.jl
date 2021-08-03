@@ -13,10 +13,10 @@ function normal_step(
   primalnorm::T, #norm(cx)
   ρmax::T,
   ϵp::T,
-  meta::MetaDCI;
-  max_eval::Int = 1_000,
-  max_time::AbstractFloat = 1_000.0,
-  max_iter::Int = typemax(Int64),
+  max_eval,
+  max_time,
+  max_iter,
+  meta::MetaDCI,
 ) where {T}
 
   #assign z variable:
