@@ -26,7 +26,6 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
   primalnorm = norm(cx)
 
   # Regularization
-  δmin = √eps(T)
   γ = zero(T)
   δ = zero(T)
 
@@ -53,7 +52,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
   ρmax = max(ϵp, 5primalnorm, 50dualnorm)
   ρ = NaN #not needed at iteration 0
 
-  Δtg = one(T)
+  Δtg = meta.tan_Δ
 
   #stopping statuses
   solved = primalnorm < ϵp && dualnorm < ϵd
@@ -109,9 +108,10 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
       primalnorm,
       ρmax,
       ϵp,
+      meta.max_eval,
+      meta.max_time - eltime,
+      meta.max_iter_normal_step,
       meta,
-      max_eval = meta.max_eval,
-      max_time = meta.max_time - eltime,
     )
     # Convergence test
     solved = primalnorm < ϵp && (dualnorm < ϵd || fz < meta.unbounded_threshold)
@@ -139,8 +139,8 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
     #Update matrix system
     @views hess_coord!(nlp, z, λ, vals[1:(nlp.meta.nnzh)])
     @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:(nlp.meta.nnzj))])
-    if γ != 0.0 && γ != √eps(T)
-      γ = max(γ / 10, √eps(T))
+    if γ != 0.0
+      γ = max(γ * meta.decrease_γ, √eps(T))
       vals[nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:(nlp.meta.nvar))] .= γ
     end
 
@@ -187,7 +187,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
     end
 
     #increase the trust-region paramter
-    Δtg = min(10Δtg, 1 / √eps(T))
+    Δtg = min(meta.increase_Δtg * Δtg, 1 / √eps(T))
 
     if tg_status == :unknown #nothing happened in tangent_step
       # skip some computations z, cz, fz, ℓzλ,  ∇ℓzλ

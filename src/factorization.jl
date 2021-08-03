@@ -7,13 +7,13 @@ function _compute_newton_step!(
   g::AbstractVector{T},
   γ::T,
   δ::T,
-  δmin::T,
   dcp::AbstractVector{T},
   vals::AbstractVector{T},
   meta::MetaDCI,
 ) where {T}
   m, n = nlp.meta.ncon, nlp.meta.nvar
   nnzh, nnzj = nlp.meta.nnzh, nlp.meta.nnzj
+  δmin = meta.δmin
 
   dζ = Array{T}(undef, m + n)
   dn = zeros(T, n) #Array{Float64}(undef, n)
@@ -67,7 +67,7 @@ function _compute_newton_step!(
         dn = zeros(n)
         break
       end
-      γ = min(max(100γ, √eps(T)), 1 / √eps(T))
+      γ = min(max(γ * meta.increase_γ, √eps(T)), 1 / √eps(T))
       nnz_idx = nnzh .+ nnzj .+ (1:n)
       vals[nnz_idx] .= γ
       nnz_idx = nnzh .+ nnzj .+ n .+ (1:m)
