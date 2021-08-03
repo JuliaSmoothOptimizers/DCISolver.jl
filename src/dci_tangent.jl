@@ -31,12 +31,12 @@ function tangent_step(
   γ::T,
   δ::T,
   meta::MetaDCI;
-  Δ::AbstractFloat = meta.tan_Δ, #trust-region radius
+  Δ::AbstractFloat = meta.tan_Δ,
   η₁::AbstractFloat = meta.tan_η₁,
   η₂::AbstractFloat = meta.tan_η₂,
-  σ₁::AbstractFloat = meta.tan_σ₁, #decrease TR radius
-  σ₂::AbstractFloat = meta.tan_σ₂, #increase TR radius
-  small_d::AbstractFloat = meta.tan_small_d, #||d|| is too small
+  σ₁::AbstractFloat = meta.tan_σ₁,
+  σ₂::AbstractFloat = meta.tan_σ₂,
+  small_d::AbstractFloat = meta.tan_small_d,
   max_eval::Int = 1_000,
   max_time::AbstractFloat = 1_000.0,
 ) where {T}

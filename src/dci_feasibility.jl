@@ -30,7 +30,7 @@ function feasibility_step(
   normcz = normcx # cons(nlp, x) = normcx = normcz for the first z
   Δ = Δ₀
   feas_iter = 0
-  consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > expected_decrease
+  consecutive_bad_steps = 0
   failed_step_comp = false
 
   el_time = 0.0

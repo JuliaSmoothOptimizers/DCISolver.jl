@@ -86,19 +86,17 @@ const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_stru
 
 struct MetaDCI{T <: AbstractFloat, In <: Integer}
 
-  #dci function call:
   #Tolerances on the problem:
-  atol::T # = 1e-5,
-  rtol::T # = 1e-5, #ϵd = atol + rtol * dualnorm
-  ctol::T # = 1e-5, #feasibility tolerance
-
-  unbounded_threshold::T # = -1e5
+  atol::T
+  rtol::T # ϵd = atol + rtol * dualnorm
+  ctol::T # feasibility tolerance
+  unbounded_threshold::T
 
   #Evaluation limits
-  max_eval::In # = 50000,
-  max_time::Float64 # = 60.
-  max_iter::In #:: Int = 500
-  max_iter_normal_step::In #:: Int = typemax(Int) 
+  max_eval::In # max number of cons + obj evals
+  max_time::Float64
+  max_iter::In
+  max_iter_normal_step::In
 
   #Compute Lagrange multipliers
   comp_λ::Symbol
@@ -106,40 +104,40 @@ struct MetaDCI{T <: AbstractFloat, In <: Integer}
   #λ_struct_rescue #one idea is to have a 2nd set in case of emergency 
   #good only if we can make a warm-start.
 
-  #Solver for the factorization
+  # Solver for the factorization
   linear_solver::Symbol # = :ldlfact,#:ma57,
-  # regularization of the factorization
-  decrease_γ::T # reduce gamma if possible (> √eps(T)) between tangent steps = 0.1
-  increase_γ::T # up gamma if possible (< 1/√eps(T)) in factorization = 100.0
-  δmin::T # smallest value (only one > 0) used for regularization δ = √eps(T),
+  ## regularization of the factorization
+  decrease_γ::T
+  increase_γ::T
+  δmin::T
 
-  #Normal step
-  feas_step::Symbol #:feasibility_step (add CaNNOLes)
-  #Feasibility step (called inside the normal step)
-  feas_η₁::T # = 1e-3,
-  feas_η₂::T # = 0.66,
-  feas_σ₁::T # = 0.25,
-  feas_σ₂::T # = 2.0,
-  feas_Δ₀::T # = one(T),
-  bad_steps_lim::In # = 3,
-  feas_expected_decrease::T # =0.95, # Bad steps are when ‖c(z)‖ / ‖c(x)‖ >feas_expected_decrease
-  #Feasibility step in the normal step
+  # Normal step
+  feas_step::Symbol #:feasibility_step
+  ## Feasibility step (called inside the normal step)
+  feas_η₁::T
+  feas_η₂::T
+  feas_σ₁::T
+  feas_σ₂::T
+  feas_Δ₀::T
+  bad_steps_lim::In
+  feas_expected_decrease::T
+  ## Compute the direction in feasibility step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
   TR_compute_step_struct::Union{TR_lsmr_struct, TR_dogleg_struct}
 
   # Parameters updating ρ (or redefine the function `compute_ρ`)
-  compρ_p1::T # Float64 = 0.75
-  compρ_p2::T # Float64 = 0.90
-  ρbar::T # coeff. of the larger cylinder # by default 2
+  compρ_p1::T
+  compρ_p2::T
+  ρbar::T
 
   #Tangent step TR parameters
-  tan_Δ::T # = one(T), #trust-region radius
-  tan_η₁::T # = T(1e-2),
-  tan_η₂::T # = T(0.75),
-  tan_σ₁::T # = T(0.25), #decrease TR radius
-  tan_σ₂::T # = T(2.0), #increase TR radius
-  tan_small_d::T # = eps(T), #||d|| is too small
-  increase_Δtg::T # increase if possible (< 1 / √eps(T)) the Δtg between tangent steps # = 10
+  tan_Δ::T
+  tan_η₁::T
+  tan_η₂::T
+  tan_σ₁::T
+  tan_σ₂::T
+  tan_small_d::T
+  increase_Δtg::T
 end
 
 function MetaDCI(
@@ -167,17 +165,17 @@ function MetaDCI(
   feas_Δ₀::T = one(T),
   bad_steps_lim::Integer = 3,
   feas_expected_decrease::T = T(0.95),
-  TR_compute_step::Symbol = :TR_lsmr, #:TR_dogleg
+  TR_compute_step::Symbol = :TR_lsmr,
   TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), S),
   compρ_p1::T = T(0.75),
   compρ_p2::T = T(0.90),
   ρbar::T = T(2.0),
-  tan_Δ::T = one(T), #trust-region radius
+  tan_Δ::T = one(T),
   tan_η₁::T = T(1e-2),
   tan_η₂::T = T(0.75),
-  tan_σ₁::T = T(0.25), #decrease TR radius
-  tan_σ₂::T = T(2.0), #increase TR radius
-  tan_small_d::T = eps(T), #||d|| is too small
+  tan_σ₁::T = T(0.25),
+  tan_σ₂::T = T(2.0),
+  tan_small_d::T = eps(T),
   increase_Δtg::T = T(10),
 ) where {T <: AbstractFloat, S <: AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
