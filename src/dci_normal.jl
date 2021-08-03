@@ -31,7 +31,7 @@ function normal_step(
   eltime = 0.0
 
   #Initialize ρ at x
-  ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0)
+  ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0, meta)
 
   done_with_normal_step = primalnorm ≤ ρ
   iter_normal_step = 0
@@ -61,7 +61,7 @@ function normal_step(
 
     #update rho
     iter_normal_step += 1
-    ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, iter_normal_step)
+    ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, iter_normal_step, meta)
 
     @info log_row(
       Any[
@@ -94,7 +94,7 @@ function normal_step(
       cz = cons(nlp, z)
       Jz = jac_op(nlp, z)
       primalnorm = norm(cz)
-      ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0)
+      ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0, meta)
     end
 
     done_with_normal_step = primalnorm ≤ ρ || tired || infeasible
@@ -130,21 +130,28 @@ end
 #
 # T.M., 2021 Feb. 5th: what if dualnorm is excessively small ?
 #            Feb. 8th: don't let ρ decrease too crazy
+function compute_ρ(dualnorm, primalnorm, norm∇fx, ρmax, ϵ, iter, meta::MetaDCI)
+  p1, p2 = meta.compρ_p1, meta.compρ_p2
+  return compute_ρ(dualnorm, primalnorm, norm∇fx, ρmax, ϵ, iter, p1, p2)
+end
+
 function compute_ρ(
   dualnorm::T,
   primalnorm::T,
   norm∇fx::T,
   ρmax::T,
   ϵ::T, #ctol
-  iter::Int,
+  iter::Integer,
+  p1::Real,
+  p2::Real,
 ) where {T}
   if iter > 100
-    return 0.75 * ρmax
+    return p1 * ρmax
   end
   ngp = dualnorm / (norm∇fx + 1)
-  ρ = max(min(ngp, 0.75) * ρmax, ϵ)
+  ρ = max(min(ngp, p1) * ρmax, ϵ) # max(min(ngp/ρmax, p1) * ρmax, ϵ)
   if ρ ≤ ϵ && primalnorm > 100ϵ
-    ρ = primalnorm * 0.90 #/ 10
+    ρ = primalnorm * p2 #/ 10
     #elseif ngp ≤ 5ϵ
     #  ρ = ϵ
   end

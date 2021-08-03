@@ -114,6 +114,9 @@ struct MetaDCI
   #Feasibility step in the normal step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
   TR_compute_step_struct::Union{TR_lsmr_struct, TR_dogleg_struct}
+  # Parameters updating ρ (or redefine the function `compute_ρ`)
+  compρ_p1::Real # Float64 = 0.75
+  compρ_p2::Real # Float64 = 0.90
 end
 
 function MetaDCI(
@@ -133,6 +136,8 @@ function MetaDCI(
   feas_step::Symbol = :feasibility_step,
   TR_compute_step::Symbol = :TR_lsmr, #:TR_dogleg
   TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), S),
+  compρ_p1::Real = 0.75,
+  compρ_p2::Real = 0.90,
 ) where {T <: AbstractFloat, S <: AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
@@ -154,5 +159,7 @@ function MetaDCI(
     feas_step,
     TR_compute_step,
     TR_struct,
+    compρ_p1,
+    compρ_p2,
   )
 end
