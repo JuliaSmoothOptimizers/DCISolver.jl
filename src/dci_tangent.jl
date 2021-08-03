@@ -55,8 +55,7 @@ function tangent_step(
 
   while !((normct ≤ meta.ρbar * ρ && r ≥ η₁) || tired)
     #Compute a descent direction d (no evals)
-    d, dBd, status, γ, δ, vals =
-      compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta)
+    d, dBd, status, γ, δ, vals = compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta)
     n2d = dot(d, d)
     if √n2d > Δ
       d = d * (Δ / √n2d) #Just in case.
