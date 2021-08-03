@@ -126,9 +126,20 @@ struct MetaDCI
   #Feasibility step in the normal step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
   TR_compute_step_struct::Union{TR_lsmr_struct, TR_dogleg_struct}
+
   # Parameters updating ρ (or redefine the function `compute_ρ`)
   compρ_p1::Real # Float64 = 0.75
   compρ_p2::Real # Float64 = 0.90
+  ρbar::Real # coeff. of the larger cylinder # by default 2
+
+  #Tangent step TR parameters
+  tan_Δ::AbstractFloat # = one(T), #trust-region radius
+  tan_η₁::AbstractFloat # = T(1e-2),
+  tan_η₂::AbstractFloat # = T(0.75),
+  tan_σ₁::AbstractFloat # = T(0.25), #decrease TR radius
+  tan_σ₂::AbstractFloat # = T(2.0), #increase TR radius
+  tan_small_d::AbstractFloat # = eps(T), #||d|| is too small
+  increase_Δtg::AbstractFloat # increase if possible (< 1 / √eps(T)) the Δtg between tangent steps # = 10
 end
 
 function MetaDCI(
@@ -160,6 +171,14 @@ function MetaDCI(
   TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), S),
   compρ_p1::Real = 0.75,
   compρ_p2::Real = 0.90,
+  ρbar::Real = 2.0,
+  tan_Δ::AbstractFloat = one(T), #trust-region radius
+  tan_η₁::AbstractFloat = T(1e-2),
+  tan_η₂::AbstractFloat = T(0.75),
+  tan_σ₁::AbstractFloat = T(0.25), #decrease TR radius
+  tan_σ₂::AbstractFloat = T(2.0), #increase TR radius
+  tan_small_d::AbstractFloat = eps(T), #||d|| is too small
+  increase_Δtg::AbstractFloat = T(10),
 ) where {T <: AbstractFloat, S <: AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
@@ -193,5 +212,13 @@ function MetaDCI(
     TR_struct,
     compρ_p1,
     compρ_p2,
+    ρbar,
+    tan_Δ,
+    tan_η₁,
+    tan_η₂,
+    tan_σ₁,
+    tan_σ₂,
+    tan_small_d,
+    increase_Δtg,
   )
 end

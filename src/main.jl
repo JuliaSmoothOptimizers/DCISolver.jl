@@ -52,7 +52,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
   ρmax = max(ϵp, 5primalnorm, 50dualnorm)
   ρ = NaN #not needed at iteration 0
 
-  Δtg = one(T)
+  Δtg = meta.tan_Δ
 
   #stopping statuses
   solved = primalnorm < ϵp && dualnorm < ϵd
@@ -187,7 +187,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
     end
 
     #increase the trust-region paramter
-    Δtg = min(10Δtg, 1 / √eps(T))
+    Δtg = min(meta.increase_Δtg * Δtg, 1 / √eps(T))
 
     if tg_status == :unknown #nothing happened in tangent_step
       # skip some computations z, cz, fz, ℓzλ,  ∇ℓzλ
