@@ -111,6 +111,14 @@ struct MetaDCI
 
   #Normal step
   feas_step::Symbol #:feasibility_step (add CaNNOLes)
+  #Feasibility step (called inside the normal step)
+  feas_η₁::AbstractFloat # = 1e-3,
+  feas_η₂::AbstractFloat # = 0.66,
+  feas_σ₁::AbstractFloat # = 0.25,
+  feas_σ₂::AbstractFloat # = 2.0,
+  feas_Δ₀::AbstractFloat # = one(T),
+  bad_steps_lim::Integer # = 3,
+  feas_expected_decrease::AbstractFloat # =0.95, # Bad steps are when ‖c(z)‖ / ‖c(x)‖ >feas_expected_decrease
   #Feasibility step in the normal step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
   TR_compute_step_struct::Union{TR_lsmr_struct, TR_dogleg_struct}
@@ -134,6 +142,13 @@ function MetaDCI(
   λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), S),
   linear_solver::Symbol = :ldlfact,
   feas_step::Symbol = :feasibility_step,
+  feas_η₁::AbstractFloat = 1e-3,
+  feas_η₂::AbstractFloat = 0.66,
+  feas_σ₁::AbstractFloat = 0.25,
+  feas_σ₂::AbstractFloat = 2.0,
+  feas_Δ₀::T = one(T),
+  bad_steps_lim::Integer = 3,
+  feas_expected_decrease::T = T(0.95),
   TR_compute_step::Symbol = :TR_lsmr, #:TR_dogleg
   TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), S),
   compρ_p1::Real = 0.75,
@@ -157,6 +172,13 @@ function MetaDCI(
     λ_struct,
     linear_solver,
     feas_step,
+    feas_η₁,
+    feas_η₂,
+    feas_σ₁,
+    feas_σ₂,
+    feas_Δ₀,
+    bad_steps_lim,
+    feas_expected_decrease,
     TR_compute_step,
     TR_struct,
     compρ_p1,

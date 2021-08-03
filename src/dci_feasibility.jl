@@ -13,11 +13,13 @@ function feasibility_step(
   ρ::T,
   ctol::AbstractFloat,
   meta::MetaDCI;
-  η₁::AbstractFloat = 1e-3,
-  η₂::AbstractFloat = 0.66,
-  σ₁::AbstractFloat = 0.25,
-  σ₂::AbstractFloat = 2.0,
-  Δ₀::T = one(T),
+  η₁::AbstractFloat = meta.feas_η₁,
+  η₂::AbstractFloat = meta.feas_η₂,
+  σ₁::AbstractFloat = meta.feas_σ₁,
+  σ₂::AbstractFloat = meta.feas_σ₂,
+  Δ₀::T = meta.feas_Δ₀,
+  bad_steps_lim::Integer = meta.bad_steps_lim,
+  expected_decrease::T = meta.feas_expected_decrease,
   max_eval::Int = 1_000,
   max_time::AbstractFloat = 60.0,
   max_feas_iter::Int = typemax(Int64),
@@ -26,11 +28,9 @@ function feasibility_step(
   cz = cx
   Jz = Jx
   normcz = normcx # cons(nlp, x) = normcx = normcz for the first z
-
   Δ = Δ₀
-
   feas_iter = 0
-  consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > 0.95
+  consecutive_bad_steps = 0 # Bad steps are when ‖c(z)‖ / ‖c(x)‖ > expected_decrease
   failed_step_comp = false
 
   el_time = 0.0
@@ -65,7 +65,7 @@ function feasibility_step(
         z = zp
         Jz = jac_op(nlp, z)
         cz = czp
-        if normczp / normcz > T(0.95)
+        if normczp / normcz > expected_decrease
           consecutive_bad_steps += 1
         else
           consecutive_bad_steps = 0
@@ -96,7 +96,7 @@ function feasibility_step(
     )
 
     # Safeguard: agressive normal step
-    if normcz > ρ && (consecutive_bad_steps ≥ 3 || failed_step_comp)
+    if normcz > ρ && (consecutive_bad_steps ≥ bad_steps_lim || failed_step_comp)
       Hz = hess_op(nlp, z, cz, obj_weight = zero(T))
       (d, stats) = cg(Hz + Jz' * Jz, Jz' * cz)
       if !stats.solved
