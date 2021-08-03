@@ -8,7 +8,7 @@ struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
   atol::T # =√eps(T), 
   rtol::T # =√eps(T),
   #radius :: T=zero(T), 
-  itmax::Integer # =0, 
+  itmax::Int # =0, 
   #verbose :: Int=0, 
   #history :: Bool=false
 end
@@ -21,7 +21,7 @@ function comp_λ_cgls(
   λ::T = zero(T),
   atol::T = √eps(T),
   rtol::T = √eps(T),
-  itmax::Integer = 5 * (m + n),
+  itmax::Int = 5 * (m + n),
 ) where {T, S <: AbstractVector{T}}
   comp_λ_solver = CglsSolver(m, n, S)
   return comp_λ_cgls(comp_λ_solver, M, λ, atol, rtol, itmax)
@@ -65,7 +65,7 @@ function TR_lsmr_struct(
   atol::T = zero(T),
   rtol::T = zero(T),
   etol::T = √eps(T),
-  itmax::Integer = m + n,
+  itmax::Int = m + n,
 ) where {T, S <: AbstractVector{T}}
   lsmr_solver = LsmrSolver(n, m, S)
   return TR_lsmr_struct(lsmr_solver, M, λ, axtol, btol, atol, rtol, etol, itmax)
@@ -84,21 +84,21 @@ end
 
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
-struct MetaDCI
+struct MetaDCI{T <: AbstractFloat, In <: Integer}
 
   #dci function call:
   #Tolerances on the problem:
-  atol::AbstractFloat # = 1e-5,
-  rtol::AbstractFloat # = 1e-5, #ϵd = atol + rtol * dualnorm
-  ctol::AbstractFloat # = 1e-5, #feasibility tolerance
+  atol::T # = 1e-5,
+  rtol::T # = 1e-5, #ϵd = atol + rtol * dualnorm
+  ctol::T # = 1e-5, #feasibility tolerance
 
-  unbounded_threshold::AbstractFloat # = -1e5
+  unbounded_threshold::T # = -1e5
 
   #Evaluation limits
-  max_eval::Integer # = 50000,
-  max_time::AbstractFloat # = 60.
-  max_iter::Integer #:: Int = 500
-  max_iter_normal_step::Integer #:: Int = typemax(Int) 
+  max_eval::In # = 50000,
+  max_time::Float64 # = 60.
+  max_iter::In #:: Int = 500
+  max_iter_normal_step::In #:: Int = typemax(Int) 
 
   #Compute Lagrange multipliers
   comp_λ::Symbol
@@ -109,76 +109,76 @@ struct MetaDCI
   #Solver for the factorization
   linear_solver::Symbol # = :ldlfact,#:ma57,
   # regularization of the factorization
-  decrease_γ::AbstractFloat # reduce gamma if possible (> √eps(T)) between tangent steps = 0.1
-  increase_γ::AbstractFloat # up gamma if possible (< 1/√eps(T)) in factorization = 100.0
-  δmin::AbstractFloat # smallest value (only one > 0) used for regularization δ = √eps(T),
+  decrease_γ::T # reduce gamma if possible (> √eps(T)) between tangent steps = 0.1
+  increase_γ::T # up gamma if possible (< 1/√eps(T)) in factorization = 100.0
+  δmin::T # smallest value (only one > 0) used for regularization δ = √eps(T),
 
   #Normal step
   feas_step::Symbol #:feasibility_step (add CaNNOLes)
   #Feasibility step (called inside the normal step)
-  feas_η₁::AbstractFloat # = 1e-3,
-  feas_η₂::AbstractFloat # = 0.66,
-  feas_σ₁::AbstractFloat # = 0.25,
-  feas_σ₂::AbstractFloat # = 2.0,
-  feas_Δ₀::AbstractFloat # = one(T),
-  bad_steps_lim::Integer # = 3,
-  feas_expected_decrease::AbstractFloat # =0.95, # Bad steps are when ‖c(z)‖ / ‖c(x)‖ >feas_expected_decrease
+  feas_η₁::T # = 1e-3,
+  feas_η₂::T # = 0.66,
+  feas_σ₁::T # = 0.25,
+  feas_σ₂::T # = 2.0,
+  feas_Δ₀::T # = one(T),
+  bad_steps_lim::In # = 3,
+  feas_expected_decrease::T # =0.95, # Bad steps are when ‖c(z)‖ / ‖c(x)‖ >feas_expected_decrease
   #Feasibility step in the normal step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
   TR_compute_step_struct::Union{TR_lsmr_struct, TR_dogleg_struct}
 
   # Parameters updating ρ (or redefine the function `compute_ρ`)
-  compρ_p1::Real # Float64 = 0.75
-  compρ_p2::Real # Float64 = 0.90
-  ρbar::Real # coeff. of the larger cylinder # by default 2
+  compρ_p1::T # Float64 = 0.75
+  compρ_p2::T # Float64 = 0.90
+  ρbar::T # coeff. of the larger cylinder # by default 2
 
   #Tangent step TR parameters
-  tan_Δ::AbstractFloat # = one(T), #trust-region radius
-  tan_η₁::AbstractFloat # = T(1e-2),
-  tan_η₂::AbstractFloat # = T(0.75),
-  tan_σ₁::AbstractFloat # = T(0.25), #decrease TR radius
-  tan_σ₂::AbstractFloat # = T(2.0), #increase TR radius
-  tan_small_d::AbstractFloat # = eps(T), #||d|| is too small
-  increase_Δtg::AbstractFloat # increase if possible (< 1 / √eps(T)) the Δtg between tangent steps # = 10
+  tan_Δ::T # = one(T), #trust-region radius
+  tan_η₁::T # = T(1e-2),
+  tan_η₂::T # = T(0.75),
+  tan_σ₁::T # = T(0.25), #decrease TR radius
+  tan_σ₂::T # = T(2.0), #increase TR radius
+  tan_small_d::T # = eps(T), #||d|| is too small
+  increase_Δtg::T # increase if possible (< 1 / √eps(T)) the Δtg between tangent steps # = 10
 end
 
 function MetaDCI(
   x0::S,
   y0::AbstractVector{T};
-  atol::AbstractFloat = T(1e-5),
-  rtol::AbstractFloat = T(1e-5),
-  ctol::AbstractFloat = T(1e-5),
-  unbounded_threshold::AbstractFloat = -T(1e5),
+  atol::T = T(1e-5),
+  rtol::T = T(1e-5),
+  ctol::T = T(1e-5),
+  unbounded_threshold::T = -T(1e5),
   max_eval::Integer = 50000,
-  max_time::AbstractFloat = 120.0,
+  max_time::Float64 = 120.0,
   max_iter::Integer = 500,
   max_iter_normal_step::Integer = typemax(Int),
   comp_λ::Symbol = :cgls!,
   λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), S),
   linear_solver::Symbol = :ldlfact,
-  decrease_γ::AbstractFloat = 0.1,
-  increase_γ::AbstractFloat = 100.0,
-  δmin::AbstractFloat = √eps(T),
+  decrease_γ::T = T(0.1),
+  increase_γ::T = T(100.0),
+  δmin::T = √eps(T),
   feas_step::Symbol = :feasibility_step,
-  feas_η₁::AbstractFloat = 1e-3,
-  feas_η₂::AbstractFloat = 0.66,
-  feas_σ₁::AbstractFloat = 0.25,
-  feas_σ₂::AbstractFloat = 2.0,
+  feas_η₁::T = T(1e-3),
+  feas_η₂::T = T(0.66),
+  feas_σ₁::T = T(0.25),
+  feas_σ₂::T = T(2.0),
   feas_Δ₀::T = one(T),
   bad_steps_lim::Integer = 3,
   feas_expected_decrease::T = T(0.95),
   TR_compute_step::Symbol = :TR_lsmr, #:TR_dogleg
   TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), S),
-  compρ_p1::Real = 0.75,
-  compρ_p2::Real = 0.90,
-  ρbar::Real = 2.0,
-  tan_Δ::AbstractFloat = one(T), #trust-region radius
-  tan_η₁::AbstractFloat = T(1e-2),
-  tan_η₂::AbstractFloat = T(0.75),
-  tan_σ₁::AbstractFloat = T(0.25), #decrease TR radius
-  tan_σ₂::AbstractFloat = T(2.0), #increase TR radius
-  tan_small_d::AbstractFloat = eps(T), #||d|| is too small
-  increase_Δtg::AbstractFloat = T(10),
+  compρ_p1::T = T(0.75),
+  compρ_p2::T = T(0.90),
+  ρbar::T = T(2.0),
+  tan_Δ::T = one(T), #trust-region radius
+  tan_η₁::T = T(1e-2),
+  tan_η₂::T = T(0.75),
+  tan_σ₁::T = T(0.25), #decrease TR radius
+  tan_σ₂::T = T(2.0), #increase TR radius
+  tan_small_d::T = eps(T), #||d|| is too small
+  increase_Δtg::T = T(10),
 ) where {T <: AbstractFloat, S <: AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
