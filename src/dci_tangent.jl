@@ -36,7 +36,6 @@ function tangent_step(
   η₂::AbstractFloat = T(0.75),
   σ₁::AbstractFloat = T(0.25), #decrease TR radius
   σ₂::AbstractFloat = T(2.0), #increase TR radius
-  δmin::T = √eps(T),
   small_d::AbstractFloat = eps(T), #||d|| is too small
   max_eval::Int = 1_000,
   max_time::AbstractFloat = 1_000.0,
@@ -57,7 +56,7 @@ function tangent_step(
   while !((normct ≤ 2ρ && r ≥ η₁) || tired)
     #Compute a descent direction d (no evals)
     d, dBd, status, γ, δ, vals =
-      compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, δmin, vals, d, meta)
+      compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta)
     n2d = dot(d, d)
     if √n2d > Δ
       d = d * (Δ / √n2d) #Just in case.
@@ -142,7 +141,6 @@ function compute_descent_direction(
   LDL::SymCOOSolver,
   γ::T,
   δ::T,
-  δmin::T,
   vals::AbstractVector{T},
   d::AbstractVector{T},
   meta::MetaDCI,
@@ -158,7 +156,7 @@ function compute_descent_direction(
     d = dcp
   else
     dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals =
-      _compute_newton_step!(nlp, LDL, g, γ, δ, δmin, dcp, vals, meta)
+      _compute_newton_step!(nlp, LDL, g, γ, δ, dcp, vals, meta)
     norm2dn = dot(dn, dn)
     if γ_too_large || dnBdn ≤ 1e-10 #or same test as gBg in _compute_gradient_step ?
       #dn = 0 here.
@@ -236,6 +234,5 @@ end
 include("factorization.jl")
 #=
 dn, dnBdn, dcpBdn,
-γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, δmin,
-                                                dcp, vals)
+γ_too_large, γ, δ, vals = _compute_newton_step!(nlp, LDL, g, γ, δ, dcp, vals)
 =#

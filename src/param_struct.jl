@@ -108,6 +108,10 @@ struct MetaDCI
 
   #Solver for the factorization
   linear_solver::Symbol # = :ldlfact,#:ma57,
+  # regularization of the factorization
+  decrease_γ::AbstractFloat # reduce gamma if possible (> √eps(T)) between tangent steps = 0.1
+  increase_γ::AbstractFloat # up gamma if possible (< 1/√eps(T)) in factorization = 100.0
+  δmin::AbstractFloat # smallest value (only one > 0) used for regularization δ = √eps(T),
 
   #Normal step
   feas_step::Symbol #:feasibility_step (add CaNNOLes)
@@ -141,6 +145,9 @@ function MetaDCI(
   comp_λ::Symbol = :cgls!,
   λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), S),
   linear_solver::Symbol = :ldlfact,
+  decrease_γ::AbstractFloat = 0.1,
+  increase_γ::AbstractFloat = 100.0,
+  δmin::AbstractFloat = √eps(T),
   feas_step::Symbol = :feasibility_step,
   feas_η₁::AbstractFloat = 1e-3,
   feas_η₂::AbstractFloat = 0.66,
@@ -171,6 +178,9 @@ function MetaDCI(
     comp_λ,
     λ_struct,
     linear_solver,
+    decrease_γ,
+    increase_γ,
+    δmin,
     feas_step,
     feas_η₁,
     feas_η₂,
