@@ -10,12 +10,12 @@ include("symcoo_runtests.jl")
 
 @testset "Unbounded tests" begin
   nlp = ADNLPModel(x -> sum(x), zeros(2))
-  stats = dci(nlp, nlp.meta.x0)
+  stats = dci(nlp)
   @test stats.status == :unbounded
 end
 
 @testset "Unconstrained tests" begin
-  unconstrained_nlp(nlp -> dci(nlp, nlp.meta.x0, atol = 1e-6, rtol = 1e-6))
+  unconstrained_nlp(nlp -> dci(nlp, atol = 1e-6, rtol = 1e-6))
 end
 
 #The first four were used in Percival.jl
@@ -84,7 +84,7 @@ end
   ]
   for nlp in test_set
     stats = with_logger(NullLogger()) do
-      dci(nlp, nlp.meta.x0, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
+      dci(nlp, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
     end
     sol = ones(nlp.meta.nvar)
     @test isapprox(stats.solution, sol, rtol = 1e-6)
@@ -117,7 +117,7 @@ function test_dci(; tol = 1e-6)
     )
 
     stats = with_logger(NullLogger()) do
-      dci(nlp, nlp.meta.x0, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
+      dci(nlp, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
     end
     dual, primal, status = stats.dual_feas, stats.primal_feas, stats.status
     @test norm(stats.solution - [0, sqrt(3)]) < tol
@@ -136,7 +136,7 @@ function test_dci(; tol = 1e-6)
     )
 
     stats = with_logger(NullLogger()) do
-      dci(nlp, nlp.meta.x0, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
+      dci(nlp, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
     end
     dual, primal, status = stats.dual_feas, stats.primal_feas, stats.status
     @show stats.solution
@@ -156,7 +156,7 @@ function test_dci(; tol = 1e-6)
     )
 
     stats = with_logger(NullLogger()) do
-      dci(nlp, nlp.meta.x0, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
+      dci(nlp, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
     end
     dual, primal, status = stats.dual_feas, stats.primal_feas, stats.status
     @test dual < tol
@@ -173,7 +173,7 @@ function test_dci(; tol = 1e-6)
       [0.0],
     )
     stats = with_logger(NullLogger()) do
-      dci(nlp, nlp.meta.x0, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
+      dci(nlp, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
     end
     dual, primal, status = stats.dual_feas, stats.primal_feas, stats.status
     @show stats.solution
@@ -192,7 +192,7 @@ function test_dci(; tol = 1e-6)
       [0.0],
     )
     stats = with_logger(NullLogger()) do
-      dci(nlp, nlp.meta.x0, max_eval = 10_000, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
+      dci(nlp, max_eval = 10_000, atol = 1e-6, rtol = 0.0, ctol = 1e-6)
     end
     dual, primal, status = stats.dual_feas, stats.primal_feas, stats.status
     @show stats.solution

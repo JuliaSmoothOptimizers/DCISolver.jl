@@ -31,6 +31,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}; kwargs...) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)
   return dci(nlp, x, meta)
 end
+dci(nlp::AbstractNLPModel; kwargs...) = dci(nlp, nlp.meta.x0; kwargs...)
 
 """compute_gBg
   B is a symmetric sparse matrix
