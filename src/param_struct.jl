@@ -121,6 +121,7 @@ struct MetaDCI{T <: AbstractFloat, In <: Integer}
   feas_Δ₀::T
   bad_steps_lim::In
   feas_expected_decrease::T
+  agressive_cgsolver::CgSolver # second-order correction
   ## Compute the direction in feasibility step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
   TR_compute_step_struct::Union{TR_lsmr_struct, TR_dogleg_struct}
@@ -183,6 +184,9 @@ function MetaDCI(
     linear_solver = :ldlfact
   end
 
+  n = length(x0)
+  agressive_cgsolver = CgSolver(n, n, typeof(x0))
+
   return MetaDCI(
     atol,
     rtol,
@@ -206,6 +210,7 @@ function MetaDCI(
     feas_Δ₀,
     bad_steps_lim,
     feas_expected_decrease,
+    agressive_cgsolver,
     TR_compute_step,
     TR_struct,
     compρ_p1,

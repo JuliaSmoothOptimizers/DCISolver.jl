@@ -26,7 +26,9 @@ function feasibility_step(
 ) where {T}
   z = x
   cz = cx
+  zp, czp = similar(z), similar(cz)
   Jz = Jx
+  (m, n) = size(Jz)
   normcz = normcx # cons(nlp, x) = normcx = normcz for the first z
   Δ = Δ₀
   feas_iter = 0
@@ -43,7 +45,6 @@ function feasibility_step(
   while !(normcz ≤ ρ || tired || infeasible)
 
     #Compute the a direction satisfying the trust-region constraint
-    (m, n) = size(Jz)
     d, Jd, infeasible, solved =
       eval(meta.TR_compute_step)(cz, Jz, ctol, Δ, normcz, meta.TR_compute_step_struct)
 
@@ -51,8 +52,8 @@ function feasibility_step(
       failed_step_comp = true #too small step
       status = :too_small
     else
-      zp = z + d
-      czp = cons(nlp, zp)
+      @. zp = z + d
+      cons!(nlp, zp, czp)
       normczp = norm(czp)
 
       Pred = T(0.5) * (normcz^2 - norm(Jd + cz)^2)
@@ -98,12 +99,12 @@ function feasibility_step(
     # Safeguard: agressive normal step
     if normcz > ρ && (consecutive_bad_steps ≥ bad_steps_lim || failed_step_comp)
       Hz = hess_op(nlp, z, cz, obj_weight = zero(T))
-      (d, stats) = cg(Hz + Jz' * Jz, Jz' * cz)
+      (d, stats) = cg!(meta.agressive_cgsolver, Hz + Jz' * Jz, Jz' * cz)
       if !stats.solved
         @warn "Fail cg in feasibility_step: $(stats.status)"
       end
-      zp = z - d
-      czp = cons(nlp, zp)
+      @. zp = z - d
+      cons!(nlp, zp, czp)
       nczp = norm(czp)
       if nczp < normcz #even if d is small we keep going
         infeasible = false

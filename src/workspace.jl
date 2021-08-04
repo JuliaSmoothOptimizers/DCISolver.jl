@@ -8,15 +8,15 @@ mutable struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:In
   ∇ℓxλ::S # ∇fx + Jx' * λ
   # From the feasibility step
   z::S
+  ∇fz::S
   cz::S
   ∇ℓzλ::S
   # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
   rows::Si # zeros(Int, nnz)
   cols::Si # zeros(Int, nnz)
   vals::S # zeros(nnz)
-  # LDL = solver_correspondence[meta.linear_solver](n + m, rows, cols, vals)
+  # LDL # would need the broadcast LDL
 end
-
 
 function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
   n, m = nlp.meta.nvar, nlp.meta.ncon
@@ -24,6 +24,7 @@ function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
   Jx = jac_op(nlp, x0)
   rows, cols = Vector{Int}(undef, nnz), Vector{Int}(undef, nnz)
   vals = S(undef, nnz)
+  # LDL = solver_correspondence[meta.linear_solver](n + m, rows, cols, vals)
   return DCIWorkspace{T, S, Vector{Int}, typeof(Jx)}(
     x0,
     S(undef, n),
@@ -33,10 +34,12 @@ function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
     S(undef, m),
     S(undef, n),
     S(undef, n),
+    S(undef, n),
     S(undef, m),
     S(undef, n),
     rows,
     cols,
     vals,
+    # LDL,
   )
 end

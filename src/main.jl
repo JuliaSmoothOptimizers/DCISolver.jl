@@ -19,7 +19,7 @@ function dci(
   ∇fx, cx = workspace.∇fx, workspace.cx
   ∇ℓzλ, cz = workspace.∇ℓzλ, workspace.cz
 
-  x, z = copy(workspace.x0), copy(workspace.x0)
+  x = copy(workspace.x0)
   fz = fx = obj(nlp, x)
   grad!(nlp, x, ∇fx)
   cons!(nlp, x, cx)
@@ -103,7 +103,7 @@ function dci(
 
   while !(solved || tired || infeasible || stalled)
     # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
-    z, cz, fz, ℓzλ, ∇ℓzλ, ρ, primalnorm, dualnorm, normal_status = normal_step(
+    z, cz, fz, ℓzλ, ∇ℓzλ, ρ, primalnorm, dualnorm, normal_status = normal_step!(
       nlp,
       x,
       cx,
@@ -121,7 +121,8 @@ function dci(
       meta.max_time - eltime,
       meta.max_iter_normal_step,
       meta,
-    ) # TODO-in place
+      workspace,
+    )
     # Convergence test
     solved = primalnorm < ϵp && (dualnorm < ϵd || fz < meta.unbounded_threshold)
     infeasible = normal_status == :infeasible
