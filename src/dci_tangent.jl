@@ -41,9 +41,9 @@ function tangent_step!(
   max_eval::Int = 1_000,
   max_time::AbstractFloat = 1_000.0,
 ) where {T}
-  d = Array{T, 1}(undef, nlp.meta.nvar)
+  d, tr, xt = workspace.dtan, workspace.tr, workspace.xtan
   Δℓ = zero(T)
-  tr = TrustRegion(nlp.meta.nvar, Δℓ)
+  r = -one(T)
 
   status = :unknown
   iter = 0
@@ -52,27 +52,25 @@ function tangent_step!(
 
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
 
-  normct, r = normcz, -one(T)
-
-  while !((normct ≤ meta.ρbar * ρ && r ≥ η₁) || tired)
+  while !((normcz ≤ meta.ρbar * ρ && r ≥ η₁) || tired)
     #Compute a descent direction d (no evals)
     d, dBd, status, γ, δ, vals = compute_descent_direction!(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta, workspace)
     n2d = dot(d, d)
     if √n2d > Δ
-      d = d * (Δ / √n2d) #Just in case.
+      d .*= Δ / √n2d #Just in case.
     end
     if √n2d < small_d
       status = :small_horizontal_step
       break
     end
 
-    xt = z + d
-    ct = cons(nlp, xt)
-    normct = norm(ct)
+    @. xt = z + d
+    cons!(nlp, xt, cz)
+    normcz = norm(cz)
 
-    if normct ≤ meta.ρbar * ρ
+    if normcz ≤ meta.ρbar * ρ
       ft = obj(nlp, xt)
-      ℓxtλ = ft + dot(λ, ct)
+      ℓxtλ = ft + dot(λ, cz)
       qd = dBd / 2 + dot(g, d)
 
       Δℓ, pred = aredpred!(tr, nlp, ℓzλ, ℓxtλ, qd, xt, d, dot(g, d))
@@ -83,8 +81,7 @@ function tangent_step!(
         Δ *= σ₁^m
       else #success
         status = :success
-        z = xt
-        cz = ct
+        z .= xt
         fz = ft
         ℓzλ = ℓxtλ
         if r ≥ η₂ && √n2d ≥ 0.99Δ
@@ -104,7 +101,7 @@ function tangent_step!(
         fz,
         ℓzλ,
         Float64,
-        norm(ct),
+        normcz,
         Float64,
         Float64,
         status,
@@ -144,12 +141,13 @@ function compute_descent_direction!(
   vals::AbstractVector{T},
   d::AbstractVector{T},
   meta::MetaDCI,
-  workspace,
+  workspace::DCIWorkspace,
 ) where {T}
   m, n = nlp.meta.ncon, nlp.meta.nvar
+  dcp = workspace.dcp
 
   #first compute a gradient step
-  dcp_on_boundary, dcp, dcpBdcp, α = _compute_gradient_step(nlp, gBg, g, Δ)
+  dcp_on_boundary, dcp, dcpBdcp, α = _compute_gradient_step!(nlp, gBg, g, Δ, dcp)
 
   if dcp_on_boundary # When the Cauchy step is in the boundary, we use it
     status = :cauchy_step
@@ -176,7 +174,7 @@ function compute_descent_direction!(
     else
       dotdndcp, norm2dcp = dot(dn, dcp), dot(dcp, dcp)
       τ = _compute_step_length(norm2dn, dotdndcp, norm2dcp, Δ)
-      d = dn + τ * (dcp - dn)
+      @. d = dn + τ * (dcp - dn)
       dBd = τ^2 * dcpBdcp + 2 * τ * (1 - τ) * dcpBdn + (1 - τ)^2 * dnBdn
       status = :dogleg
     end
@@ -194,7 +192,7 @@ return `dcp = - α g`
 return `dcpBdcp = α^2 gBg`
 and `α` the solution.
 """
-function _compute_gradient_step(nlp::AbstractNLPModel, gBg::T, g::AbstractVector{T}, Δ::T) where {T}
+function _compute_gradient_step!(nlp::AbstractNLPModel, gBg::T, g::AbstractVector{T}, Δ::T, dcp::AbstractVector{T}) where {T}
   dcp_on_boundary = false
   dgg = dot(g, g)
   if gBg ≤ 1e-12 * dgg #generalize this test
@@ -207,7 +205,7 @@ function _compute_gradient_step(nlp::AbstractNLPModel, gBg::T, g::AbstractVector
       dcp_on_boundary = true
     end
   end
-  dcp = -α * g
+  @. dcp = -α * g
   dcpBdcp = α^2 * gBg
 
   return dcp_on_boundary, dcp, dcpBdcp, α

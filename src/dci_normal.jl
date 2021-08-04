@@ -95,7 +95,7 @@ function normal_step!(
       #Heuristic that forces a random move from z
       restoration, infeasible = true, false
       perturbation_length = min(primalnorm, √ϵp) / norm(z) #sqrt(ϵp)/norm(z)
-      @. z += (2 * rand(T, nlp.meta.nvar) - 1) * perturbation_length
+      z .+= (2 * rand(T, nlp.meta.nvar) .- one(T)) * perturbation_length
       cons!(nlp, z, cz)
       Jz = jac_op(nlp, z)
       primalnorm = norm(cz)
