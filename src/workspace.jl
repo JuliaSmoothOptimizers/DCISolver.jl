@@ -16,6 +16,10 @@ mutable struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:In
   cols::Si # zeros(Int, nnz)
   vals::S # zeros(nnz)
   # LDL # would need the broadcast LDL
+  # factorization computation
+  dζ::S
+  dn::S
+  rhs::S
 end
 
 function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
@@ -25,6 +29,10 @@ function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
   rows, cols = Vector{Int}(undef, nnz), Vector{Int}(undef, nnz)
   vals = S(undef, nnz)
   # LDL = solver_correspondence[meta.linear_solver](n + m, rows, cols, vals)
+
+  dζ = Array{T}(undef, m + n)
+  dn = Array{T}(undef, n)
+  rhs = Array{T}(undef, m + n)
   return DCIWorkspace{T, S, Vector{Int}, typeof(Jx)}(
     x0,
     S(undef, n),
@@ -41,5 +49,8 @@ function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
     cols,
     vals,
     # LDL,
+    dζ,
+    dn,
+    rhs,
   )
 end

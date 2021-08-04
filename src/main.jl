@@ -157,7 +157,7 @@ function dci(
     gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
 
     rmng_time = meta.max_time - (time() - start_time)
-    x, cx, fx, tg_status, Δtg, Δℓₜ, γ, δ = tangent_step(
+    x, cx, fx, tg_status, Δtg, Δℓₜ, γ, δ = tangent_step!(
       nlp,
       z,
       λ,
@@ -173,6 +173,7 @@ function dci(
       γ,
       δ,
       meta,
+      workspace,
       Δ = Δtg,
       max_eval = meta.max_eval,
       max_time = rmng_time,
