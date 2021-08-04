@@ -101,13 +101,6 @@ end
 """
 Compute the solution of ‖Jx' λ - ∇fx‖
 """
-function compute_lx(Jx, ∇fx::AbstractVector{T}, meta::MetaDCI) where {T <: AbstractFloat}
-  m, n = size(Jx)
-  λ = Array{T}(undef, m)
-  compute_lx!(Jx, ∇fx, λ, meta)
-  return λ
-end
-
 function compute_lx!(
   Jx,
   ∇fx::AbstractVector{T},
@@ -129,15 +122,6 @@ function compute_lx!(
     #print(stats)
   end
   λ .= l #Should we really update if !stats.solved?
-  return λ
-end
-
-function compute_lx(Jx, ∇fx, meta::MetaDCI)
-  return Jx' \ (-∇fx)
-end
-
-function compute_lx!(Jx, ∇fx, λ, meta::MetaDCI)
-  λ .= Jx' \ (-∇fx)
   return λ
 end
 

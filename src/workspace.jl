@@ -34,14 +34,6 @@ function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
   vals = S(undef, nnz)
   # LDL = solver_correspondence[meta.linear_solver](n + m, rows, cols, vals)
 
-  xtan = Array{T}(undef, n)
-  dtan = Array{T}(undef, n)
-
-  tr = TrustRegion(n, zero(T))
-  dζ = Array{T}(undef, m + n)
-  dn = Array{T}(undef, n)
-  dcp = Array{T}(undef, n)
-  rhs = Array{T}(undef, m + n)
   return DCIWorkspace{T, S, Vector{Int}, typeof(Jx)}(
     x0,
     S(undef, n),
@@ -58,12 +50,12 @@ function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
     cols,
     vals,
     # LDL,
-    xtan,
-    dtan,
-    tr,
-    dζ,
-    dn,
-    dcp,
-    rhs,
+    S(undef, n),
+    S(undef, n),
+    TrustRegion(n, zero(T)),
+    S(undef, m + n),
+    S(undef, n),
+    S(undef, n),
+    S(undef, m + n),
   )
 end
