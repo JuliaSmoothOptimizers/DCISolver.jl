@@ -53,6 +53,7 @@ function normal_step!(
       ρ,
       ϵp,
       meta,
+      workspace,
       max_eval = max_eval,
       max_time = max_time,
     )
@@ -155,7 +156,7 @@ function compute_ρ(
   end
   ngp = dualnorm / (norm∇fx + 1)
   ρ = max(min(ngp, p1) * ρmax, ϵ) # max(min(ngp/ρmax, p1) * ρmax, ϵ)
-  if ρ ≤ ϵ && primalnorm > 100ϵ
+  if ρ ≤ ϵ && primalnorm > 100 * ϵ
     ρ = primalnorm * p2 #/ 10
     #elseif ngp ≤ 5ϵ
     #  ρ = ϵ

@@ -84,7 +84,7 @@ function tangent_step!(
         z .= xt
         fz = ft
         ℓzλ = ℓxtλ
-        if r ≥ η₂ && √n2d ≥ 0.99Δ
+        if r ≥ η₂ && √n2d ≥ 0.99 * Δ
           Δ *= σ₂
         end
       end

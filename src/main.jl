@@ -58,7 +58,7 @@ function dci(
   ϵd = meta.atol + meta.rtol * max(dualnorm, norm(∇fx))
   ϵp = meta.ctol
 
-  ρmax = max(ϵp, 5primalnorm, 50dualnorm)
+  ρmax = max(ϵp, 5 * primalnorm, 50 * dualnorm)
   ρ = T(NaN) #not needed at iteration 0
 
   Δtg = meta.tan_Δ
@@ -139,7 +139,7 @@ function dci(
       ρmax = max(ϵp, ρmax / 2)
       ρ = min(ρ, ρmax)
     else #we don't let ρmax too far from the residuals
-      ρmax = min(ρmax, max(ϵp, 5primalnorm, 50dualnorm))
+      ρmax = min(ρmax, max(ϵp, 5 * primalnorm, 50 * dualnorm))
       ρ = min(ρ, ρmax)
     end
     if Δℓₙ > -Δℓₜ / 2

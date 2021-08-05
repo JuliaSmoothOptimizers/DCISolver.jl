@@ -1,3 +1,5 @@
 Manifest.toml
 *.jld2
 *.png
+*.mem
+/allocs-pack

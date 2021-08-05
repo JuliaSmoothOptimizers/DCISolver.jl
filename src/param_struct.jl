@@ -84,7 +84,7 @@ end
 
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
-struct MetaDCI{T <: AbstractFloat, In <: Integer, COO <: SymCOOSolver}
+struct MetaDCI{T <: AbstractFloat, In <: Integer, COO <: SymCOOSolver, CGLSStruct <: comp_λ_cgls, TRStruct <: Union{TR_lsmr_struct, TR_dogleg_struct}}
 
   #Tolerances on the problem:
   atol::T
@@ -100,7 +100,7 @@ struct MetaDCI{T <: AbstractFloat, In <: Integer, COO <: SymCOOSolver}
 
   #Compute Lagrange multipliers
   comp_λ::Symbol
-  λ_struct::comp_λ_cgls
+  λ_struct::CGLSStruct
   #λ_struct_rescue #one idea is to have a 2nd set in case of emergency 
   #good only if we can make a warm-start.
 
@@ -125,7 +125,7 @@ struct MetaDCI{T <: AbstractFloat, In <: Integer, COO <: SymCOOSolver}
   agressive_cgsolver::CgSolver # second-order correction
   ## Compute the direction in feasibility step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
-  TR_compute_step_struct::Union{TR_lsmr_struct, TR_dogleg_struct}
+  TR_compute_step_struct::TRStruct
 
   # Parameters updating ρ (or redefine the function `compute_ρ`)
   compρ_p1::T
