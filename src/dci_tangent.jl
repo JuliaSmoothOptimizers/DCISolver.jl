@@ -219,14 +219,13 @@ function _compute_step_length(norm2dn::T, dotdndcp::T, norm2dcp::T, Δ::T) where
   # d = τ dcp + (1 - τ) * dn = dn + τ * (dcp - dn)
   # ‖d‖² = Δ² => τ² ‖dcp - dn‖² + 2τ dnᵀ(dcp - dn) + ‖dn‖² - Δ² = 0
   # Δ = b² - 4ac
-  q₀ = norm2dn - Δ^2
-  q₁ = 2 * (dotdndcp - norm2dn)
-  q₂ = norm2dcp - 2 * dotdndcp + norm2dn
-  #q₀, q₁, q₂ = [q₀, q₁, q₂] / maximum(abs.([q₀, q₁, q₂]))
-  q₀, q₁, q₂ = [q₀, q₁, q₂] / q₂ #so the first coefficient is 1.
-  roots = Krylov.roots_quadratic(q₂, q₁, q₀) #Is this type stable?
+  scal = norm2dcp - 2 * dotdndcp + norm2dn
+  q₀ = (norm2dn - Δ^2) / scal
+  q₁ = 2 * (dotdndcp - norm2dn) / scal
+  q₂ = one(T)
+  # q₀, q₁, q₂ = [q₀, q₁, q₂] / q₂ #so the first coefficient is 1.
+  roots = Krylov.roots_quadratic(q₂, q₁, q₀)
   τ = length(roots) == 0 ? one(T) : min(one(T), roots...)
-
   return τ
 end
 

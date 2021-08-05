@@ -110,7 +110,7 @@ function compute_lx!(
   (l, stats) = eval(meta.comp_λ)(
     meta.λ_struct.comp_λ_solver,
     Jx',
-    -∇fx,
+    ∇fx,
     M = meta.λ_struct.M,
     λ = meta.λ_struct.λ,
     atol = meta.λ_struct.atol,
@@ -121,7 +121,7 @@ function compute_lx!(
     @warn "Fail $(meta.comp_λ) computation Lagrange multiplier: $(stats.status)"
     #print(stats)
   end
-  λ .= l #Should we really update if !stats.solved?
+  @. λ = -l #Should we really update if !stats.solved?
   return λ
 end
 

@@ -41,7 +41,7 @@ function _compute_newton_step!(
 
     if success(LDL)
       solve!(dζ, LDL, rhs)
-      dn = dζ[1:n]
+      dn .= dζ[1:n]
       dλ = view(dζ, (n + 1):(n + m))
       slope = dot(g, dn)
       dnBdn = -slope - γ * dot(dn, dn) - δ * dot(dλ, dλ)

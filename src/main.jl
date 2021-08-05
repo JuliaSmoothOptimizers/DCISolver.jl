@@ -19,7 +19,7 @@ function dci(
   ∇fx, cx = workspace.∇fx, workspace.cx
   ∇ℓzλ, cz = workspace.∇ℓzλ, workspace.cz
 
-  x .= copy(workspace.x0)
+  x .= workspace.x0
   fz = fx = obj(nlp, x)
   grad!(nlp, x, ∇fx)
   cons!(nlp, x, cx) # issue with the type of cx
