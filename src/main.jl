@@ -1,8 +1,8 @@
 function dci(
     nlp::AbstractNLPModel{T, S},
-    meta::MetaDCI,
+    meta::MetaDCI{T, In, COO},
     workspace::DCIWorkspace{T, S, Si, Op},
-  ) where {T, S, Si, Op}
+  ) where {T, S, In, Si, Op, COO}
   if !(nlp.meta.minimize)
     error("DCI only works for minimization problem")
   end
@@ -19,7 +19,7 @@ function dci(
   ∇fx, cx = workspace.∇fx, workspace.cx
   ∇ℓzλ, cz = workspace.∇ℓzλ, workspace.cz
 
-  x = copy(workspace.x0)
+  x .= copy(workspace.x0)
   fz = fx = obj(nlp, x)
   grad!(nlp, x, ∇fx)
   cons!(nlp, x, cx)
@@ -46,7 +46,7 @@ function dci(
   vals .= zero(T)
   regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
 
-  LDL = solver_correspondence[meta.linear_solver](n + m, rows, cols, vals)
+  LDL = COO(n + m, rows, cols, vals)
 
   Δℓₜ = T(Inf)
   Δℓₙ = zero(T)
@@ -59,7 +59,7 @@ function dci(
   ϵp = meta.ctol
 
   ρmax = max(ϵp, 5primalnorm, 50dualnorm)
-  ρ = NaN #not needed at iteration 0
+  ρ = T(NaN) #not needed at iteration 0
 
   Δtg = meta.tan_Δ
 

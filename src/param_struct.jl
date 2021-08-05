@@ -84,7 +84,7 @@ end
 
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
-struct MetaDCI{T <: AbstractFloat, In <: Integer}
+struct MetaDCI{T <: AbstractFloat, In <: Integer, COO <: SymCOOSolver}
 
   #Tolerances on the problem:
   atol::T
@@ -106,6 +106,7 @@ struct MetaDCI{T <: AbstractFloat, In <: Integer}
 
   # Solver for the factorization
   linear_solver::Symbol # = :ldlfact,#:ma57,
+  fact_type::Val{COO}
   ## regularization of the factorization
   decrease_γ::T
   increase_γ::T
@@ -199,6 +200,7 @@ function MetaDCI(
     comp_λ,
     λ_struct,
     linear_solver,
+    Val(solver_correspondence[linear_solver]),
     decrease_γ,
     increase_γ,
     δmin,

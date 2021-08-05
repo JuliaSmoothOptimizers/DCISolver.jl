@@ -1,4 +1,4 @@
-mutable struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, Op}
+struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, Op}
   x0::S
   x::S
   ∇fx::S # grad(nlp, x)
@@ -15,7 +15,7 @@ mutable struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:In
   rows::Si # zeros(Int, nnz)
   cols::Si # zeros(Int, nnz)
   vals::S # zeros(nnz)
-  # LDL # would need the broadcast LDL
+  # LDL::COO # would need the broadcast LDL
   xtan::S
   dtan::S
   tr::TrustRegion
@@ -26,13 +26,12 @@ mutable struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:In
   rhs::S
 end
 
-function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta, x0::S) where {S, T}
+function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta::MetaDCI{T, In, COO}, x0::S) where {T, S <: AbstractVector{T}, In <: Integer, COO <: SymCOOSolver}
   n, m = nlp.meta.nvar, nlp.meta.ncon
   nnz = nlp.meta.nnzh + nlp.meta.nnzj + n + m
   Jx = jac_op(nlp, x0)
   rows, cols = Vector{Int}(undef, nnz), Vector{Int}(undef, nnz)
   vals = S(undef, nnz)
-  # LDL = solver_correspondence[meta.linear_solver](n + m, rows, cols, vals)
 
   return DCIWorkspace{T, S, Vector{Int}, typeof(Jx)}(
     x0,
