@@ -3,7 +3,9 @@ struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, 
   x::S
   ∇fx::S # grad(nlp, x)
   cx::S # cons(nlp, x)
-  Jx::Op # jac_op(nlp, x)
+  Jx::Op # jac_op!(nlp, x, Jv, Jtv)
+  Jv::S
+  Jtv::S
   λ::S # λ = argmin ‖∇f + Jᵀλ‖
   ∇ℓxλ::S # ∇fx + Jx' * λ
   # From the feasibility step
@@ -39,6 +41,8 @@ function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta::MetaDCI{T, In, COO}, x0
     S(undef, n),
     S(undef, m),
     Jx,
+    S(undef, m),
+    S(undef, n),
     S(undef, m),
     S(undef, n),
     S(undef, n),

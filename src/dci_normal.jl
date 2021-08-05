@@ -97,7 +97,7 @@ function normal_step!(
       perturbation_length = min(primalnorm, √ϵp) / norm(z) #sqrt(ϵp)/norm(z)
       z .+= (2 * rand(T, nlp.meta.nvar) .- one(T)) * perturbation_length
       cons!(nlp, z, cz)
-      Jz = jac_op(nlp, z)
+      Jz = jac_op!(nlp, z, workspace.Jv, workspace.Jtv) # workspace.Jx
       primalnorm = norm(cz)
       ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0, meta)
     end

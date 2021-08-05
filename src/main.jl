@@ -22,11 +22,11 @@ function dci(
   x .= copy(workspace.x0)
   fz = fx = obj(nlp, x)
   grad!(nlp, x, ∇fx)
-  cons!(nlp, x, cx)
+  cons!(nlp, x, cx) # issue with the type of cx
 
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
-  Jx, λ, ∇ℓxλ = workspace.Jx, workspace.λ, workspace.∇ℓxλ
-  Jx = jac_op(nlp, x)
+  λ, ∇ℓxλ = workspace.λ, workspace.∇ℓxλ
+  Jx = jac_op!(nlp, x, workspace.Jv, workspace.Jtv) # workspace.Jx
   compute_lx!(Jx, ∇fx, λ, meta)  # λ = argmin ‖∇f + Jᵀλ‖
   ℓxλ = fx + dot(λ, cx)
   ∇ℓxλ .= ∇fx .+ Jx' * λ
@@ -206,7 +206,7 @@ function dci(
     end
 
     grad!(nlp, x, ∇fx)
-    Jx = jac_op(nlp, x)
+    Jx = jac_op!(nlp, x, workspace.Jv, workspace.Jtv) # workspace.Jx
     compute_lx!(Jx, ∇fx, λ, meta)
     ℓxλ = fx + dot(λ, cx) #differs from the tangent step as λ is different
     ∇ℓxλ .= ∇fx .+ Jx' * λ
