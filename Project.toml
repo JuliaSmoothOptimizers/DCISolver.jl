@@ -1,7 +1,7 @@
 name = "DCISolver"
 uuid = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
 authors = ["Abel Soares Siqueira <abel.s.siqueira@gmail.com>"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 HSL = "34c5aeac-e683-54a6-a0e9-6e0fdc586c50"
@@ -16,7 +16,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]
 HSL = "0.1.0, 0.2.0"
-Krylov = "0.7"
+Krylov = "~0.7.4"
 LDLFactorizations = "0.8.1"
 NLPModels = "0.15, 0.16, 0.17"
 SolverCore = "0.2"
