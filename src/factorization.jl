@@ -10,16 +10,18 @@ function _compute_newton_step!(
   dcp::AbstractVector{T},
   vals::AbstractVector{T},
   meta::MetaDCI,
+  workspace,
 ) where {T}
   m, n = nlp.meta.ncon, nlp.meta.nvar
   nnzh, nnzj = nlp.meta.nnzh, nlp.meta.nnzj
   δmin = meta.δmin
 
-  dζ = Array{T}(undef, m + n)
-  dn = zeros(T, n) #Array{Float64}(undef, n)
+  dζ, dn, rhs = workspace.dζ, workspace.dn, workspace.rhs
+  dn .= zero(T)
 
   # When there is room for improvement, we try a dogleg step
-  rhs = [-g; zeros(T, m)]
+  rhs[1:n] .= -g
+  rhs[(n+1):end] .= zero(T)
   dnBdn = dcpBdn = zero(T)
   gnorm = norm(g)
   slope = NaN
@@ -39,7 +41,7 @@ function _compute_newton_step!(
 
     if success(LDL)
       solve!(dζ, LDL, rhs)
-      dn = dζ[1:n]
+      dn .= dζ[1:n]
       dλ = view(dζ, (n + 1):(n + m))
       slope = dot(g, dn)
       dnBdn = -slope - γ * dot(dn, dn) - δ * dot(dλ, dλ)
@@ -64,7 +66,7 @@ function _compute_newton_step!(
         γ = γ0 #regularization failed
         dnBdn = zero(T)
         dcpBdn = zero(T)
-        dn = zeros(n)
+        dn .= zero(T)
         break
       end
       γ = min(max(γ * meta.increase_γ, √eps(T)), 1 / √eps(T))

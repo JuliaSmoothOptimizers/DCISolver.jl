@@ -15,7 +15,7 @@ Return status with outcomes:
 See https://github.com/JuliaSmoothOptimizers/SolverTools.jl/blob/78f6793f161c3aac2234aee8a27aa07f1df3e8ee/src/trust-region/trust-region.jl#L37
 for `SolverTools.aredpred`
 """
-function tangent_step(
+function tangent_step!(
   nlp::AbstractNLPModel,
   z::AbstractVector{T},
   λ::AbstractVector{T},
@@ -30,7 +30,8 @@ function tangent_step(
   ρ::AbstractFloat,
   γ::T,
   δ::T,
-  meta::MetaDCI;
+  meta::MetaDCI,
+  workspace::DCIWorkspace;
   Δ::AbstractFloat = meta.tan_Δ,
   η₁::AbstractFloat = meta.tan_η₁,
   η₂::AbstractFloat = meta.tan_η₂,
@@ -40,9 +41,9 @@ function tangent_step(
   max_eval::Int = 1_000,
   max_time::AbstractFloat = 1_000.0,
 ) where {T}
-  d = Array{T, 1}(undef, nlp.meta.nvar)
+  d, tr, xt = workspace.dtan, workspace.tr, workspace.xtan
   Δℓ = zero(T)
-  tr = TrustRegion(nlp.meta.nvar, Δℓ)
+  r = -one(T)
 
   status = :unknown
   iter = 0
@@ -51,27 +52,25 @@ function tangent_step(
 
   tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
 
-  normct, r = normcz, -one(T)
-
-  while !((normct ≤ meta.ρbar * ρ && r ≥ η₁) || tired)
+  while !((normcz ≤ meta.ρbar * ρ && r ≥ η₁) || tired)
     #Compute a descent direction d (no evals)
-    d, dBd, status, γ, δ, vals = compute_descent_direction(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta)
+    d, dBd, status, γ, δ, vals = compute_descent_direction!(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta, workspace)
     n2d = dot(d, d)
     if √n2d > Δ
-      d = d * (Δ / √n2d) #Just in case.
+      d .*= Δ / √n2d #Just in case.
     end
     if √n2d < small_d
       status = :small_horizontal_step
       break
     end
 
-    xt = z + d
-    ct = cons(nlp, xt)
-    normct = norm(ct)
+    @. xt = z + d
+    cons!(nlp, xt, cz)
+    normcz = norm(cz)
 
-    if normct ≤ meta.ρbar * ρ
+    if normcz ≤ meta.ρbar * ρ
       ft = obj(nlp, xt)
-      ℓxtλ = ft + dot(λ, ct)
+      ℓxtλ = ft + dot(λ, cz)
       qd = dBd / 2 + dot(g, d)
 
       Δℓ, pred = aredpred!(tr, nlp, ℓzλ, ℓxtλ, qd, xt, d, dot(g, d))
@@ -82,11 +81,10 @@ function tangent_step(
         Δ *= σ₁^m
       else #success
         status = :success
-        z = xt
-        cz = ct
+        z .= xt
         fz = ft
         ℓzλ = ℓxtλ
-        if r ≥ η₂ && √n2d ≥ 0.99Δ
+        if r ≥ η₂ && √n2d ≥ 0.99 * Δ
           Δ *= σ₂
         end
       end
@@ -103,7 +101,7 @@ function tangent_step(
         fz,
         ℓzλ,
         Float64,
-        norm(ct),
+        normcz,
         Float64,
         Float64,
         status,
@@ -132,7 +130,7 @@ Compute a direction `d` with three possible outcomes:
 - `:interior_cauchy_step` when γ is too large.
 for `min_d q(d) s.t. ‖d‖ ≤ Δ`.
 """
-function compute_descent_direction(
+function compute_descent_direction!(
   nlp::AbstractNLPModel,
   gBg::T,
   g::AbstractVector{T},
@@ -143,11 +141,13 @@ function compute_descent_direction(
   vals::AbstractVector{T},
   d::AbstractVector{T},
   meta::MetaDCI,
+  workspace::DCIWorkspace,
 ) where {T}
   m, n = nlp.meta.ncon, nlp.meta.nvar
+  dcp = workspace.dcp
 
   #first compute a gradient step
-  dcp_on_boundary, dcp, dcpBdcp, α = _compute_gradient_step(nlp, gBg, g, Δ)
+  dcp_on_boundary, dcp, dcpBdcp, α = _compute_gradient_step!(nlp, gBg, g, Δ, dcp)
 
   if dcp_on_boundary # When the Cauchy step is in the boundary, we use it
     status = :cauchy_step
@@ -155,7 +155,7 @@ function compute_descent_direction(
     d = dcp
   else
     dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals =
-      _compute_newton_step!(nlp, LDL, g, γ, δ, dcp, vals, meta)
+      _compute_newton_step!(nlp, LDL, g, γ, δ, dcp, vals, meta, workspace)
     norm2dn = dot(dn, dn)
     if γ_too_large || dnBdn ≤ 1e-10 #or same test as gBg in _compute_gradient_step ?
       #dn = 0 here.
@@ -174,7 +174,7 @@ function compute_descent_direction(
     else
       dotdndcp, norm2dcp = dot(dn, dcp), dot(dcp, dcp)
       τ = _compute_step_length(norm2dn, dotdndcp, norm2dcp, Δ)
-      d = dn + τ * (dcp - dn)
+      @. d = dn + τ * (dcp - dn)
       dBd = τ^2 * dcpBdcp + 2 * τ * (1 - τ) * dcpBdn + (1 - τ)^2 * dnBdn
       status = :dogleg
     end
@@ -192,7 +192,7 @@ return `dcp = - α g`
 return `dcpBdcp = α^2 gBg`
 and `α` the solution.
 """
-function _compute_gradient_step(nlp::AbstractNLPModel, gBg::T, g::AbstractVector{T}, Δ::T) where {T}
+function _compute_gradient_step!(nlp::AbstractNLPModel, gBg::T, g::AbstractVector{T}, Δ::T, dcp::AbstractVector{T}) where {T}
   dcp_on_boundary = false
   dgg = dot(g, g)
   if gBg ≤ 1e-12 * dgg #generalize this test
@@ -205,7 +205,7 @@ function _compute_gradient_step(nlp::AbstractNLPModel, gBg::T, g::AbstractVector
       dcp_on_boundary = true
     end
   end
-  dcp = -α * g
+  @. dcp = -α * g
   dcpBdcp = α^2 * gBg
 
   return dcp_on_boundary, dcp, dcpBdcp, α
@@ -219,14 +219,13 @@ function _compute_step_length(norm2dn::T, dotdndcp::T, norm2dcp::T, Δ::T) where
   # d = τ dcp + (1 - τ) * dn = dn + τ * (dcp - dn)
   # ‖d‖² = Δ² => τ² ‖dcp - dn‖² + 2τ dnᵀ(dcp - dn) + ‖dn‖² - Δ² = 0
   # Δ = b² - 4ac
-  q₀ = norm2dn - Δ^2
-  q₁ = 2 * (dotdndcp - norm2dn)
-  q₂ = norm2dcp - 2 * dotdndcp + norm2dn
-  #q₀, q₁, q₂ = [q₀, q₁, q₂] / maximum(abs.([q₀, q₁, q₂]))
-  q₀, q₁, q₂ = [q₀, q₁, q₂] / q₂ #so the first coefficient is 1.
-  roots = Krylov.roots_quadratic(q₂, q₁, q₀) #Is this type stable?
+  scal = norm2dcp - 2 * dotdndcp + norm2dn
+  q₀ = (norm2dn - Δ^2) / scal
+  q₁ = 2 * (dotdndcp - norm2dn) / scal
+  q₂ = one(T)
+  # q₀, q₁, q₂ = [q₀, q₁, q₂] / q₂ #so the first coefficient is 1.
+  roots = Krylov.roots_quadratic(q₂, q₁, q₀)
   τ = length(roots) == 0 ? one(T) : min(one(T), roots...)
-
   return τ
 end
 

@@ -1,5 +1,5 @@
 # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
-function normal_step(
+function normal_step!(
   nlp::AbstractNLPModel,
   x::AbstractVector{T},
   cx::AbstractVector{T},
@@ -17,12 +17,17 @@ function normal_step(
   max_time,
   max_iter,
   meta::MetaDCI,
+  workspace::DCIWorkspace,
 ) where {T}
 
   #assign z variable:
-  z, cz, Jz, fz, ∇fz = x, cx, Jx, fx, ∇fx
+  workspace.z .= x
+  workspace.cz .= cx
+  workspace.∇fz .= ∇fx
+  Jz, fz, ℓzλ = Jx, fx, ℓxλ
   norm∇fz = norm(∇fx) #can be avoided if we use dualnorm
-  ℓzλ, ∇ℓzλ = ℓxλ, ∇ℓxλ
+  workspace.∇ℓzλ .= ∇ℓxλ
+  z, cz, ∇fz, ∇ℓzλ = workspace.z, workspace.cz, workspace.∇fz, workspace.∇ℓzλ
 
   infeasible = false
   restoration = false
@@ -48,15 +53,16 @@ function normal_step(
       ρ,
       ϵp,
       meta,
+      workspace,
       max_eval = max_eval,
       max_time = max_time,
     )
 
-    fz, ∇fz = objgrad(nlp, z)
+    fz, ∇fz = objgrad!(nlp, z, ∇fz)
     norm∇fz = norm(∇fz) #can be avoided if we use dualnorm
     compute_lx!(Jz, ∇fz, λ, meta)
     ℓzλ = fz + dot(λ, cz)
-    ∇ℓzλ = ∇fz + Jz' * λ
+    ∇ℓzλ .= ∇fz .+ Jz' * λ
     dualnorm = norm(∇ℓzλ)
 
     #update rho
@@ -90,9 +96,9 @@ function normal_step(
       #Heuristic that forces a random move from z
       restoration, infeasible = true, false
       perturbation_length = min(primalnorm, √ϵp) / norm(z) #sqrt(ϵp)/norm(z)
-      z += (2 .* rand(T, nlp.meta.nvar) .- 1) * perturbation_length
-      cz = cons(nlp, z)
-      Jz = jac_op(nlp, z)
+      z .+= (2 * rand(T, nlp.meta.nvar) .- one(T)) * perturbation_length
+      cons!(nlp, z, cz)
+      Jz = jac_op!(nlp, z, workspace.Jv, workspace.Jtv) # workspace.Jx
       primalnorm = norm(cz)
       ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, 0, meta)
     end
@@ -150,7 +156,7 @@ function compute_ρ(
   end
   ngp = dualnorm / (norm∇fx + 1)
   ρ = max(min(ngp, p1) * ρmax, ϵ) # max(min(ngp/ρmax, p1) * ρmax, ϵ)
-  if ρ ≤ ϵ && primalnorm > 100ϵ
+  if ρ ≤ ϵ && primalnorm > 100 * ϵ
     ρ = primalnorm * p2 #/ 10
     #elseif ngp ≤ 5ϵ
     #  ρ = ϵ

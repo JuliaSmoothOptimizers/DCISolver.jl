@@ -84,7 +84,7 @@ end
 
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
-struct MetaDCI{T <: AbstractFloat, In <: Integer}
+struct MetaDCI{T <: AbstractFloat, In <: Integer, COO <: SymCOOSolver, CGLSStruct <: comp_λ_cgls, TRStruct <: Union{TR_lsmr_struct, TR_dogleg_struct}}
 
   #Tolerances on the problem:
   atol::T
@@ -100,12 +100,13 @@ struct MetaDCI{T <: AbstractFloat, In <: Integer}
 
   #Compute Lagrange multipliers
   comp_λ::Symbol
-  λ_struct::comp_λ_cgls
+  λ_struct::CGLSStruct
   #λ_struct_rescue #one idea is to have a 2nd set in case of emergency 
   #good only if we can make a warm-start.
 
   # Solver for the factorization
   linear_solver::Symbol # = :ldlfact,#:ma57,
+  fact_type::Val{COO}
   ## regularization of the factorization
   decrease_γ::T
   increase_γ::T
@@ -121,9 +122,10 @@ struct MetaDCI{T <: AbstractFloat, In <: Integer}
   feas_Δ₀::T
   bad_steps_lim::In
   feas_expected_decrease::T
+  agressive_cgsolver::CgSolver # second-order correction
   ## Compute the direction in feasibility step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
-  TR_compute_step_struct::Union{TR_lsmr_struct, TR_dogleg_struct}
+  TR_compute_step_struct::TRStruct
 
   # Parameters updating ρ (or redefine the function `compute_ρ`)
   compρ_p1::T
@@ -183,6 +185,9 @@ function MetaDCI(
     linear_solver = :ldlfact
   end
 
+  n = length(x0)
+  agressive_cgsolver = CgSolver(n, n, typeof(x0))
+
   return MetaDCI(
     atol,
     rtol,
@@ -195,6 +200,7 @@ function MetaDCI(
     comp_λ,
     λ_struct,
     linear_solver,
+    Val(solver_correspondence[linear_solver]),
     decrease_γ,
     increase_γ,
     δmin,
@@ -206,6 +212,7 @@ function MetaDCI(
     feas_Δ₀,
     bad_steps_lim,
     feas_expected_decrease,
+    agressive_cgsolver,
     TR_compute_step,
     TR_struct,
     compρ_p1,

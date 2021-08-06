@@ -10,6 +10,7 @@ using HSL, Krylov, NLPModels, SolverCore, SolverTools
 export dci
 
 include("param_struct.jl")
+include("workspace.jl")
 include("dci_feasibility.jl")
 include("dci_normal.jl")
 include("dci_tangent.jl")
@@ -29,7 +30,8 @@ equality-constrained problems described in
 """
 function dci(nlp::AbstractNLPModel, x::AbstractVector{T}; kwargs...) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)
-  return dci(nlp, x, meta)
+  workspace = DCIWorkspace(nlp, meta, x)
+  return dci(nlp, meta, workspace)
 end
 dci(nlp::AbstractNLPModel; kwargs...) = dci(nlp, nlp.meta.x0; kwargs...)
 
@@ -99,13 +101,6 @@ end
 """
 Compute the solution of ‖Jx' λ - ∇fx‖
 """
-function compute_lx(Jx, ∇fx::AbstractVector{T}, meta::MetaDCI) where {T <: AbstractFloat}
-  m, n = size(Jx)
-  λ = Array{T}(undef, m)
-  compute_lx!(Jx, ∇fx, λ, meta)
-  return λ
-end
-
 function compute_lx!(
   Jx,
   ∇fx::AbstractVector{T},
@@ -115,7 +110,7 @@ function compute_lx!(
   (l, stats) = eval(meta.comp_λ)(
     meta.λ_struct.comp_λ_solver,
     Jx',
-    -∇fx,
+    ∇fx,
     M = meta.λ_struct.M,
     λ = meta.λ_struct.λ,
     atol = meta.λ_struct.atol,
@@ -126,16 +121,7 @@ function compute_lx!(
     @warn "Fail $(meta.comp_λ) computation Lagrange multiplier: $(stats.status)"
     #print(stats)
   end
-  λ .= l #Should we really update if !stats.solved?
-  return λ
-end
-
-function compute_lx(Jx, ∇fx, meta::MetaDCI)
-  return Jx' \ (-∇fx)
-end
-
-function compute_lx!(Jx, ∇fx, λ, meta::MetaDCI)
-  λ .= Jx' \ (-∇fx)
+  @. λ = -l #Should we really update if !stats.solved?
   return λ
 end
 

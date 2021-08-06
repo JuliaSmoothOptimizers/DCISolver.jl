@@ -14,6 +14,7 @@ ctol = 1e-5
     zeros(1),
   )
   meta_dci = DCISolver.MetaDCI(nlp.meta.x0, nlp.meta.y0)
+  workspace_dci = DCISolver.DCIWorkspace(nlp, meta_dci, nlp.meta.x0)
 
   x = [0.0; 1.0; 0.0]
   cx = cons(nlp, x)
@@ -29,7 +30,8 @@ ctol = 1e-5
     Jx,
     ρ,
     ctol,
-    meta_dci;
+    meta_dci,
+    workspace_dci;
     η₁ = 1e-3,
     η₂ = 0.66,
     σ₁ = 0.25,
@@ -50,7 +52,8 @@ ctol = 1e-5
     Jxϵ,
     ρ,
     ctol,
-    meta_dci;
+    meta_dci,
+    workspace_dci;
     η₁ = 1e-3,
     η₂ = 0.66,
     σ₁ = 0.25,
@@ -73,6 +76,7 @@ end
     zeros(1),
   )
   meta_dci = DCISolver.MetaDCI(nlp.meta.x0, nlp.meta.y0)
+  workspace_dci = DCISolver.DCIWorkspace(nlp, meta_dci, nlp.meta.x0)
 
   x = [0.0; 1.0; 0.0]
   cx = cons(nlp, x)
@@ -87,7 +91,8 @@ end
     Jx,
     ρ,
     ctol,
-    meta_dci;
+    meta_dci,
+    workspace_dci;
     η₁ = 1e-3,
     η₂ = 0.66,
     σ₁ = 0.25,
@@ -108,7 +113,8 @@ end
     Jx,
     ρ,
     ctol,
-    meta_dci;
+    meta_dci,
+    workspace_dci;
     η₁ = 1e-3,
     η₂ = 0.66,
     σ₁ = 0.25,

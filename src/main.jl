@@ -1,4 +1,8 @@
-function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {T}
+function dci(
+    nlp::AbstractNLPModel{T, S},
+    meta::MetaDCI{T, In, COO},
+    workspace::DCIWorkspace{T, S, Si, Op},
+  ) where {T, S, In, Si, Op, COO}
   if !(nlp.meta.minimize)
     error("DCI only works for minimization problem")
   end
@@ -11,16 +15,21 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
     (evals(nlp) > meta.max_eval || eltime > meta.max_time || iter > meta.max_iter)
   end
 
-  z = copy(x)
+  z, x = workspace.z, workspace.x
+  ∇fx, cx = workspace.∇fx, workspace.cx
+  ∇ℓzλ, cz = workspace.∇ℓzλ, workspace.cz
+
+  x .= workspace.x0
   fz = fx = obj(nlp, x)
-  ∇fx = grad(nlp, x)
-  cx = cons(nlp, x)
+  grad!(nlp, x, ∇fx)
+  cons!(nlp, x, cx) # issue with the type of cx
 
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
-  Jx = jac_op(nlp, x)
-  λ = compute_lx(Jx, ∇fx, meta)  # λ = argmin ‖∇f + Jᵀλ‖
+  λ, ∇ℓxλ = workspace.λ, workspace.∇ℓxλ
+  Jx = jac_op!(nlp, x, workspace.Jv, workspace.Jtv) # workspace.Jx
+  compute_lx!(Jx, ∇fx, λ, meta)  # λ = argmin ‖∇f + Jᵀλ‖
   ℓxλ = fx + dot(λ, cx)
-  ∇ℓxλ = ∇fx + Jx' * λ
+  ∇ℓxλ .= ∇fx .+ Jx' * λ
 
   dualnorm = norm(∇ℓxλ)
   primalnorm = norm(cx)
@@ -30,14 +39,14 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
   δ = zero(T)
 
   # Allocate the sparse structure of K = [H + γI  [Jᵀ]; J -δI]
+  rows, cols, vals = workspace.rows, workspace.cols, workspace.vals
   n, m = nlp.meta.nvar, nlp.meta.ncon
-  nnz = nlp.meta.nnzh + nlp.meta.nnzj + n + m # H, J, γI, -δI
-  rows = zeros(Int, nnz)
-  cols = zeros(Int, nnz)
-  vals = zeros(nnz)
+  rows .= zero(Int)
+  cols .= zero(Int)
+  vals .= zero(T)
   regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
 
-  LDL = solver_correspondence[meta.linear_solver](n + m, rows, cols, vals)
+  LDL = COO(n + m, rows, cols, vals)
 
   Δℓₜ = T(Inf)
   Δℓₙ = zero(T)
@@ -49,8 +58,8 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
   ϵd = meta.atol + meta.rtol * max(dualnorm, norm(∇fx))
   ϵp = meta.ctol
 
-  ρmax = max(ϵp, 5primalnorm, 50dualnorm)
-  ρ = NaN #not needed at iteration 0
+  ρmax = max(ϵp, 5 * primalnorm, 50 * dualnorm)
+  ρ = T(NaN) #not needed at iteration 0
 
   Δtg = meta.tan_Δ
 
@@ -94,7 +103,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
 
   while !(solved || tired || infeasible || stalled)
     # Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
-    z, cz, fz, ℓzλ, ∇ℓzλ, ρ, primalnorm, dualnorm, normal_status = normal_step(
+    z, cz, fz, ℓzλ, ∇ℓzλ, ρ, primalnorm, dualnorm, normal_status = normal_step!(
       nlp,
       x,
       cx,
@@ -112,6 +121,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
       meta.max_time - eltime,
       meta.max_iter_normal_step,
       meta,
+      workspace,
     )
     # Convergence test
     solved = primalnorm < ϵp && (dualnorm < ϵd || fz < meta.unbounded_threshold)
@@ -129,7 +139,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
       ρmax = max(ϵp, ρmax / 2)
       ρ = min(ρ, ρmax)
     else #we don't let ρmax too far from the residuals
-      ρmax = min(ρmax, max(ϵp, 5primalnorm, 50dualnorm))
+      ρmax = min(ρmax, max(ϵp, 5 * primalnorm, 50 * dualnorm))
       ρ = min(ρ, ρmax)
     end
     if Δℓₙ > -Δℓₜ / 2
@@ -147,7 +157,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
     gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
 
     rmng_time = meta.max_time - (time() - start_time)
-    x, cx, fx, tg_status, Δtg, Δℓₜ, γ, δ = tangent_step(
+    x, cx, fx, tg_status, Δtg, Δℓₜ, γ, δ = tangent_step!(
       nlp,
       z,
       λ,
@@ -163,6 +173,7 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
       γ,
       δ,
       meta,
+      workspace,
       Δ = Δtg,
       max_eval = meta.max_eval,
       max_time = rmng_time,
@@ -194,11 +205,11 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}, meta::MetaDCI) where {
       #@warn "Pass here sometimes?"
     end
 
-    ∇fx = grad(nlp, x)
-    Jx = jac_op(nlp, x)
+    grad!(nlp, x, ∇fx)
+    Jx = jac_op!(nlp, x, workspace.Jv, workspace.Jtv) # workspace.Jx
     compute_lx!(Jx, ∇fx, λ, meta)
     ℓxλ = fx + dot(λ, cx) #differs from the tangent step as λ is different
-    ∇ℓxλ = ∇fx + Jx' * λ
+    ∇ℓxλ .= ∇fx .+ Jx' * λ
 
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)

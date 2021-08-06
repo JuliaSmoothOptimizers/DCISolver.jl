@@ -12,7 +12,8 @@ function feasibility_step(
   Jx,
   ρ::T,
   ctol::AbstractFloat,
-  meta::MetaDCI;
+  meta::MetaDCI,
+  workspace;
   η₁::AbstractFloat = meta.feas_η₁,
   η₂::AbstractFloat = meta.feas_η₂,
   σ₁::AbstractFloat = meta.feas_σ₁,
@@ -26,7 +27,9 @@ function feasibility_step(
 ) where {T}
   z = x
   cz = cx
+  zp, czp, Jd = workspace.zp, workspace.czp, workspace.Jd
   Jz = Jx
+  (m, n) = size(Jz)
   normcz = normcx # cons(nlp, x) = normcx = normcz for the first z
   Δ = Δ₀
   feas_iter = 0
@@ -43,19 +46,19 @@ function feasibility_step(
   while !(normcz ≤ ρ || tired || infeasible)
 
     #Compute the a direction satisfying the trust-region constraint
-    (m, n) = size(Jz)
     d, Jd, infeasible, solved =
-      eval(meta.TR_compute_step)(cz, Jz, ctol, Δ, normcz, meta.TR_compute_step_struct)
+      eval(meta.TR_compute_step)(cz, Jz, ctol, Δ, normcz, Jd, meta.TR_compute_step_struct)
 
     if infeasible #the direction is too small
       failed_step_comp = true #too small step
       status = :too_small
     else
-      zp = z + d
-      czp = cons(nlp, zp)
+      @. zp = z + d
+      cons!(nlp, zp, czp)
       normczp = norm(czp)
 
-      Pred = T(0.5) * (normcz^2 - norm(Jd + cz)^2)
+      @. Jd += cz
+      Pred = T(0.5) * (normcz^2 - norm(Jd)^2) # T(0.5) * (normcz^2 - norm(Jd + cz)^2)
       Ared = T(0.5) * (normcz^2 - normczp^2)
 
       if Ared / Pred < η₁
@@ -63,7 +66,7 @@ function feasibility_step(
         status = :reduce_Δ
       else #success
         z = zp
-        Jz = jac_op(nlp, z)
+        Jz = jac_op!(nlp, z, workspace.Jv, workspace.Jtv)
         cz = czp
         if normczp / normcz > expected_decrease
           consecutive_bad_steps += 1
@@ -98,12 +101,12 @@ function feasibility_step(
     # Safeguard: agressive normal step
     if normcz > ρ && (consecutive_bad_steps ≥ bad_steps_lim || failed_step_comp)
       Hz = hess_op(nlp, z, cz, obj_weight = zero(T))
-      (d, stats) = cg(Hz + Jz' * Jz, Jz' * cz)
+      (d, stats) = cg!(meta.agressive_cgsolver, Hz + Jz' * Jz, Jz' * cz)
       if !stats.solved
         @warn "Fail cg in feasibility_step: $(stats.status)"
       end
-      zp = z - d
-      czp = cons(nlp, zp)
+      @. zp = z - d
+      cons!(nlp, zp, czp)
       nczp = norm(czp)
       if nczp < normcz #even if d is small we keep going
         infeasible = false
@@ -111,7 +114,7 @@ function feasibility_step(
         status = :agressive
         z, cz = zp, czp
         normcz = nczp
-        Jz = jac_op(nlp, z)
+        Jz = jac_op!(nlp, z, workspace.Jv, workspace.Jtv)
       elseif norm(d) < ctol * min(nczp, one(T))
         infeasible = true
         status = :agressive_fail
@@ -184,13 +187,14 @@ function TR_dogleg(
   ctol::AbstractFloat,
   Δ::T,
   normcz::AbstractFloat,
+  Jd::AbstractVector{T},
   meta::TR_dogleg_struct,
 ) where {T}
   infeasible, solved = false, true
 
   d = -Jz' * cz
   nd2 = dot(d, d)
-  Jd = Jz * d
+  Jd .= Jz * d
 
   if √nd2 < ctol * min(normcz, one(T)) #norm(d) < ctol * normcz
     infeasible = true
@@ -203,7 +207,7 @@ function TR_dogleg(
 
   if √ndcp2 > Δ
     d = dcp * Δ / √ndcp2  #so ||d||=Δ
-    Jd = Jd * t * Δ / √ndcp2  #avoid recomputing Jd
+    Jd .= Jd * t * Δ / √ndcp2  #avoid recomputing Jd
   else
     (dn, stats) = lsmr!(meta.lsmr_solver, Jz, -cz)
     solved = stats.solved
@@ -220,7 +224,7 @@ function TR_dogleg(
       τ = (-dcpv + sqrt(dcpv^2 + 4 * nv2 * (Δ^2 - ndcp2))) / nv2
       d = dcp + τ * v
     end
-    Jd = Jz * d # d has been updated
+    Jd .= Jz * d # d has been updated
   end
 
   return d, Jd, infeasible, solved
@@ -232,12 +236,14 @@ function TR_lsmr(
   ctol::AbstractFloat,
   Δ::T,
   normcz::AbstractFloat,
+  Jd::AbstractVector{T},
   meta::TR_lsmr_struct,
 ) where {T}
+  solver = meta.lsmr_solver
   (d, stats) = lsmr!(
-    meta.lsmr_solver,
+    solver,
     Jz,
-    -cz,
+    cz,
     radius = Δ,
     M = meta.M,
     λ = meta.λ,
@@ -255,7 +261,8 @@ function TR_lsmr(
     @warn "Fail lsmr in TR_lsmr: $(stats.status)"
   end
 
-  Jd = Jz * d #lsmr doesn't return this information
+  @. d = -d
+  Jd .= Jz * d #lsmr doesn't return this information
 
   return d, Jd, infeasible, solved
 end
