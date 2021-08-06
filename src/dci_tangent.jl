@@ -54,7 +54,8 @@ function tangent_step!(
 
   while !((normcz ≤ meta.ρbar * ρ && r ≥ η₁) || tired)
     #Compute a descent direction d (no evals)
-    d, dBd, status, γ, δ, vals = compute_descent_direction!(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta, workspace)
+    d, dBd, status, γ, δ, vals =
+      compute_descent_direction!(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta, workspace)
     n2d = dot(d, d)
     if √n2d > Δ
       d .*= Δ / √n2d #Just in case.
@@ -192,7 +193,13 @@ return `dcp = - α g`
 return `dcpBdcp = α^2 gBg`
 and `α` the solution.
 """
-function _compute_gradient_step!(nlp::AbstractNLPModel, gBg::T, g::AbstractVector{T}, Δ::T, dcp::AbstractVector{T}) where {T}
+function _compute_gradient_step!(
+  nlp::AbstractNLPModel,
+  gBg::T,
+  g::AbstractVector{T},
+  Δ::T,
+  dcp::AbstractVector{T},
+) where {T}
   dcp_on_boundary = false
   dgg = dot(g, g)
   if gBg ≤ 1e-12 * dgg #generalize this test

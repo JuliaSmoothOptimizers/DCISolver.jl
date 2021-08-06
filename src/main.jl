@@ -1,8 +1,8 @@
 function dci(
-    nlp::AbstractNLPModel{T, S},
-    meta::MetaDCI{T, In, COO},
-    workspace::DCIWorkspace{T, S, Si, Op},
-  ) where {T, S, In, Si, Op, COO}
+  nlp::AbstractNLPModel{T, S},
+  meta::MetaDCI{T, In, COO},
+  workspace::DCIWorkspace{T, S, Si, Op},
+) where {T, S, In, Si, Op, COO}
   if !(nlp.meta.minimize)
     error("DCI only works for minimization problem")
   end

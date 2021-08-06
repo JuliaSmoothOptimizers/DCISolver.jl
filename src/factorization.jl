@@ -21,7 +21,7 @@ function _compute_newton_step!(
 
   # When there is room for improvement, we try a dogleg step
   rhs[1:n] .= -g
-  rhs[(n+1):end] .= zero(T)
+  rhs[(n + 1):end] .= zero(T)
   dnBdn = dcpBdn = zero(T)
   gnorm = norm(g)
   slope = NaN

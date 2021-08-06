@@ -84,7 +84,13 @@ end
 
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
-struct MetaDCI{T <: AbstractFloat, In <: Integer, COO <: SymCOOSolver, CGLSStruct <: comp_λ_cgls, TRStruct <: Union{TR_lsmr_struct, TR_dogleg_struct}}
+struct MetaDCI{
+  T <: AbstractFloat,
+  In <: Integer,
+  COO <: SymCOOSolver,
+  CGLSStruct <: comp_λ_cgls,
+  TRStruct <: Union{TR_lsmr_struct, TR_dogleg_struct},
+}
 
   #Tolerances on the problem:
   atol::T
