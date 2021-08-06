@@ -99,7 +99,6 @@ struct MetaDCI{T <: AbstractFloat, In <: Integer, COO <: SymCOOSolver, CGLSStruc
   max_iter_normal_step::In
 
   #Compute Lagrange multipliers
-  comp_λ::Symbol
   λ_struct::CGLSStruct
   #λ_struct_rescue #one idea is to have a 2nd set in case of emergency 
   #good only if we can make a warm-start.
@@ -153,7 +152,6 @@ function MetaDCI(
   max_time::Float64 = 120.0,
   max_iter::Integer = 500,
   max_iter_normal_step::Integer = typemax(Int),
-  comp_λ::Symbol = :cgls!,
   λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), S),
   linear_solver::Symbol = :ldlfact,
   decrease_γ::T = T(0.1),
@@ -197,7 +195,6 @@ function MetaDCI(
     max_time,
     max_iter,
     max_iter_normal_step,
-    comp_λ,
     λ_struct,
     linear_solver,
     Val(solver_correspondence[linear_solver]),

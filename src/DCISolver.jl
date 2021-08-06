@@ -107,7 +107,7 @@ function compute_lx!(
   λ::AbstractVector{T},
   meta::MetaDCI,
 ) where {T <: AbstractFloat}
-  (l, stats) = eval(meta.comp_λ)(
+  (l, stats) = Krylov.solve!(
     meta.λ_struct.comp_λ_solver,
     Jx',
     ∇fx,
@@ -118,7 +118,7 @@ function compute_lx!(
     itmax = meta.λ_struct.itmax,
   )
   if !stats.solved
-    @warn "Fail $(meta.comp_λ) computation Lagrange multiplier: $(stats.status)"
+    @warn "Fail computation of Lagrange multiplier: $(stats.status)"
     #print(stats)
   end
   @. λ = -l #Should we really update if !stats.solved?
