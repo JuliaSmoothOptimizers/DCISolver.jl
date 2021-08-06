@@ -31,7 +31,11 @@ struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, 
   rhs::S
 end
 
-function DCIWorkspace(nlp::AbstractNLPModel{T, S}, meta::MetaDCI{T, In, COO}, x0::S) where {T, S <: AbstractVector{T}, In <: Integer, COO <: SymCOOSolver}
+function DCIWorkspace(
+  nlp::AbstractNLPModel{T, S},
+  meta::MetaDCI{T, In, COO},
+  x0::S,
+) where {T, S <: AbstractVector{T}, In <: Integer, COO <: SymCOOSolver}
   n, m = nlp.meta.nvar, nlp.meta.ncon
   nnz = nlp.meta.nnzh + nlp.meta.nnzj + n + m
   Jx = jac_op(nlp, x0)
