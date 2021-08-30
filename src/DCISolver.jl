@@ -107,7 +107,9 @@ function compute_lx!(
   λ::AbstractVector{T},
   meta::MetaDCI,
 ) where {T <: AbstractFloat}
-  (l, stats) = Krylov.solve!(
+  l = meta.λ_struct.comp_λ_solver.x
+  stats = meta.λ_struct.comp_λ_solver.stats
+  Krylov.solve!(
     meta.λ_struct.comp_λ_solver,
     Jx',
     ∇fx,
