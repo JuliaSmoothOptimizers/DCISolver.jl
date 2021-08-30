@@ -101,7 +101,9 @@ function feasibility_step(
     # Safeguard: agressive normal step
     if normcz > ρ && (consecutive_bad_steps ≥ bad_steps_lim || failed_step_comp)
       Hz = hess_op(nlp, z, cz, obj_weight = zero(T))
-      (d, stats) = Krylov.solve!(meta.agressive_cgsolver, Hz + Jz' * Jz, Jz' * cz)
+      d = meta.agressive_cgsolver.x
+      stats = meta.agressive_cgsolver.stats
+      Krylov.solve!(meta.agressive_cgsolver, Hz + Jz' * Jz, Jz' * cz)
       if !stats.solved
         @warn "Fail 2nd order correction in feasibility_step: $(stats.status)"
       end
@@ -209,9 +211,11 @@ function TR_dogleg(
     d = dcp * Δ / √ndcp2  #so ||d||=Δ
     Jd .= Jd * t * Δ / √ndcp2  #avoid recomputing Jd
   else
-    (dn, stats) = Krylov.solve!(meta.lsmr_solver, Jz, -cz)
+    dn = meta.lsmr_solver.x
+    stats = meta.lsmr_solver.stats
+    Krylov.solve!(meta.lsmr_solver, Jz, -cz)
     solved = stats.solved
-    if !stats.solved #stats.status ∈ ("maximum number of iterations exceeded")
+    if !solved #stats.status ∈ ("maximum number of iterations exceeded")
       @warn "Fail lsmr in TR_dogleg: $(stats.status)"
     end
 
@@ -240,7 +244,9 @@ function TR_lsmr(
   meta::TR_lsmr_struct,
 ) where {T}
   solver = meta.lsmr_solver
-  (d, stats) = Krylov.solve!(
+  d = solver.x
+  stats = solver.stats
+  Krylov.solve!(
     solver,
     Jz,
     cz,
