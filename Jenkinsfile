@@ -49,7 +49,7 @@ pipeline {
 
      causeString: 'Triggered on $comment',
 
-     token: "",
+     token: "DCISolver",
 
      printContributedVariables: true,
      printPostContent: true,
