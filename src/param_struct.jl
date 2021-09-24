@@ -161,7 +161,7 @@ function MetaDCI(
   λ_struct::comp_λ_cgls = comp_λ_cgls(length(x0), length(y0), S),
   linear_solver::Symbol = :ldlfact,
   decrease_γ::T = T(0.1),
-  increase_γ::T = T(100.0),
+  increase_γ::T = T(10.0),
   δmin::T = √eps(T),
   feas_step::Symbol = :feasibility_step,
   feas_η₁::T = T(1e-3),
