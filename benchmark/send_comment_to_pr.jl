@@ -56,14 +56,13 @@ function create_gist_from_log_file(gist_file, pullrequest_id, myauth)
   line_number = findfirst(x -> !isnothing(match(r"ERROR:", x)), file_lines)
   lines = !isnothing(line_number) ? file_lines[line_number:end] : [""]
   for line in lines
-      file_content *= line*'\n'
+    file_content *= line * '\n'
   end
   close(file)
 
   file_dict = Dict("$(pullrequest_id)_bmark_error.log" => Dict("content" => file_content))
-  gist = Dict{String,Any}("description" => "Benchmark logs",
-                            "public" => true,
-                            "files" => file_dict)
+  gist =
+    Dict{String, Any}("description" => "Benchmark logs", "public" => true, "files" => file_dict)
 
   posted_gist = GitHub.create_gist(params = gist, auth = myauth)
 
@@ -119,12 +118,12 @@ function main()
   gist_file = parsed_args[:gist]
   comment = parsed_args[:comment]
 
-  if !isnothing(gist_file) 
-      if gist_file == DEFAULT_GIST_FILE_PATH
-        comment = "$(comment): $(create_gist_from_json_file(myauth).html_url)"
-      else
-        comment = "$(comment): $(create_gist_from_log_file(gist_file, pullrequest_id, myauth).html_url)"
-      end
+  if !isnothing(gist_file)
+    if gist_file == DEFAULT_GIST_FILE_PATH
+      comment = "$(comment): $(create_gist_from_json_file(myauth).html_url)"
+    else
+      comment = "$(comment): $(create_gist_from_log_file(gist_file, pullrequest_id, myauth).html_url)"
+    end
   end
   post_comment_to_pr(org, repo_name, pullrequest_id, comment; auth = myauth)
 end
