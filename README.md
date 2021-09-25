@@ -1,4 +1,4 @@
-# DCISolver - Dynamic Control of Infeasibility Solver
+# DCISolver.jl - Dynamic Control of Infeasibility Solver
 
 | **Documentation** | **CI** | **Coverage** | **Release** | **DOI** |
 |:-----------------:|:------:|:------------:|:-----------:|:-------:|
