@@ -16,7 +16,7 @@ function runcutest(cutest_problems, solvers; today::String = string(today()))
   return stats
 end
 
-nmax = 300
+nmax = 100
 _pnames = CUTEst.select(
   max_var = nmax,
   min_con = 1,
@@ -56,7 +56,9 @@ solvers = Dict(
     ),
 )
 
-runcutest(cutest_problems, solvers) # for precompilation
+with_logger(NullLogger()) do
+  runcutest(cutest_problems, solvers) # for precompilation
+end
 
 const SUITE = BenchmarkGroup()
 SUITE[:cutest_dcildl_ipopt_benchmark] = @benchmarkable with_logger(NullLogger()) do
