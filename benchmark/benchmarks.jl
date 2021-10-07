@@ -56,6 +56,8 @@ solvers = Dict(
     ),
 )
 
+runcutest(cutest_problems, solvers) # for precompilation
+
 const SUITE = BenchmarkGroup()
 SUITE[:cutest_dcildl_ipopt_benchmark] =
   @benchmarkable runcutest(cutest_problems, solvers) samples = 5
