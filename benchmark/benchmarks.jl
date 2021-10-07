@@ -1,4 +1,4 @@
-using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2
+using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2, Logging
 #JSO packages
 using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
 #This package
