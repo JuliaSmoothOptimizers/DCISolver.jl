@@ -1,8 +1,6 @@
-using DelimitedFiles, LinearAlgebra, Printf, SparseArrays
-using BenchmarkTools, DataFrames, Dates, JLD2, Plots
+using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2
 #JSO packages
-using CUTEst,
-  NLPModels, NLPModelsKnitro, NLPModelsIpopt, BenchmarkProfiles, SolverBenchmark, SolverCore
+using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
 #This package
 using DCISolver
 
