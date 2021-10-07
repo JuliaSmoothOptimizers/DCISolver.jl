@@ -61,4 +61,4 @@ runcutest(cutest_problems, solvers) # for precompilation
 const SUITE = BenchmarkGroup()
 SUITE[:cutest_dcildl_ipopt_benchmark] = @benchmarkable with_logger(NullLogger()) do
    runcutest(cutest_problems, solvers)
-  end samples = 5
+  end samples = 5 seconds = 300
