@@ -21,6 +21,7 @@ using Plots
 
 using SolverBenchmark
 
+import DCISolver
 # NB: benchmarkpkg will run benchmarks/benchmarks.jl by default
 commit = benchmarkpkg(repo_name)  # current state of repository
 main = benchmarkpkg(repo_name, "main")
