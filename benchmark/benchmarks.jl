@@ -29,7 +29,7 @@ _pnames = CUTEst.select(
 #Remove all the problems ending by NE as Ipopt cannot handle them.
 pnamesNE = _pnames[findall(x -> occursin(r"NE\b", x), _pnames)]
 pnames = setdiff(_pnames, pnamesNE)
-cutest_problems = (CUTEstModel(p) for p in pnames)
+cutest_problems = [CUTEstModel(p) for p in pnames]
 
 #Same time limit for all the solvers
 max_time = 60.0 #20 minutes
