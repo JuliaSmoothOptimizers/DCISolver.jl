@@ -1,4 +1,4 @@
-using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2, Logging
+using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2, Logging, Random
 #JSO packages
 using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
 #This package
@@ -29,7 +29,11 @@ _pnames = CUTEst.select(
 #Remove all the problems ending by NE as Ipopt cannot handle them.
 pnamesNE = _pnames[findall(x -> occursin(r"NE\b", x), _pnames)]
 pnames = setdiff(_pnames, pnamesNE)
-cutest_problems = (CUTEstModel(p) for p in pnames)
+cutest_problems = Array{AbstractNLPModel}(undef, length(pnames)) 
+for i=1:length(pnames)
+  cutest_problems[i] = CUTEstModel(pnames[i])
+  finalize(cutest_problems[i])
+end
 
 #Same time limit for all the solvers
 max_time = 60.0 #20 minutes
@@ -61,6 +65,27 @@ with_logger(NullLogger()) do
 end
 
 const SUITE = BenchmarkGroup()
-SUITE[:cutest_dcildl_ipopt_benchmark] = @benchmarkable with_logger(NullLogger()) do
-   runcutest(cutest_problems, solvers)
-  end samples = 5 seconds = 300
+
+SUITE["utf8"] = BenchmarkGroup(["string", "unicode"])
+teststr = String(join(rand(MersenneTwister(1), 'a':'d', 10^4)))
+SUITE["utf8"]["replace"] = @benchmarkable replace($teststr, "a" => "b")
+SUITE["utf8"]["join"] = @benchmarkable join($teststr, $teststr)
+SUITE["utf8"]["plots"] = BenchmarkGroup()
+
+SUITE["trigonometry"] = BenchmarkGroup(["math", "triangles"])
+SUITE["trigonometry"]["circular"] = BenchmarkGroup()
+for f in (sin, cos, tan)
+    for x in (0.0, pi)
+        SUITE["trigonometry"]["circular"][string(f), x] = @benchmarkable ($f)($x)
+    end
+end
+
+SUITE["trigonometry"]["hyperbolic"] = BenchmarkGroup()
+for f in (sin, cos, tan)
+    for x in (0.0, pi)
+        SUITE["trigonometry"]["hyperbolic"][string(f), x] = @benchmarkable ($f)($x)
+    end
+end
+SUITE["trigonometry"]["cutest_dcildl_ipopt_benchmark"] = @benchmarkable with_logger(NullLogger()) do
+  runcutest(cutest_problems, solvers)
+end
