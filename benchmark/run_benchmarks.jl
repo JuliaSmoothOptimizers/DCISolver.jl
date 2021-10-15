@@ -23,10 +23,10 @@ using SolverBenchmark
 
 import DCISolver
 # NB: benchmarkpkg will run benchmarks/benchmarks.jl by default
-benchmarkpkg(repo_name)
+#benchmarkpkg(repo_name)
 commit = benchmarkpkg(repo_name)  # current state of repository
-benchmarkpkg(repo_name, "991a13a1a60271550071882962c5941bae154ac0")
-main = benchmarkpkg(repo_name, "991a13a1a60271550071882962c5941bae154ac0")
+#benchmarkpkg(repo_name, "991a13a1a60271550071882962c5941bae154ac0")
+main = benchmarkpkg(repo_name, "dc26d5ceec37124312b15917fd174447c7a136e9")
 judgement = judge(commit, main)
 
 commit_stats = bmark_results_to_dataframes(commit)
