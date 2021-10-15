@@ -1,5 +1,8 @@
-using BenchmarkTools
-using Random
+using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2, Logging, Random
+#JSO packages
+using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
+#This package
+using DCISolver
 
 const SUITE = BenchmarkGroup()
 
