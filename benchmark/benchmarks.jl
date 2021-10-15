@@ -82,3 +82,6 @@ for f in (sin, cos, tan)
         SUITE["trigonometry"]["hyperbolic"][string(f), x] = @benchmarkable ($f)($x)
     end
 end
+SUITE["trigonometry"]["cutest_dcildl_ipopt_benchmark"] = @benchmarkable with_logger(NullLogger()) do
+  runcutest(cutest_problems, solvers)
+end
