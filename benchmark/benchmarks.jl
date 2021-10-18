@@ -7,19 +7,19 @@ import ADNLPModels
 #This package
 using DCISolver
 
-function runcutest(cutest_problems, solvers; today::String = string(today()))
+function runcutest(ad_problems, solvers; today::String = string(today()))
   list = ""
   for solver in keys(solvers)
     list = string(list, "_$(solver)")
   end
-  stats = bmark_solvers(solvers, cutest_problems)
+  stats = bmark_solvers(solvers, ad_problems)
 
-  @save "$(today)_$(list)_$(string(length(cutest_problems))).jld2" stats
+  @save "$(today)_$(list)_$(string(length(ad_problems))).jld2" stats
 
   return stats
 end
 
-cutest_problems = [
+ad_problems = [
   eval(Meta.parse("ADNLPProblems.$(prob)()"))
   for prob in setdiff(names(ADNLPProblems), [:ADNLPProblems, :clplatea, :clplateb, :clplatec, :fminsrf2])[1:10]
 ]
@@ -50,10 +50,10 @@ solvers = Dict(
 )
 
 with_logger(NullLogger()) do
-  runcutest(cutest_problems, solvers) # for precompilation
+  runcutest(ad_problems, solvers) # for precompilation
 end
 
 const SUITE = BenchmarkGroup()
 SUITE[:cutest_dcildl_ipopt_benchmark] = @benchmarkable with_logger(NullLogger()) do
-   runcutest(cutest_problems, solvers)
+   runcutest(ad_problems, solvers)
   end #samples = 5 seconds = 300
