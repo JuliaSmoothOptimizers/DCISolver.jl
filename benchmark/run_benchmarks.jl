@@ -1,3 +1,4 @@
+bmark_dir = @__DIR__
 repo_name = string(split(ARGS[1], ".")[1])
 bmarkname = lowercase(repo_name)
 
