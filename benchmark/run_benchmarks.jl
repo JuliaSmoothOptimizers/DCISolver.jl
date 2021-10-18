@@ -26,7 +26,7 @@ import DCISolver
 #benchmarkpkg(repo_name)
 commit = benchmarkpkg(repo_name)  # current state of repository
 #benchmarkpkg(repo_name, "991a13a1a60271550071882962c5941bae154ac0")
-main = benchmarkpkg(repo_name, "fab0c6c6e3c53c5c8674aceed35aebe53b6c8dda")
+main = benchmarkpkg(repo_name, "51278798ad6d2b03685110fcc0ae8f96afa063e3")
 judgement = judge(commit, main)
 
 commit_stats = bmark_results_to_dataframes(commit)
