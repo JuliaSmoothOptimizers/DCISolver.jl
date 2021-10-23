@@ -1,4 +1,5 @@
 def bmarkFile = 'run_benchmarks.jl'
+def prNumber = BRANCH_NAME.tokenize("PR-")[0]
 pipeline {
   agent any
   environment {
@@ -56,8 +57,8 @@ pipeline {
 
      silentResponse: false,
 
-     regexpFilterText: '$comment',
-     regexpFilterExpression: '@JSOBot runbenchmarks'
+     regexpFilterText: '$comment $pullrequest',
+     regexpFilterExpression: '@JSOBot runbenchmarks( .*\\.jl)? ' + prNumber
     )
   }
   stages {
@@ -115,3 +116,4 @@ pipeline {
     }
   }
 }
+

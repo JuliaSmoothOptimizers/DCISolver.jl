@@ -1,8 +1,5 @@
 using Pkg
 bmark_dir = @__DIR__
-println(@__DIR__)
-Pkg.activate(bmark_dir)
-Pkg.instantiate()
 repo_name = string(split(ARGS[1], ".")[1])
 bmarkname = lowercase(repo_name)
 
@@ -21,9 +18,12 @@ using Plots
 
 using SolverBenchmark
 
+import DCISolver
 # NB: benchmarkpkg will run benchmarks/benchmarks.jl by default
+#benchmarkpkg(repo_name)
 commit = benchmarkpkg(repo_name)  # current state of repository
-main = benchmarkpkg(repo_name, "main")
+#benchmarkpkg(repo_name, "991a13a1a60271550071882962c5941bae154ac0")
+main = benchmarkpkg(repo_name, "51278798ad6d2b03685110fcc0ae8f96afa063e3")
 judgement = judge(commit, main)
 
 commit_stats = bmark_results_to_dataframes(commit)

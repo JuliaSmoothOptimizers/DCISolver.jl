@@ -1,35 +1,28 @@
-using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2
+using Pkg
+Pkg.add(url="https://github.com/JuliaSmoothOptimizers/OptimizationProblems.jl#main")
+using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2, Logging
 #JSO packages
-using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
+using OptimizationProblems, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
+import ADNLPModels
 #This package
 using DCISolver
 
-function runcutest(cutest_problems, solvers; today::String = string(today()))
+function runcutest(ad_problems, solvers; today::String = string(today()))
   list = ""
   for solver in keys(solvers)
     list = string(list, "_$(solver)")
   end
-  stats = bmark_solvers(solvers, cutest_problems)
+  stats = bmark_solvers(solvers, ad_problems)
 
-  @save "$(today)_$(list)_$(string(length(pnames))).jld2" stats
+  @save "$(today)_$(list)_$(string(length(ad_problems))).jld2" stats
 
   return stats
 end
 
-nmax = 300
-_pnames = CUTEst.select(
-  max_var = nmax,
-  min_con = 1,
-  max_con = nmax,
-  only_free_var = true,
-  only_equ_con = true,
-  objtype = 3:6,
-)
-
-#Remove all the problems ending by NE as Ipopt cannot handle them.
-pnamesNE = _pnames[findall(x -> occursin(r"NE\b", x), _pnames)]
-pnames = setdiff(_pnames, pnamesNE)
-cutest_problems = (CUTEstModel(p) for p in pnames)
+ad_problems = [
+  eval(Meta.parse("ADNLPProblems.$(prob)()"))
+  for prob in setdiff(names(ADNLPProblems), [:ADNLPProblems, :clplatea, :clplateb, :clplatec, :fminsrf2])[1:10]
+]
 
 #Same time limit for all the solvers
 max_time = 60.0 #20 minutes
@@ -56,8 +49,11 @@ solvers = Dict(
     ),
 )
 
-runcutest(cutest_problems, solvers) # for precompilation
+with_logger(NullLogger()) do
+  runcutest(ad_problems, solvers) # for precompilation
+end
 
 const SUITE = BenchmarkGroup()
-SUITE[:cutest_dcildl_ipopt_benchmark] =
-  @benchmarkable runcutest(cutest_problems, solvers) samples = 5
+SUITE[:cutest_dcildl_ipopt_benchmark] = @benchmarkable with_logger(NullLogger()) do
+   runcutest(ad_problems, solvers)
+  end #samples = 5 seconds = 300
