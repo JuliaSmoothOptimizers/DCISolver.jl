@@ -1,19 +1,17 @@
-using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2
+using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2, Random
 #JSO packages
 using CUTEst, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
 #This package
 using DCISolver
+
+Random.seed!(1234)
 
 function runcutest(cutest_problems, solvers; today::String = string(today()))
   list = ""
   for solver in keys(solvers)
     list = string(list, "_$(solver)")
   end
-  stats = bmark_solvers(solvers, cutest_problems)
-
-  @save "$(today)_$(list)_$(string(length(pnames))).jld2" stats
-
-  return stats
+  return bmark_solvers(solvers, cutest_problems)
 end
 
 nmax = 300
@@ -57,5 +55,5 @@ solvers = Dict(
 )
 
 const SUITE = BenchmarkGroup()
-SUITE[:cutest_dcildl_ipopt_benchmark] =
-  @benchmarkable runcutest(cutest_problems, solvers) samples = 5
+SUITE[:cutest_dcildl_ipopt_benchmark] = @benchmarkable runcutest(cutest_problems, solvers)
+tune!(SUITE[:cutest_dcildl_ipopt_benchmark])
