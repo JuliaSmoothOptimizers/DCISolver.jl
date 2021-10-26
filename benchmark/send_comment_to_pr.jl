@@ -1,7 +1,3 @@
-using Pkg
-Pkg.activate("./benchmark/")
-Pkg.instantiate()
-
 using ArgParse
 using Git
 using GitHub
