@@ -1,5 +1,6 @@
 #!/bin/bash
 
+julia --project=benchmark -E 'using Pkg; Pkg.resolve()'
 julia --project=benchmark benchmark/send_comment_to_pr.jl -o $org -r $repo -p $pullrequest -c '**Starting benchmarks!**'
 
 LOCAL_BRANCH_NAME="temp_bmark"
