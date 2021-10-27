@@ -1,22 +1,18 @@
-using Pkg
-Pkg.add(url="https://github.com/JuliaSmoothOptimizers/OptimizationProblems.jl#main")
-using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2, Logging
+using BenchmarkTools, DataFrames, Dates, DelimitedFiles, JLD2, Random
 #JSO packages
 using OptimizationProblems, NLPModels, NLPModelsKnitro, NLPModelsIpopt, SolverBenchmark, SolverCore
 import ADNLPModels
 #This package
 using DCISolver
 
-function runcutest(ad_problems, solvers; today::String = string(today()))
+Random.seed!(1234)
+
+function runcutest(cutest_problems, solvers; today::String = string(today()))
   list = ""
   for solver in keys(solvers)
     list = string(list, "_$(solver)")
   end
-  stats = bmark_solvers(solvers, ad_problems)
-
-  @save "$(today)_$(list)_$(string(length(ad_problems))).jld2" stats
-
-  return stats
+  return bmark_solvers(solvers, cutest_problems)
 end
 
 ad_problems = [
@@ -54,6 +50,5 @@ with_logger(NullLogger()) do
 end
 
 const SUITE = BenchmarkGroup()
-SUITE[:cutest_dcildl_ipopt_benchmark] = @benchmarkable with_logger(NullLogger()) do
-   runcutest(ad_problems, solvers)
-  end #samples = 5 seconds = 300
+SUITE[:cutest_dcildl_ipopt_benchmark] = @benchmarkable runcutest(cutest_problems, solvers)
+tune!(SUITE[:cutest_dcildl_ipopt_benchmark])
