@@ -1,3 +1,4 @@
+ENV["GKSwstype"] = "100"
 using ADNLPModels
 using Documenter
 using Printf
@@ -5,6 +6,7 @@ using DCISolver
 
 pages = [
   "Introduction" => "index.md",
+  "Benchmark" => "benchmark.md",
   "Fine-tune DCI" => "fine-tuneDCI.md",
   "Reference" => "reference.md",
 ]
