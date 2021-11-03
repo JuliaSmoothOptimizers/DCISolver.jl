@@ -37,7 +37,8 @@ meta = DCISolver.MetaDCI(
   linear_solver = :ldlfact, 
   TR_compute_step = :TR_lsmr
 )
-stats = dci(nlp, nlp.meta.x0, meta)
+workspace = DCISolver.DCIWorkspace(nlp, meta, nlp.meta.x0)
+stats = dci(nlp, meta, workspace)
 
 #The alternative would be:
 stats2 = dci(

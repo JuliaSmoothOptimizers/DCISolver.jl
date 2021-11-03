@@ -16,6 +16,8 @@ based on the paper
 
 `DCISolver` is a JuliaSmoothOptimizers-compliant solver. It takes an [`AbstractNLPModel`](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) as an input and returns a [`GenericExecutionStats`](https://github.com/JuliaSmoothOptimizers/SolverCore.jl/blob/16fc349908f46634f2c9acdddddb009b23634b71/src/stats.jl#L60).
 
+We refer to [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io) for tutorials on the NLPModel API and its usage. This framework allows the usage of models from Ampl (using [AmplNLReader.jl](https://github.com/JuliaSmoothOptimizers/AmplNLReader.jl)), CUTEst (using [CUTEst.jl](https://github.com/JuliaSmoothOptimizers/CUTEst.jl)), JuMP (using [NLPModelsJuMP.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsJuMP.jl)), PDE-constrained optimization problems (using [PDENLPModels.jl](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl)) and models defined with automatic differentiation (using [ADNLPModels.jl](https://github.com/JuliaSmoothOptimizers/ADNLPModels.jl)).
+
 ## Installation
 
 `DCISolver` is a registered package. To install this package, open the Julia REPL (i.e., execute the julia binary), type ] to enter package mode, and install `DCISolver` as follows
@@ -44,3 +46,10 @@ end
 
 println(stats)
 ```
+
+# Bug reports and discussions
+
+If you think you found a bug, feel free to open an [issue](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/issues).
+Focused suggestions and requests can also be opened as issues. Before opening a pull request, start an issue or a discussion on the topic, please.
+
+If you want to ask a question not suited for a bug report, feel free to start a discussion [here](https://github.com/JuliaSmoothOptimizers/Organization/discussions). This forum is for general discussion about this repository and the [JuliaSmoothOptimizers](https://github.com/JuliaSmoothOptimizers), so questions about any of our packages are welcome.
