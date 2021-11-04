@@ -266,6 +266,7 @@ function dci(
     primal_feas = primalnorm,
     iter = iter,
     elapsed_time = eltime,
-    solver_specific = Dict(:multiplier => λ, :lagrangian => ℓxλ),
+    multipliers = λ,
+    solver_specific = Dict(:lagrangian => ℓxλ),
   ) #add more?
 end
