@@ -30,6 +30,9 @@ equality-constrained problems described in
 """
 function dci(nlp::AbstractNLPModel, x::AbstractVector{T}; kwargs...) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)
+  return dci(nlp, meta, x)
+end
+function dci(nlp::AbstractNLPModel, meta::MetaDCI{T, In, COO}, x::AbstractVector{T}) where {T, In, COO}
   workspace = DCIWorkspace(nlp, meta, x)
   return dci(nlp, meta, workspace)
 end
