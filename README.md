@@ -46,14 +46,14 @@ If you use DCISolver.jl in your work, please cite using the format given in [CIT
 ## Example
 
 ```julia
-using DCISolver, NLPModels
+using DCISolver, ADNLPModels
 
 # Rosenbrock
 nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0])
-stats = dci(nlp, nlp.meta.x0)
+stats = dci(nlp)
 
 # Constrained
 nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0],
                  x->[x[1] * x[2] - 1], [0.0], [0.0])
-stats = dci(nlp, nlp.meta.x0)
+stats = dci(nlp)
 ```
