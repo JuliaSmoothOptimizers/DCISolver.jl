@@ -70,7 +70,7 @@ with  $\lambda$ an approximation of a Lagrange multiplier at  $x^k$ computed by
 The  $k$-th iteration of the algorithm consists of a normal and a tangent step. Given  $x^{k-1}$, the normal step computes a couple  $(x^k_c,\rho^k)$ satisfying  $x^k_c \in C(\rho^k)$. The sequence  $\{\rho^k\}$ is decreasing to zero.
 On the other hand, the tangent step aims at reducing the dual feasibility and computes  $x^k:=x^k_c + d^k$ such that
 \begin{equation}\label{eq:dual_feasibility_step}
-    d^k \in \argmin{d \in \mathbb{R}^n} \nabla f(x^k_c)^T d + \frac{1}{2} d^T B d \quad \st \quad \nabla h(x^k_c) d = 0, \ \| d \| \leq \Delta,
+    d^k \in \arg\min{d \in \mathbb{R}^n} \nabla f(x^k_c)^T d + \frac{1}{2} d^T B d \quad \text{subject to } \quad \nabla h(x^k_c) d = 0, \ \| d \| \leq \Delta,
 \end{equation}
 where  $B$ is a symmetric approximation of the Lagrangian Hessian at  $x^k_c$, and,  $\Delta>0$ is a trust-region parameter, in particular, chosen such that  $\|h(x^k)\| \leq 2\rho^k$. 
 
