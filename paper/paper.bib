@@ -129,9 +129,12 @@
   DOI = {10.5281/zenodo.2658672},
 }
 
-%http://www.hsl.rl.ac.uk/catalogue/
-@Misc{hsl2,
-  title = {HSL. A collection of Fortran codes for large scale scientific computation. http://www.hsl.rl.ac.uk}
+@Manual{HSL,
+  Title                    = {The {HSL} Mathematical Software Library},
+  Author                   = {HSL},
+  Note                     = {\url{http://www.hsl.rl.ac.uk}},
+  Organization             = {STFC Rutherford Appleton Laboratory},
+  Year                     = {2007}
 }
 
 @Article{duff-2004,
@@ -144,4 +147,218 @@
   Pages                    = {118--144},
   Volume                   = {30},
   Doi                      = {10.1145/992200.992202}
+}
+
+@Misc{orban-hsl-2021,
+  author = {D. Orban and {contributors}},
+  title = {{HSL.jl}: A Julia interface to the {HSL} Mathematical Software Library},
+  month = {March},
+  url = {https://github.com/JuliaSmoothOptimizers/HSL.jl},
+  year = {2021},
+  DOI = {10.5281/zenodo.2658672},
+}
+
+@article{besard2018juliagpu,
+  author        = {Besard, Tim and Foket, Christophe and De Sutter, Bjorn},
+  title         = {Effective Extensible Programming: Unleashing {Julia} on {GPUs}},
+  journal       = {IEEE Transactions on Parallel and Distributed Systems},
+  year          = {2018},
+  doi           = {10.1109/TPDS.2018.2872064},
+  ISSN          = {1045-9219},
+  archivePrefix = {arXiv},
+  eprint        = {1712.03112},
+  primaryClass  = {cs.PL},
+}
+
+@article{lougee2003common,
+  title={The common optimization interface for operations research: Promoting open-source software in the operations research community},
+  author={Lougee-Heimer, Robin},
+  journal=ibmjrd,
+  volume={47},
+  number={1},
+  pages={57--66},
+  year={2003},
+  doi={10.1147/rd.471.0057},
+}
+
+@article{gould2003galahad,
+  title={{GALAHAD}, a library of thread-safe Fortran 90 packages for large-scale nonlinear optimization},
+  author={Gould, Nicholas I.M. and Orban, Dominique and Toint, Philippe L.},
+  journal=toms,
+  volume={29},
+  number={4},
+  pages={353--372},
+  year={2003},
+  publisher={ACM New York, NY, USA},
+  doi={10.1145/962437.962438},
+}
+
+@misc{johnson2014nlopt,
+  title={The {NLopt} nonlinear-optimization package},
+  author={Johnson, Steven G.},
+  url={https://github.com/stevengj/nlopt},
+  year={2014}
+}
+
+@article{optcpp,
+  doi = {10.1145/1236463.1236467},
+  year = {2007},
+  publisher = {Association for Computing Machinery ({ACM})},
+  volume = {33},
+  number = {2},
+  pages = {12--es},
+  author = {J. C. Meza and R. A. Oliva and P. D. Hough and P. J. Williams},
+  title = {{OPT}$++$},
+  journal = toms,
+}
+
+@TechReport{petsc-user-ref,
+       author = {Satish Balay and Shrirang Abhyankar and Mark~F. Adams and Jed Brown and Peter Brune
+                 and Kris Buschelman and Lisandro Dalcin and Alp Dener and Victor Eijkhout and William~D. Gropp
+                 and Dmitry Karpeyev and Dinesh Kaushik and Matthew~G. Knepley and Dave~A. May and Lois Curfman McInnes
+                 and Richard Tran Mills and Todd Munson and Karl Rupp and Patrick Sanan
+                 and Barry~F. Smith and Stefano Zampini and Hong Zhang and Hong Zhang},
+       title  = {{PETS}c Users Manual},
+       institution = {Argonne National Laboratory},
+       year   = 2021,
+       number = {ANL-95/11 - Revision 3.15},
+       url    = {https://www.mcs.anl.gov/petsc}
+     }
+
+@misc{cvxopt,
+  author = "J. Dahl and L. Vandenberghe",
+  title = "{CVXOPT}: Python software for convex optimization",
+  url = "http://cvxopt.org/",
+  year = "2004",
+}
+
+@article{beal2018gekko,
+title={{GEKKO Optimization Suite}},
+author={Beal, Logan and Hill, Daniel and Martin, R and Hedengren, John},
+journal={Processes},
+volume={6},
+number={8},
+pages={106},
+year={2018},
+doi={10.3390/pr6080106},
+publisher={Multidisciplinary Digital Publishing Institute}}
+
+@techreport{nlppy,
+  doi = {10.13140/rg.2.1.2846.6803},
+  url = {http://rgdoi.net/10.13140/RG.2.1.2846.6803},
+  author = {Arreckx,  Sylvain and Orban,  Dominique and Omme,  Nikolaj Van},
+  title = {{NLP}.py: An Object-Oriented Environment for Large-Scale Optimization},
+  institution = {GERAD},
+  year = {2016}
+}
+
+@incollection{opal,
+  doi = {10.1007/978-1-4419-6935-4\_15},
+  year = {2010},
+  month = aug,
+  publisher = {Springer New York},
+  pages = {255--274},
+  author = {Charles Audet and Cong-Kien Dang and Dominique Orban},
+  title = {Algorithmic Parameter Optimization of the {DFO} Method with the {OPAL} Framework},
+  booktitle = {Software Automatic Tuning}
+}
+
+@techreport{pulp,
+  author = "M. Stuart and M. O'Sullivan and I. Dunning",
+  title = "{PuLP}: a linear programming toolkit for {Python}",
+  institute = "Department of Engineering Science, The University of Auckland, Auckland, New Zealand",
+  year = "2011",
+  url = "https://www.optimization-online.org/DB_FILE/2011/09/3178.pdf"
+}
+
+@inproceedings{izzo2012pygmo,
+  title={{PyGMO and PyKEP}: Open source tools for massively parallel optimization in astrodynamics (the case of interplanetary trajectory optimization)},
+  author={Izzo, Dario},
+  booktitle={Proceedings of the fifth international conference on astrodynamics tools and techniques, ICATT},
+  year={2012},
+  url={}
+}
+
+@book{pyomo,
+  doi = {10.1007/978-1-4614-3226-5},
+  year = {2012},
+  publisher = {Springer {US}},
+  author = {William E. Hart and Carl Laird and Jean-Paul Watson and David L. Woodruff},
+  title = {Pyomo {\textendash} Optimization Modeling in Python}
+}
+
+@article{pyopt,
+  doi = {10.1007/s00158-011-0666-3},
+  year = {2011},
+  month = may,
+  publisher = {Springer Science and Business Media {LLC}},
+  volume = {45},
+  number = {1},
+  pages = {101--118},
+  author = {Ruben E. Perez and Peter W. Jansen and Joaquim R. R. A. Martins},
+  title = {{pyOpt}: a Python-based object-oriented framework for nonlinear constrained optimization},
+  journal = smo
+}
+
+@article{virtanen2020scipy,
+  title={{SciPy} 1.0: fundamental algorithms for scientific computing in {Python}},
+  author={Virtanen, Pauli and Gommers, Ralf and Oliphant, Travis E and Haberland, Matt and Reddy, Tyler and Cournapeau, David and Burovski, Evgeni and Peterson, Pearu and Weckesser, Warren and Bright, Jonathan and others},
+  journal=natmeth,
+  volume={17},
+  number={3},
+  pages={261--272},
+  year={2020},
+  doi={10.1038/s41592-019-0686-2}
+}
+
+@article{bezanson2017julia,
+  title={Julia: A fresh approach to numerical computing},
+  author={Bezanson, Jeff and Edelman, Alan and Karpinski, Stefan and Shah, Viral B.},
+  journal=sirev,
+  volume={59},
+  number={1},
+  pages={65--98},
+  year={2017},
+  publisher={SIAM},
+  doi={10.1137/141000671}
+}
+
+@article{lubin2015computing,
+  title={Computing in operations research using {J}ulia},
+  author={Lubin, Miles and Dunning, Iain},
+  journal=infjoc,
+  volume={27},
+  number={2},
+  pages={238--248},
+  year={2015},
+  publisher={INFORMS},
+  doi={10.1287/ijoc.2014.0623}
+}
+
+@Misc{orban-siqueira-nlpmodelsknitro-2020,
+  author = {D. Orban and A. S. Siqueira and {contributors}},
+  title = {{NLPModelsKnitro.jl}: A thin {KNITRO} wrapper for {NLPModels}},
+  month = {July},
+  url = {https://github.com/JuliaSmoothOptimizers/NLPModelsKnitro.jl},
+  year = {2020},
+  DOI = {10.5281/zenodo.3994983},
+}
+
+@Misc{orban-siqueira-nlpmodelsipopt-2020,
+  author = {D. Orban and A. S. Siqueira and {contributors}},
+  title = {{NLPModelsIpopt.jl}: A thin {IPOPT} wrapper for {NLPModels}},
+  month = {July},
+  url = {https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl},
+  year = {2020},
+  DOI = {10.5281/zenodo.2629034},
+}
+
+@incollection{byrd2006k,
+  title={Knitro: An integrated package for nonlinear optimization},
+  author={Byrd, Richard H and Nocedal, Jorge and Waltz, Richard A},
+  booktitle={Large-scale nonlinear optimization},
+  pages={35--59},
+  year={2006},
+  publisher={Springer},
+  doi={10.1007/0-387-30065-1\_4}
 }
