@@ -57,24 +57,24 @@ We refer to the website \href{https://juliasmoothoptimizers.github.io/}{juliasmo
 # Statement of need
 (A Statement of Need section that clearly illustrates the research purpose of the software.)
 
-DCISolver is designed to help application experts to easily solve real-world problems and to help researchers improve, compare and analyze new techniques too handle constraints without writing such algorithms themselves.
-The user benefits from JuliaSmoothOptimizers's framework to solve nonlinear optimization problems from diverse nature in an accessible fashion, which makes it very suitable for numerical optimization courses.
+DCISolver is designed to help application experts quickly solve real-world problems and help researchers improve, compare and analyze new techniques to handle constraints without writing algorithms themselves.
+The user benefits from JuliaSmoothOptimizers's framework to solve nonlinear optimization problems of diverse nature in an accessible fashion, which makes it very suitable for numerical optimization courses.
 
 C++ and Fortran are often languages of choice for large-scale optimization solvers, e.g., COIN-OR [@lougee2003common] Ipopt [@wachter2006implementation], GALAHAD [@gould2003galahad] with a sequential augmented Lagrangian LANCELOT in Fortran, NLopt [@johnson2014nlopt] also an augmented Lagrangian, Opt++ [@optcpp] a nonlinear interior point method, PETcs-TAO [@petsc-user-ref] to cite some of the main organizations. However, such low-level languages have a rather steep learning curve and long write-compile-link-debug cycles.
 Hence, practitioners and researchers have often turned to higher-level languages such as Python and Matlab.
 Python is an object-oriented programming language with an extensive 
 standard library that is nearly as extensive as that of C and C++ including for optimization, see, CVXOPT [@cvxopt], GEKKO Optimization Suite [@beal2018gekko], NLP.py [@nlppy], Opal [@opal], PulP [@pulp], PyGMO [@izzo2012pygmo], Pyomo [@pyomo], Pyopt [@pyopt], SciPy [@virtanen2020scipy].
 
-Julia has a high-level syntax, inspired by other well-known languages, such as Matlab and Python, and, it uses just-in-time compilation to achieve high performance.
-One of Julia's aspects is the ability to access C, Fortran or Python code without sacrificing speed natively, which helps tackle the two language problems -- prototype on high-level, reimplement in low-level.
+Julia has a high-level syntax inspired by other well-known languages, such as Matlab and Python, and it uses just-in-time compilation to achieve high performance.
+One of Julia's aspects is the ability to access C, Fortran, or Python code without sacrificing speed natively, which helps tackle the two language problems -- prototype on high-level, reimplement in low-level.
 In Julia, one can create a prototype just as quickly as other high-level languages, but the resulting prototype is considerably more efficient [@bezanson2017julia].
-Furthermore, instead of moving the code to a low-level language, the prototype can be improved until a competitive version is obtained.
-Julia has been designed to efficiently implement softwares and algorithms fundamental to the field of operations research, particularly in mathematical optimization [@lubin2015computing]. Indeed, [@lubin2015computing] showed cross-language benchmarks suggesting that Julia is capable of obtaining state-of-the-art performance.
+Furthermore, the prototype can be improved instead of moving the code to a low-level language until a competitive version is obtained.
+Julia has been designed to efficiently implement software and algorithms fundamental to the field of operations research, particularly in mathematical optimization [@lubin2015computing]. Indeed, [@lubin2015computing] showed cross-language benchmarks suggesting that Julia is capable of obtaining state-of-the-art performance.
 
-In Julia, one can also consider using MathOptInterface.jl [@legat2021mathoptinterface] that solve JuMP models using state of the art solvers, or Optim.jl [@mogensen2018optim]. JSO also provides thin wrapper to existing solvers such as Artelys Knitro [@byrd2006k] via `NLPModelsKnitro.jl` [@orban-siqueira-nlpmodelsknitro-2020] or Ipopt [@wachter2006implementation] via `NLPModelsIpopt.jl` [@orban-siqueira-nlpmodelsipopt-2020], and pure Julia implementations such as Percival [@percival-jl].
-To the best of our knowledge, there are no available open source implementation of the DCI algorithm, which offers a very interesting alternative to interior-point methods or augmented Lagrangian methods that extremly popular in the aforementioned references.
+In Julia, one can also consider using MathOptInterface.Jl [@legat2021mathoptinterface] that solves JuMP models using state-of-the-art solvers, or Optim.Jl [@mogensen2018optim]. JSO also provides thin wrapper to existing solvers such as Artelys Knitro [@byrd2006k] via `NLPModelsKnitro.jl` [@orban-siqueira-nlpmodelsknitro-2020] or Ipopt [@wachter2006implementation] via `NLPModelsIpopt.jl` [@orban-siqueira-nlpmodelsipopt-2020], and pure Julia implementations such as Percival [@percival-jl].
+To the best of our knowledge, there is no available open-source implementation of the DCI algorithm, which offers a very interesting alternative to interior-point methods or augmented Lagrangian methods that are extremely popular in the references mentioned above.
 
-DCISolver is an open-source project hosted at Github and distributed under a Mozilla Public license.
+DCISolver is an open-source project hosted at Github and distributed under a Mozilla Public License.
 
 # Acknowledgements
 
