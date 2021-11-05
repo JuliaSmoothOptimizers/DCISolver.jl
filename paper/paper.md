@@ -41,7 +41,7 @@ The method uses the idea of using trust cylinders to keep the infeasibility unde
 Each time the trust cylinder is violated, a restoration step is called and the infeasibility level is reduced. 
 The radius of the trust cylinder has a nonincreasing update scheme, so eventually a feasible and optimal point is obtained.
 
-![The step and the trust cylinders C(\rho^k) := \{ x \in \mathbb{R}^n : \| h(x) \| \leq \rho^k \}.  $x^k_c$ satisfies  $\|h(x^k_c)\| \leq \rho^k$, while  $x^k$ satisfies  $\|h(x^k)\| \leq 2\rho^k$.](trust_cylinder_improved.png){ width=100% }
+![The step and the trust cylinders $C(\rho^k) := \{ x \in \mathbb{R}^n : \| h(x) \| \leq \rho^k \}$.  $x^k_c$ satisfies  $\|h(x^k_c)\| \leq \rho^k$, while  $x^k$ satisfies  $\|h(x^k)\| \leq 2\rho^k$.](trust_cylinder_improved.png){ width=100% }
 
 # Statement of need
 (A Statement of Need section that clearly illustrates the research purpose of the software.)
