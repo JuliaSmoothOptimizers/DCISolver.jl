@@ -88,15 +88,13 @@ The JSO organization benefits from Julia's expressive language and performance t
 A JSO-compliant solver essentially implies a constraint on the input and the output of the main function. The inputted problem must be an instance of an `AbstractNLPModel`. The output has to include a `GenericExecutionStats`, implemented in `SolverCore.jl`, which is a structure containing the available information at the end of the execution, such as a solver status, the objective function value, the norm of the gradient of the Lagrangian, the norm of the constraint function, the elapsed time, and a dictionary of solver specifics.
 
 JSO provides a general consistent API, `AbstractNLPModel`, for solvers to interact with models by providing flexible data types to represent the objective and constraint functions, to evaluate their derivatives, and to provide essentially any information that a solver might request from a model.
-Then, one can instantiate this abstract structure to different problems. We exploit Julia's multiple dispatch facilities \citep{bezanson2017julia} to efficiently specialize instances to different contexts.
+Then, one can instantiate this abstract structure to different problems. We exploit Julia's multiple dispatch facilities to efficiently specialize instances to different contexts.
 Hence, solvers can be designed to rely on the API's behavior independently of the problem's origin. Moreover, the API handles sparse Hessian/Jacobian matrices or operators for matrix-free implementations.
 JSO also provides converters from classical mathematical optimization modeling language.
 
 ## Benchmarks
 
-With a JSO-compliant solver, such as DCI, we can run the solver on a set of problems, explore the results, and compare to other JSO-compliant solvers using specialized benchmark tools. 
-`SolverBenchmark.jl` also produces performance profiles and \LaTeX\ tables ready for use.
-
+With a JSO-compliant solver, such as DCI, we can run the solver on a set of problems, explore the results, and compare to other JSO-compliant solvers using specialized benchmark tools `SolverBenchmark.jl`. 
 To test the implementation of DCI, we use the package `CUTEst.jl`, which implements `CUTEstModel` an instance of `AbstractNLPModel`. Let us select equality-constrained problems from CUTEst with a maximum of 10000 variables or constraints. After removing problems with fixed variables, examples with a constant objective, and infeasibility residuals, we are left with 82 problems.
 
 We can see on these two figures that our implementation DCI is doing extremely well in terms of execution time. It used more evaluation of functions than the well-known solvers, which is not necessarily a surprise as it is a very young implementation. Overall, these simulations show that it is possible to code efficient algorithms under JSO's umbrella.
