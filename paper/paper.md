@@ -1,112 +1,139 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: 'DCISolver.jl: A Julia package for Dynamic Control of Infeasibility Solver for Nonlinear Optimization'
 tags:
-  - Python
-  - astronomy
-  - dynamics
-  - galactic dynamics
-  - milky way
+  - Julia
+  - nonlinear optimization
+  - numerical optimization
+  - large-scale optimization
+  - constrained optimization
+  - nonlinear programming
 authors:
-  - name: Adrian M. Price-Whelan^[co-first author] # note this makes a footnote saying 'co-first author'
-    orcid: 0000-0003-0872-7098
+  - name: Tangi Migot^[corresponding author]
+    orcid: 0000-0001-7729-2513
+    affiliation: 1
+  - name: Dominique Orban
+    orcid: 0000-0002-8017-7687
     affiliation: "1, 2" # (Multiple affiliations must be quoted)
-  - name: Author Without ORCID^[co-first author] # note this makes a footnote saying 'co-first author'
-    affiliation: 2
-  - name: Author with no affiliation^[corresponding author]
+  - name: Abel Soares Siqueira
+    orcid: 0000-0003-4451-281X
     affiliation: 3
 affiliations:
- - name: Lyman Spitzer, Jr. Fellow, Princeton University
+ - name: GERAD, Department of Mathematics and Industrial Engineering, École Polytechnique, Montréal, QC, Canada.
    index: 1
- - name: Institution Name
+ - name: 
    index: 2
- - name: Independent Researcher
+ - name: Netherlands eScience Center, Amsterdam, NL
    index: 3
-date: 13 August 2017
+date: 05 November 2021
 bibliography: paper.bib
 
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-aas-journal: Astrophysical Journal <- The name of the AAS journal.
 ---
 
 # Summary
+(A summary describing the high-level functionality and purpose of the software for a diverse, non-specialist audience.)
 
-The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+DCISolver.jl is a new Julia implementation of DCI (Dynamic Control of Infeasibility), introduced by R.H. Bielschowsky and F.A.M. Gomes in [@bielschowsky2008dynamic], an algorithm for solving smooth nonlinear optimization models
+with equality constraints:
+\begin{equation}\label{eq:nlp}
+    \min_{x \in \mathbb{R}^n} f(x) \quad \st \quad h(x) = 0,
+\end{equation}
+where  $f:\mathbb{R}^n \rightarrow \mathbb{R}$ and  $h:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are twice continuously differentiable.  \autoref{eq:nlp}
+DCISolver is designed to help application experts to easily solve real-world problems, to help researchers improve compare and analyze new techniques too handle constraints, and also for its usage in numerical optimization courses.
+
 
 # Statement of need
+(A Statement of Need section that clearly illustrates the research purpose of the software.)
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
+## The cylinder
 
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
+The method uses the idea of using trust cylinders to keep the infeasibility under control.
+Each time the trust cylinder is violated, a restoration step is called and the infeasibility level is reduced. 
+The radius of the trust cylinder has a nonincreasing update scheme, so eventually a feasible (and optimal) point is obtained.
+The numerical results suggest that the algorithm is promising.
 
-# Mathematics
-
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
-
-Double dollars make self-standing equations:
-
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
-
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
+The DCI algorithm is an iterative method that has the flavor of a projected gradient algorithm and could be characterized as
+a relaxed feasible point method with dynamic control of infeasibility. The main idea is to compute a sequence of iterate  $\{x^k\}$ where each iterate belongs to a trust-cylinder  $C(\rho^k)$, so that, for all  $k=1,\dots$, it holds
+\begin{equation}\label{eq:trust-cylinder}
+    x^k \in C(\rho^k) := \{ x \in \mathbb{R}^n : \| h(x) \| \leq \rho^k \},  
 \end{equation}
-and refer to \autoref{eq:fourier} from text.
+where the radii  $\rho^k$ is chosen such that
+\begin{equation}\label{eq:radii}
+    \rho^k = O\left(\|\nabla f(x^k) + \nabla h(x^k)^T \lambda\|\right),
+%    \rho^k = O(\|g_p(x^k)\|),
+% $g_p(x^k) := \nabla f(x^k) + \nabla h(x^k)^T \lambda$
+\end{equation}
+with  $\lambda$ an approximation of a Lagrange multiplier at  $x^k$ computed by 
+\begin{equation}\label{eq:lag}
+    \arg\min_{\lambda \in \mathbb{R}^m} \| \nabla f(x^k) + \nabla h(x^k)^T \lambda \|.
+\end{equation}
 
-# Citations
+The  $k$-th iteration of the algorithm consists of a normal and a tangent step. Given  $x^{k-1}$, the normal step computes a couple  $(x^k_c,\rho^k)$ satisfying  $x^k_c \in C(\rho^k)$. The sequence  $\{\rho^k\}$ is decreasing to zero.
+On the other hand, the tangent step aims at reducing the dual feasibility and computes  $x^k:=x^k_c + d^k$ such that
+\begin{equation}\label{eq:dual_feasibility_step}
+    d^k \in \argmin{d \in \mathbb{R}^n} \nabla f(x^k_c)^T d + \frac{1}{2} d^T B d \quad \st \quad \nabla h(x^k_c) d = 0, \ \| d \| \leq \Delta,
+\end{equation}
+where  $B$ is a symmetric approximation of the Lagrangian Hessian at  $x^k_c$, and,  $\Delta>0$ is a trust-region parameter, in particular, chosen such that  $\|h(x^k)\| \leq 2\rho^k$. 
 
-Citations to entries in paper.bib should be in
-[rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
-format.
+![The step and the trust cylinders.  $x^k_c$ satisfies  $\|h(x^k_c)\| \leq \rho^k$, while  $x^k$ satisfies  $\|h(x^k)\| \leq 2\rho^k$.](trust_cylinder_improved.png){ width=10% }
 
-If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below for @fidgit.
+The following algorithm gives a concise presentation of the main steps. We refer to \cite[Algorithm~2.1 (page 4)]{bielschowsky2008dynamic} for an example of implementation of both steps, the computation of the radii, and the convergence analysis of the algorithm under standard assumptions.  
 
-For a quick reference, the following citation commands can be used:
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)"
+\begin{algorithm}
+\caption{Main steps of the DCI algorithm \citep{bielschowsky2008dynamic}.}
+\label{algo:dci}
+\begin{algorithmic}[1]
 
-# Figures
+\Function{dci}{$x^0,\rho^0, \dots$} 
+    \State  $k=0$
+    \State Initialize  $\rho^0_{max}$ \Comment{ $\{\rho^k_{max}\}$ is a non-increasing sequence  $\downarrow 0$}
+    
+    \While{ $x^k$ is not an  $\epsilon$-stationary point}  
+        \State  $x^k_c := x^k$ \Comment{Initialize the normal step}
+        \While{ $\|h(x^k_c)\| > \rho^k$} \Comment{Normal step}
+        \State Compute  $x^k_c$ such that  $\|h(x^k_c)\| \leq \rho^k$ \Comment{Feasibility step}
+        \State Update  $\rho^k$ satisfying \eqref{eq:radii} and  $\rho^k \leq \rho^k_{max}$
+        \EndWhile \Comment{End of the normal step}
+        \State Decrease  $\rho^k_{max}$ if enough progress are made
+        \While{ $d^k$ is not sufficiently minimizing  \eqref{eq:dual_feasibility_step} } \Comment{Tangent step}
+        \State Compute a dogleg direction  $d^k$
+        \State Update the trust-region parameter  $\Delta$
+        \EndWhile \Comment{End of the tangent step}
+        \State  $x^{k+1} := x^k_c + d^k$ \Comment{ $\Delta$ ensures  $\|h(x^{k+1})\| \leq 2\rho^k$}
+        \State  $k:=k+1$
+    \EndWhile
+\EndFunction
 
-Figures can be included like this:
-![Caption for example figure.\label{fig:example}](figure.png)
-and referenced from text using \autoref{fig:example}.
+\end{algorithmic}
+\end{algorithm}
 
-Figure sizes can be customized by adding an optional second parameter:
-![Caption for example figure.](figure.png){ width=20% }
+## JSO-solver
+
+JuliaSmoothOptimizers (JSO) is an academic organization containing a collection of Julia packages for nonlinear optimization software development, testing, and benchmarking. It provides solvers and tools for building models, accessing repositories of problems, solving subproblems, and linear algebra.
+The JSO organization benefits from Julia's expressive language and performance to offer all the tools to solve large-scale continuous optimization problems, research and design new methods in an accessible and efficient way. It strives for retaining efficiency, promoting expandability and code reuse at all levels. JSO provides an API to access optimization problems' functions and derivatives that can be specialized to a variety of different problems including optimization problems with partial differential equations in the constraints. A central point is that it also offers tools to improve the solver's quality, such as factorization and iterative solver packages for linear algebra and subproblem's solvers. With a few code lines, one can prototype a solver, compare with well-known solvers or pure-Julia implementations of solvers, and test on manually inputted problems or test problem sets. We refer to the website  \href{https://juliasmoothoptimizers.github.io/}{juliasmoothoptimizers.github.io} for tutorials.
+
+![JuliaSmoothOptimizers' logo.](jso-logo.png){ width=10% }
+
+A JSO-compliant solver essentially implies a constraint on the input and the output of the main function. The inputted problem must be an instance of an `AbstractNLPModel`. The output has to include a `GenericExecutionStats`, implemented in `SolverCore.jl`, which is a structure containing the available information at the end of the execution, such as a solver status, the objective function value, the norm of the gradient of the Lagrangian, the norm of the constraint function, the elapsed time, and a dictionary of solver specifics.
+
+JSO provides a general consistent API, `AbstractNLPModel`, for solvers to interact with models by providing flexible data types to represent the objective and constraint functions, to evaluate their derivatives, and to provide essentially any information that a solver might request from a model.
+Then, one can instantiate this abstract structure to different problems. We exploit Julia's multiple dispatch facilities \citep{bezanson2017julia} to efficiently specialize instances to different contexts.
+Hence, solvers can be designed to rely on the API's behavior independently of the problem's origin. Moreover, the API handles sparse Hessian/Jacobian matrices or operators for matrix-free implementations.
+JSO also provides converters from classical mathematical optimization modeling language.
+
+## Benchmarks
+
+With a JSO-compliant solver, such as DCI, we can run the solver on a set of problems, explore the results, and compare to other JSO-compliant solvers using specialized benchmark tools. 
+`SolverBenchmark.jl` also produces performance profiles and \LaTeX\ tables ready for use.
+
+To test the implementation of DCI, we use the package `CUTEst.jl`, which implements `CUTEstModel` an instance of `AbstractNLPModel`. Let us select equality-constrained problems from CUTEst with a maximum of 10000 variables or constraints. After removing problems with fixed variables, examples with a constant objective, and infeasibility residuals, we are left with 82 problems.
+
+We can see on these two figures that our implementation DCI is doing extremely well in terms of execution time. It used more evaluation of functions than the well-known solvers, which is not necessarily a surprise as it is a very young implementation. Overall, these simulations show that it is possible to code efficient algorithms under JSO's umbrella.
+
+![Performance profile with respect to time](20210127_perf-elapsed_time.png)
 
 # Acknowledgements
 
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
+This research was partially supported by IVADO and the Canada First Research Excellence Fund / Apog\'ee,
+and by an NSERC Discovery Grant.
 
 # References
