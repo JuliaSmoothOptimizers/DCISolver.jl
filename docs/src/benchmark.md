@@ -14,9 +14,9 @@ Let us select equality-constrained problems from CUTEst with a maximum of 10000 
 
 ``` @example ex1
 _pnames = CUTEst.select(
-  max_var = 10000, 
+  max_var = 100, 
   min_con = 1, 
-  max_con = 10000, 
+  max_con = 100, 
   only_free_var = true, 
   only_equ_con = true, 
   objtype = 3:6
