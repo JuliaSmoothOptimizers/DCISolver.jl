@@ -35,7 +35,7 @@ bibliography: paper.bib
 DCISolver.jl is a new Julia implementation of DCI (Dynamic Control of Infeasibility), introduced by R.H. Bielschowsky and F.A.M. Gomes in [@bielschowsky2008dynamic], an algorithm for solving smooth nonlinear optimization models
 with equality constraints:
 \begin{equation}\label{eq:nlp}
-    \min_{x \in \mathbb{R}^n} f(x) \quad \st \quad h(x) = 0,
+    \min_{x \in \mathbb{R}^n} f(x) \quad \text{subject to } \quad h(x) = 0,
 \end{equation}
 where  $f:\mathbb{R}^n \rightarrow \mathbb{R}$ and  $h:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are twice continuously differentiable.  \autoref{eq:nlp}
 DCISolver is designed to help application experts to easily solve real-world problems, to help researchers improve compare and analyze new techniques too handle constraints, and also for its usage in numerical optimization courses.
@@ -76,35 +76,7 @@ where  $B$ is a symmetric approximation of the Lagrangian Hessian at  $x^k_c$, a
 
 ![The step and the trust cylinders.  $x^k_c$ satisfies  $\|h(x^k_c)\| \leq \rho^k$, while  $x^k$ satisfies  $\|h(x^k)\| \leq 2\rho^k$.](trust_cylinder_improved.png){ width=10% }
 
-The following algorithm gives a concise presentation of the main steps. We refer to \cite[Algorithm~2.1 (page 4)]{bielschowsky2008dynamic} for an example of implementation of both steps, the computation of the radii, and the convergence analysis of the algorithm under standard assumptions.  
-
-\begin{algorithm}
-\caption{Main steps of the DCI algorithm \citep{bielschowsky2008dynamic}.}
-\label{algo:dci}
-\begin{algorithmic}[1]
-
-\Function{dci}{$x^0,\rho^0, \dots$} 
-    \State  $k=0$
-    \State Initialize  $\rho^0_{max}$ \Comment{ $\{\rho^k_{max}\}$ is a non-increasing sequence  $\downarrow 0$}
-    
-    \While{ $x^k$ is not an  $\epsilon$-stationary point}  
-        \State  $x^k_c := x^k$ \Comment{Initialize the normal step}
-        \While{ $\|h(x^k_c)\| > \rho^k$} \Comment{Normal step}
-        \State Compute  $x^k_c$ such that  $\|h(x^k_c)\| \leq \rho^k$ \Comment{Feasibility step}
-        \State Update  $\rho^k$ satisfying \eqref{eq:radii} and  $\rho^k \leq \rho^k_{max}$
-        \EndWhile \Comment{End of the normal step}
-        \State Decrease  $\rho^k_{max}$ if enough progress are made
-        \While{ $d^k$ is not sufficiently minimizing  \eqref{eq:dual_feasibility_step} } \Comment{Tangent step}
-        \State Compute a dogleg direction  $d^k$
-        \State Update the trust-region parameter  $\Delta$
-        \EndWhile \Comment{End of the tangent step}
-        \State  $x^{k+1} := x^k_c + d^k$ \Comment{ $\Delta$ ensures  $\|h(x^{k+1})\| \leq 2\rho^k$}
-        \State  $k:=k+1$
-    \EndWhile
-\EndFunction
-
-\end{algorithmic}
-\end{algorithm}
+The following algorithm gives a concise presentation of the main steps. We refer to Algorithm~2.1 (page 4) [@bielschowsky2008dynamic] for an example of implementation of both steps, the computation of the radii, and the convergence analysis of the algorithm under standard assumptions.  
 
 ## JSO-solver
 
