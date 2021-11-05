@@ -36,12 +36,33 @@ with equality constraints:
     \min_{x \in \mathbb{R}^n} f(x) \quad \text{subject to } \quad h(x) = 0,
 \end{equation}
 where  $f:\mathbb{R}^n \rightarrow \mathbb{R}$ and  $h:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are twice continuously differentiable.
+As often in nonlinear continuous optimization, DCI is an iterative method that aims at computing a local minimum, or at least a stationary point, of \autoref{eq:nlp} using information on first and second order derivatives.
 
-The method uses the idea of using trust cylinders to keep the infeasibility under control.
+This iterative method uses the idea of trust cylinders to keep the infeasibility under control. On the contrary to penalization methods that encourage feasibility.
 Each time the trust cylinder is violated, a restoration step is called and the infeasibility level is reduced. 
 The radius of the trust cylinder has a nonincreasing update scheme, so eventually a feasible and optimal point is obtained.
 
 ![The step and the trust cylinders $C(\rho^k) := \{ x \in \mathbb{R}^n : \| h(x) \| \leq \rho^k \}$.  $x^k_c$ satisfies  $\|h(x^k_c)\| \leq \rho^k$, while  $x^k$ satisfies  $\|h(x^k)\| \leq 2\rho^k$.](trust_cylinder_improved.png){ width=100% }
+
+2-step process: in particular very suitable for large-scale problems where the feasibility is an issue as this part is factorization-free.
+
+(
+    BIM - JSO-solvers
+)
+
+## JSO-solver
+
+JuliaSmoothOptimizers (JSO) is an academic organization containing a collection of Julia packages for nonlinear optimization software development, testing, and benchmarking. It provides solvers and tools for building models, accessing repositories of problems, solving subproblems, and linear algebra.
+The JSO organization benefits from Julia's expressive language and performance to offer all the tools to solve large-scale continuous optimization problems, research and design new methods in an accessible and efficient way. 
+With a few code lines, one can prototype a solver, compare with well-known solvers or pure-Julia implementations of solvers, and test on manually inputted problems or test problem sets. We refer to the website \href{https://juliasmoothoptimizers.github.io/}{juliasmoothoptimizers.github.io} for tutorials.
+
+JSO provides a general consistent API, `AbstractNLPModel` defined in `NLPModels.jl` [@orban-siqueira-nlpmodels-2020], for solvers to interact with models by providing flexible data types to represent the objective and constraint functions, to evaluate their derivatives, and to provide essentially any information that a solver might request from a model.
+Then, one can instantiate this abstract structure to different problems. 
+The user can provide derivatives themselves, request that they are calculated using automatic differentiation or using JSO-converters from classical mathematical optimization modeling language (JuMP, Ampl ...).
+We exploit Julia's multiple dispatch facilities to efficiently specialize instances to different contexts.
+Moreover, the API handles sparse Hessian/Jacobian matrices or operators for matrix-free implementations.
+
+A JSO-compliant solver essentially implies a constraint on the input and the output of the main function. The inputted problem must be an instance of an `AbstractNLPModel`. The output has to include a `GenericExecutionStats`, implemented in `SolverCore.jl`, which is a structure containing the available information at the end of the execution, such as a solver status, the objective function value, the norm of the gradient of the Lagrangian, the norm of the constraint function, the elapsed time, and a dictionary of solver specifics.
 
 # Statement of need
 (A Statement of Need section that clearly illustrates the research purpose of the software.)
@@ -59,20 +80,6 @@ We should also state why we needed a new algorithm -
 In Julia: compare to Ipopt [@wachter2006implementation], Percival [@percival-jl], interior-point Newton method in Optim.jl [@mogensen2018optim], MathOptInterface.jl [@legat2021mathoptinterface]
 To the best of our knowledge, there are no available open source implementation of this solver.
 )
-
-## JSO-solver
-
-JuliaSmoothOptimizers (JSO) is an academic organization containing a collection of Julia packages for nonlinear optimization software development, testing, and benchmarking. It provides solvers and tools for building models, accessing repositories of problems, solving subproblems, and linear algebra.
-The JSO organization benefits from Julia's expressive language and performance to offer all the tools to solve large-scale continuous optimization problems, research and design new methods in an accessible and efficient way. 
-With a few code lines, one can prototype a solver, compare with well-known solvers or pure-Julia implementations of solvers, and test on manually inputted problems or test problem sets. We refer to the website \href{https://juliasmoothoptimizers.github.io/}{juliasmoothoptimizers.github.io} for tutorials.
-
-JSO provides a general consistent API, `AbstractNLPModel` defined in `NLPModels.jl` [@orban-siqueira-nlpmodels-2020], for solvers to interact with models by providing flexible data types to represent the objective and constraint functions, to evaluate their derivatives, and to provide essentially any information that a solver might request from a model.
-Then, one can instantiate this abstract structure to different problems. 
-The user can provide derivatives themselves, request that they are calculated using automatic differentiation or using JSO-converters from classical mathematical optimization modeling language (JuMP, Ampl ...).
-We exploit Julia's multiple dispatch facilities to efficiently specialize instances to different contexts.
-Moreover, the API handles sparse Hessian/Jacobian matrices or operators for matrix-free implementations.
-
-A JSO-compliant solver essentially implies a constraint on the input and the output of the main function. The inputted problem must be an instance of an `AbstractNLPModel`. The output has to include a `GenericExecutionStats`, implemented in `SolverCore.jl`, which is a structure containing the available information at the end of the execution, such as a solver status, the objective function value, the norm of the gradient of the Lagrangian, the norm of the constraint function, the elapsed time, and a dictionary of solver specifics.
 
 ## Benchmarks
 
