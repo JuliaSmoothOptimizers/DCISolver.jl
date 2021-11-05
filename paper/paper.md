@@ -35,16 +35,17 @@ with equality constraints:
     \min_{x \in \mathbb{R}^n} f(x) \quad \text{subject to} \quad h(x) = 0,
 \end{equation}
 where  $f:\mathbb{R}^n \rightarrow \mathbb{R}$ and  $h:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are twice continuously differentiable.
-As often in nonlinear continuous optimization, DCI is an iterative method that aims at computing a local minimum, or at least a stationary point, of \autoref{eq:nlp} using first and second-order derivatives.
+As often in nonlinear continuous optimization, DCI is an iterative method that aims at computing a local minimum of \autoref{eq:nlp} using first and second-order derivatives.
 
 The DCI algorithm is a two-step process that first minimizes the problem with a relaxed feasibility constraint and then recenters toward a trust cylinder. 
 The idea of trust cylinders is to keep infeasibility under control, contrary to penalization methods that only encourage feasibility.
 Every time the trust cylinder is violated, a restoration step is called, and the infeasibility level is reduced.
 The radius of the trust cylinder has a decreasing update scheme, so a feasible and optimal point will be obtained.
+
 One of the significant advantages of this implementation is that the restoration step is matrix-free, i.e., it uses second-order information via Hessian-vector products but does not need access to the Hessian matrix.
 This makes `DCISolver.jl` a great asset for large-scale problems, where the equality constraint is hard to handle.
 
-`DCISolver.jl` relies on JuliaSmoothOptimizers' (JSO) tools. JSO is an academic organization containing a collection of Julia packages for nonlinear optimization software development, testing, and benchmarking. It provides the tools for building models, accessing repositories of problems, and solving subproblems. `DCISolver.jl` takes as an input an `AbstractNLPModel`, JSO's general consistent API defined in `NLPModels.jl` [@orban-siqueira-nlpmodels-2020]. It represents flexible data types to handle the objective and constraint functions, to evaluate their derivatives, and to provide essentially any information that a solver might request from a model. The user can code derivatives themselves or with automatic differentiation, or use JSO-converters for classical mathematical optimization modeling languages such as Ampl or JuMP. Moreover, the API handles sparse matrices and operators for matrix-free implementations. We exploit here Julia's multiple dispatch facilities to specialize instances to different contexts efficiently.
+`DCISolver.jl` relies on JuliaSmoothOptimizers' (JSO) tools. JSO is an academic organization containing a collection of Julia packages for nonlinear optimization software development, testing, and benchmarking. It provides the tools for building models, accessing repositories of problems, and solving subproblems. `DCISolver.jl` takes as an input an `AbstractNLPModel`, JSO's general consistent API defined in `NLPModels.jl` [@orban-siqueira-nlpmodels-2020]. It represents flexible data types to handle the objective and constraint functions, to evaluate their derivatives, and to provide essentially any information that a solver might request from a model. The user can code derivatives themselves or with automatic differentiation, or use JSO-converters for classical mathematical optimization modeling languages such as Ampl [@fourer2003ampl] or JuMP [@jump]. Moreover, the API handles sparse matrices and operators for matrix-free implementations. We exploit here Julia's multiple dispatch facilities to specialize instances to different contexts efficiently.
 
 `DCISolver.jl` internally combines cutting-edge numerical linear algebra solvers. The restoration step heavily relies on iterative methods for linear algebra from `Krylov.jl` [@montoison-orban-krylov-2020].
 This package provides more than 25 implementations of standard and novel Krylov methods, and they all can be used with Nvidia GPU via CUDA.jl [@besard2018juliagpu]. 
@@ -62,11 +63,11 @@ Julia has a high-level syntax inspired by other well-known languages, such as Ma
 One of Julia's aspects is the ability to access C, Fortran, or Python code without sacrificing speed natively, which helps tackle the two language problems -- prototype on high-level, reimplement in low-level.
 In Julia, one can create a prototype just as quickly as other high-level languages, but the resulting prototype is considerably more efficient [@bezanson2017julia].
 Furthermore, the prototype can be improved instead of moving the code to a low-level language until a competitive version is obtained.
-Julia has been designed to efficiently implement software and algorithms fundamental to the field of operations research, particularly in mathematical optimization [@lubin2015computing]. Indeed, [@lubin2015computing] showed cross-language benchmarks suggesting that Julia is capable of obtaining state-of-the-art performance.
+Julia has been designed to efficiently implement software and algorithms fundamental to the field of operations research, particularly in mathematical optimization [@lubin2015computing].
 Moreover, tools coded in pure Julia do not require external compiled dependencies and work with multiple input data types.
 
 To solve \autoref{eq:nlp} in Julia, one can also consider using MathOptInterface.jl [@legat2021mathoptinterface] that solves JuMP models [@jump] using state-of-the-art solvers, or Optim.jl [@mogensen2018optim]. JSO also provides thin wrapper to existing solvers such as Artelys Knitro [@byrd2006k] via `NLPModelsKnitro.jl` [@orban-siqueira-nlpmodelsknitro-2020] or Ipopt [@wachter2006implementation] via `NLPModelsIpopt.jl` [@orban-siqueira-nlpmodelsipopt-2020], and pure Julia implementations such as `Percival.jl` [@percival-jl].
-To the best of our knowledge, there is no available open-source implementation of the DCI algorithm, which offers a very interesting alternative to interior-point methods or augmented Lagrangian methods that are extremely popular in the references mentioned above. 
+To the best of our knowledge, there is no available open-source implementation of the DCI algorithm. Hence, we offer here a very interesting alternative to interior-point methods or augmented Lagrangian methods that are extremely popular in the references mentioned above. 
 
 `DCISolver.jl` is designed to help application experts quickly solve real-world problems and help researchers improve, compare and analyze new techniques to handle constraints without writing algorithms themselves.
 The user benefits from JuliaSmoothOptimizers's framework to solve nonlinear optimization problems of diverse nature in an accessible fashion, which makes it very suitable for numerical optimization courses.
