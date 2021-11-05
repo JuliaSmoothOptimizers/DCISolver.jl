@@ -13,13 +13,16 @@ It is also possible to fine-tune the parameters used in the implementation in tw
 
 DCISolver.jl exports the function `dci`:
 ```
-dci(nlp :: AbstractNLPModel, x :: AbstractVector{T}, meta :: MetaDCI) where T
+   dci(nlp :: AbstractNLPModel)
+   dci(nlp :: AbstractNLPModel, x :: AbstractVector)
+   dci(nlp :: AbstractNLPModel, meta :: MetaDCI, x :: AbstractVector)
+   dci(nlp :: AbstractNLPModel, meta :: MetaDCI, workspace :: DCIWorkspace)
 ```
-where `MetaDCI` is a structure handling all the parameters used in the algorithm.
+where `MetaDCI` is a structure handling all the parameters used in the algorithm, and `DCIWorkspace` pre-allocates all the memory used during the iterative process.
 
 It is therefore possible to either call `dci(nlp, x, kwargs...)` and the keywords arguments are passed to the `MetaDCI` constructor or build an instance of `MetaDCI` directly.
 
-```@example
+```@example ex1
 using ADNLPModels, DCISolver
 
 nlp = ADNLPModel(
@@ -30,79 +33,98 @@ nlp = ADNLPModel(
   name = "Rosenbrock with x₁x₂=1"
 )
 
-m, n = nlp.meta.ncon, nlp.meta.nvar
-meta = DCISolver.MetaDCI(
-  nlp.meta.x0, nlp.meta.y0, 
-  max_time = 600., 
-  linear_solver = :ldlfact, 
-  TR_compute_step = :TR_lsmr
-)
-workspace = DCISolver.DCIWorkspace(nlp, meta, nlp.meta.x0)
-stats = dci(nlp, meta, workspace)
-
 #The alternative would be:
-stats2 = dci(
+stats = dci(
   nlp, nlp.meta.x0, 
   max_time = 600., 
   linear_solver = :ldlfact, 
   TR_compute_step = :TR_lsmr
 )
 ```
+The alternative would be:
+```@example ex1
+meta = DCISolver.MetaDCI(
+  nlp.meta.x0, nlp.meta.y0, 
+  max_time = 600., 
+  linear_solver = :ldlfact, 
+  TR_compute_step = :TR_lsmr
+)
+stats = dci(nlp, meta, nlp.meta.x0)
+```
+
+The `DCIWorkspace` allows to reuse the same memory if one would re-solve a problem of the same dimension.
+
+```@example ex1
+workspace = DCISolver.DCIWorkspace(nlp, meta, nlp.meta.x0)
+stats = dci(nlp, meta, workspace)
+worspace.x0 .= ones(2) # change the initial guess, and resolve
+stats = dci(nlp, meta, workspace)
+```
 
 ## List of possible options
 
-Find below a list of the main options of `dci`:
+Find below a list of the main options of `dci`.
+
+### Tolerances on the problem
+We use `ϵ = atol + rtol * dualnorm`.
 ```
-# Tolerances on the problem: in general, we use `ϵ = atol + rtol * dualnorm`
-atol :: AbstractFloat # default: 1e-5 ; absolute tolerance.
-rtol :: AbstractFloat # default: 1e-5 ; relative tolerance.
-ctol :: AbstractFloat # default: 1e-5 ; feasibility tolerance.
-
-unbounded_threshold :: AbstractFloat # default: -1e5 ; below this threshold the problem is unbounded.
-
-# Evaluation limits
-max_eval :: Integer # default: 50000 ; maximum number of cons + obj evaluations.
-max_time :: AbstractFloat # default: 120 ; maximum number of seconds.
-max_iter :: Integer # default: 500 ; maximum number of iterations.
-max_iter_normal_step :: Integer # default: typemax(Int) ; maximum number of iterations in normal step.
-
-# Compute Lagrange multipliers
-comp_λ :: Symbol # default: :cgls ; eval(comp_λ) is used to compute Lagrange multipliers.
-λ_struct :: comp_λ_cgls # default: comp_λ_cgls(length(x0), length(y0), typeof(x0)) ; companion structure of `comp_λ`.
-   
-# Tangent step
-## Solver for the factorization
-linear_solver :: Symbol # default: :ldlfact, options: :ma57.
-## Regularization for the factorization
-decrease_γ :: AbstractFloat # default: 0.1 ; reduce γ if possible, > √eps(T), between tangent steps.
-increase_γ :: AbstractFloat # default: 100.0 ; up γ if possible, < 1/√eps(T), during the factorization.
-δmin :: AbstractFloat # default: √eps(T) ; smallest value of δ used for the regularization.
-## Tangent step trust-region parameters
-tan_Δ :: AbstractFloat # default: 1.0 ; initial trust-region radius.
-tan_η₁ :: AbstractFloat # default: 1e-2 ; decrease the trust-region radius when Ared/Pred < η₁.
-tan_η₂ :: AbstractFloat # default: 0.75 ; increase the trust-region radius when Ared/Pred > η₂.
-tan_σ₁ :: AbstractFloat # default: 0.25 ; decrease coefficient of the trust-region radius.
-tan_σ₂ :: AbstractFloat # default: 2.0 ; increase coefficient of the trust-region radius.
-tan_small_d :: AbstractFloat # default: eps(T) ; ||d|| is too small.
-increase_Δtg :: AbstractFloat # default: 10.0 ; increase if possible, < 1 / √eps(T), the Δtg between tangent steps.
-
-# Normal step
-feas_step :: Symbol # default: :feasibility_step
-## Feasibility step
-feas_η₁ :: AbstractFloat # default: 1e-3 ; decrease the trust-region radius when Ared/Pred < η₁.
-feas_η₂ :: AbstractFloat # default: 0.66 ; increase the trust-region radius when Ared/Pred > η₂.
-feas_σ₁ :: AbstractFloat # default: 0.25 ; decrease coefficient of the trust-region radius.
-feas_σ₂ :: AbstractFloat # default: 2.0 ; increase coefficient of the trust-region radius.
-feas_Δ₀ :: AbstractFloat # default: 1.0 ; initial radius.
-feas_expected_decrease :: AbstractFloat # default: 0.95 ; bad steps are when ‖c(z)‖ / ‖c(x)‖ >feas_expected_decrease.
-bad_steps_lim :: Integer # default: 3 ; consecutive bad steps before using a second order step.
-## Compute the direction in feasibility step
-TR_compute_step :: Symbol # default: :TR_lsmr, options: :TR_dogleg.
-TR_compute_step_struct :: Union{TR_lsmr_struct, TR_dogleg_struct} # default: TR_lsmr_struct(length(x0), length(y0), typeof(x0)), options: TR_dogleg_struct(length(x0), length(y0), typeof(x0)).
-
-# Parameters updating ρ (or redefine the function `compute_ρ`)
-compρ_p1 :: AbstractFloat # default: 0.75 ; update ρ as `ρ = max(min(ngp, p1) * ρmax, ϵ)`.
-compρ_p2 :: AbstractFloat # default: 0.90 ; update ρ as `ρ = primalnorm * p2` if not sufficiently feasible.
-ρbar :: AbstractFloat # default: 2.0 ; radius of the larger cylinder is `ρbar * ρ`.
-#Computation of ρ can be modified by importing `compute_ρ(dualnorm, primalnorm, norm∇fx, ρmax, ϵ, iter, meta::MetaDCI)`
+| Parameters           | Type          | Default      | Description                                    |
+| -------------------- | ------------- | ------------ | ---------------------------------------------- |
+| atol                 | AbstractFloat | 1e-5         | absolute tolerance.                            |
+| rtol                 | AbstractFloat | 1e-5         | relative tolerance.                            |
+| ctol                 | AbstractFloat | 1e-5         | feasibility tolerance.                         |
+| unbounded_threshold  | AbstractFloat | -1e5         | below this threshold the problem is unbounded. |
+| max_eval             | Integer       | 50000        | maximum number of cons + obj evaluations.      |
+| max_time             | AbstractFloat | 120.         | maximum number of seconds.                     |
+| max_iter             | Integer       | 500          | maximum number of iterations.                  |
+| max_iter_normal_step | Integer       | typemax(Int) | maximum number of iterations in normal step.   |
 ```
+
+### Compute Lagrange multipliers
+```
+| Parameters  | Type        | Default                                         | Description                                           |
+| ----------- | ----------- | ----------------------------------------------- | ----------------------------------------------------- |
+| comp_λ      | Symbol      | :cgls                                           | eval(comp_λ) is used to compute Lagrange multipliers. |
+| λ_struct    | comp_λ_cgls | comp_λ_cgls(length(x0), length(y0), typeof(x0)) | companion structure of `comp_λ`.                      |
+```
+
+### Tangent step
+```
+| Parameters    | Type          | Default  | Description                                                                                               |
+| ------------- | ------------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| linear_solver | Symbol        | :ldlfact | Solver for the factorization. options: :ma57.                                                             | 
+| decrease_γ    | AbstractFloat | 0.1      | Regularization for the factorization: reduce γ if possible, > √eps(T), between tangent steps.             |
+| increase_γ    | AbstractFloat | 100.0    | Regularization for the factorization: up γ if possible, < 1/√eps(T), during the factorization.            |
+| δmin          | AbstractFloat | √eps(T)  | Regularization for the factorization: smallest value of δ used for the regularization.                    |
+| tan_Δ         | AbstractFloat | 1.0      | Tangent step trust-region parameters: initial trust-region radius.                                        |
+| tan_η₁        | AbstractFloat | 1e-2     | Tangent step trust-region parameters: decrease the trust-region radius when Ared/Pred < η₁.               |
+| tan_η₂        | AbstractFloat | 0.75     | Tangent step trust-region parameters: increase the trust-region radius when Ared/Pred > η₂.               |
+| tan_σ₁        | AbstractFloat | 0.25     | Tangent step trust-region parameters: decrease coefficient of the trust-region radius.                    |
+| tan_σ₂        | AbstractFloat | 2.0      | Tangent step trust-region parameters: increase coefficient of the trust-region radius.                    |
+| tan_small_d   | AbstractFloat | eps(T)   | Tangent step trust-region parameters: ||d|| is too small.                                                 |
+| increase_Δtg  | AbstractFloat | 10.0     | Tangent step trust-region parameters: increase if possible, < 1 / √eps(T), the Δtg between tangent steps. |
+```
+### Normal step
+```
+| Parameters             | Type                                    | Default                                            | Description                                                                                               |
+| ---------------------- | --------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| feas_step              | Symbol                                  | :feasibility_step                                  | Normal step                                                                                               |
+| feas_η₁                | AbstractFloat                           | 1e-3                                               | Feasibility step: decrease the trust-region radius when Ared/Pred < η₁.                                   |
+| feas_η₂                | AbstractFloat                           | 0.66                                               | Feasibility step: increase the trust-region radius when Ared/Pred > η₂.                                   |
+| feas_σ₁                | AbstractFloat                           | 0.25                                               | Feasibility step: decrease coefficient of the trust-region radius.                                        |
+| feas_σ₂                | AbstractFloat                           | 2.0                                                | Feasibility step: increase coefficient of the trust-region radius.                                        |
+| feas_Δ₀                | AbstractFloat                           | 1.0                                                | Feasibility step: initial radius.                                                                         |
+| feas_expected_decrease | AbstractFloat                           | 0.95                                               | Feasibility step: bad steps are when ‖c(z)‖ / ‖c(x)‖ >feas_expected_decrease.                             |
+| bad_steps_lim          | Integer                                 | 3                                                  | Feasibility step: consecutive bad steps before using a second order step.                                 |
+| TR_compute_step        | Symbol                                  | :TR_lsmr                                           | Compute the direction in feasibility step: options: :TR_dogleg.                                           |
+| TR_compute_step_struct | Union{TR_lsmr_struct, TR_dogleg_struct} | TR_lsmr_struct(length(x0), length(y0), typeof(x0)) | Compute the direction in feasibility step: options: TR_dogleg_struct(length(x0), length(y0), typeof(x0)). |
+```
+### Parameters updating ρ (or redefine the function `compute_ρ`)
+```
+| Parameters  | Type          | Default | Description                                                     |
+| ----------- | ------------- | ------- | --------------------------------------------------------------- |
+| compρ_p1    | AbstractFloat | 0.75    | update ρ as `ρ = max(min(ngp, p1) * ρmax, ϵ)`.                  |
+| compρ_p2    | AbstractFloat | 0.90    | update ρ as `ρ = primalnorm * p2` if not sufficiently feasible. |
+| ρbar        | AbstractFloat | 2.0     | radius of the larger cylinder is `ρbar * ρ`.                    |
+```
+The computation of ρ can also be modified by importing `compute_ρ(dualnorm, primalnorm, norm∇fx, ρmax, ϵ, iter, meta::MetaDCI)`

@@ -16,21 +16,27 @@ based on the paper
 
 `DCISolver` is a JuliaSmoothOptimizers-compliant solver. It takes an [`AbstractNLPModel`](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) as an input and returns a [`GenericExecutionStats`](https://github.com/JuliaSmoothOptimizers/SolverCore.jl/blob/16fc349908f46634f2c9acdddddb009b23634b71/src/stats.jl#L60).
 
-We refer to [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io) for tutorials on the NLPModel API and its usage. This framework allows the usage of models from Ampl (using [AmplNLReader.jl](https://github.com/JuliaSmoothOptimizers/AmplNLReader.jl)), CUTEst (using [CUTEst.jl](https://github.com/JuliaSmoothOptimizers/CUTEst.jl)), JuMP (using [NLPModelsJuMP.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsJuMP.jl)), PDE-constrained optimization problems (using [PDENLPModels.jl](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl)) and models defined with automatic differentiation (using [ADNLPModels.jl](https://github.com/JuliaSmoothOptimizers/ADNLPModels.jl)).
+We refer to [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io) for tutorials on the NLPModel API. This framework allows the usage of models from Ampl (using [AmplNLReader.jl](https://github.com/JuliaSmoothOptimizers/AmplNLReader.jl)), CUTEst (using [CUTEst.jl](https://github.com/JuliaSmoothOptimizers/CUTEst.jl)), JuMP (using [NLPModelsJuMP.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsJuMP.jl)), PDE-constrained optimization problems (using [PDENLPModels.jl](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl)) and models defined with automatic differentiation (using [ADNLPModels.jl](https://github.com/JuliaSmoothOptimizers/ADNLPModels.jl)).
 
 ## Installation
 
-`DCISolver` is a registered package. To install this package, open the Julia REPL (i.e., execute the julia binary), type ] to enter package mode, and install `DCISolver` as follows
+`DCISolver` is a registered package. To install this package, open the Julia REPL (i.e., execute the julia binary), type `]` to enter package mode, and install `DCISolver` as follows
 ```
 add DCISolver
 ```
 
+The DCI algorithm is an iterative method that has the flavor of a projected gradient algorithm and could be characterized as
+a relaxed feasible point method with dynamic control of infeasibility. It is a combination of two steps: a tangent step and a feasibility step.
 It uses [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) by default to compute the factorization in the tangent step. Follow [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl)'s `MA57` installation for an alternative.
-
 The feasibility steps are factorization-free and use iterative methods from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
 
 ## Example
 
+We consider in this example the minization of the Rosenbrock function over an equality constraint.
+```math
+    \min_x \ 100 * (x₂ - x₁²)² + (x₁ - 1)² \quad \text{s.t.} \quad  x₁x₂=1,
+```
+The problem is modeled using `ADNLPModels.jl` with `[-1.2; 1.0]` as default initial point, and then solved using `dci`.
 ```@example
 using DCISolver, ADNLPModels, Logging
 nlp = ADNLPModel(
@@ -41,7 +47,7 @@ nlp = ADNLPModel(
   name = "Rosenbrock with x₁x₂=1"
 )
 stats = with_logger(NullLogger()) do
-  dci(nlp, nlp.meta.x0)
+  dci(nlp)
 end
 
 println(stats)
