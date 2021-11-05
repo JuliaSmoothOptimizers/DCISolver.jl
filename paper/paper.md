@@ -37,6 +37,12 @@ with equality constraints:
 \end{equation}
 where  $f:\mathbb{R}^n \rightarrow \mathbb{R}$ and  $h:\mathbb{R}^n \rightarrow \mathbb{R}^m$ are twice continuously differentiable.
 
+The method uses the idea of using trust cylinders to keep the infeasibility under control.
+Each time the trust cylinder is violated, a restoration step is called and the infeasibility level is reduced. 
+The radius of the trust cylinder has a nonincreasing update scheme, so eventually a feasible and optimal point is obtained.
+
+![The step and the trust cylinders C(\rho^k) := \{ x \in \mathbb{R}^n : \| h(x) \| \leq \rho^k \}.  $x^k_c$ satisfies  $\|h(x^k_c)\| \leq \rho^k$, while  $x^k$ satisfies  $\|h(x^k)\| \leq 2\rho^k$.](trust_cylinder_improved.png){ width=100% }
+
 # Statement of need
 (A Statement of Need section that clearly illustrates the research purpose of the software.)
 
@@ -44,14 +50,14 @@ DCISolver is designed to help application experts to easily solve real-world pro
 The user benefits from JuliaSmoothOptimizers's framework to solve nonlinear optimization problems from diverse nature in an accessible fashion, which makes it very suitable for numerical optimization courses.
 
 (
-We should also state why we needed a new algorithm - 
-In Julia: compare to Ipopt [@wachter2006implementation], Percival [@percival-jl], interior-point Newton method in Optim.jl [@mogensen2018optim], MathOptInterface.jl [@legat2021mathoptinterface]
-To the best of our knowledge, there are no available open source implementation of this solver.
+There are similar solvers in other languages BUT Julia combines the performance of compiled languages with the productivity of interpreted ones by using type inference and justin-time compilation to generate fast code. As a result, there is no need to use two different
+languages to write low-level performance code and high-level user interfaces.
 )
 
 (
-There are similar solvers in other languages BUT Julia combines the performance of compiled languages with the productivity of interpreted ones by using type inference and justin-time compilation to generate fast code. As a result, there is no need to use two different
-languages to write low-level performance code and high-level user interfaces.
+We should also state why we needed a new algorithm - 
+In Julia: compare to Ipopt [@wachter2006implementation], Percival [@percival-jl], interior-point Newton method in Optim.jl [@mogensen2018optim], MathOptInterface.jl [@legat2021mathoptinterface]
+To the best of our knowledge, there are no available open source implementation of this solver.
 )
 
 ## JSO-solver
@@ -67,40 +73,6 @@ We exploit Julia's multiple dispatch facilities to efficiently specialize instan
 Moreover, the API handles sparse Hessian/Jacobian matrices or operators for matrix-free implementations.
 
 A JSO-compliant solver essentially implies a constraint on the input and the output of the main function. The inputted problem must be an instance of an `AbstractNLPModel`. The output has to include a `GenericExecutionStats`, implemented in `SolverCore.jl`, which is a structure containing the available information at the end of the execution, such as a solver status, the objective function value, the norm of the gradient of the Lagrangian, the norm of the constraint function, the elapsed time, and a dictionary of solver specifics.
-
-## The cylinder
-
-The method uses the idea of using trust cylinders to keep the infeasibility under control.
-Each time the trust cylinder is violated, a restoration step is called and the infeasibility level is reduced. 
-The radius of the trust cylinder has a nonincreasing update scheme, so eventually a feasible (and optimal) point is obtained.
-The numerical results suggest that the algorithm is promising.
-
-The DCI algorithm is an iterative method that has the flavor of a projected gradient algorithm and could be characterized as
-a relaxed feasible point method with dynamic control of infeasibility. The main idea is to compute a sequence of iterate  $\{x^k\}$ where each iterate belongs to a trust-cylinder  $C(\rho^k)$, so that, for all  $k=1,\dots$, it holds
-\begin{equation}\label{eq:trust-cylinder}
-    x^k \in C(\rho^k) := \{ x \in \mathbb{R}^n : \| h(x) \| \leq \rho^k \},  
-\end{equation}
-where the radii  $\rho^k$ is chosen such that
-\begin{equation}\label{eq:radii}
-    \rho^k = O\left(\|\nabla f(x^k) + \nabla h(x^k)^T \lambda\|\right),
-%    \rho^k = O(\|g_p(x^k)\|),
-% $g_p(x^k) := \nabla f(x^k) + \nabla h(x^k)^T \lambda$
-\end{equation}
-with  $\lambda$ an approximation of a Lagrange multiplier at  $x^k$ computed by 
-\begin{equation}\label{eq:lag}
-    \arg\min_{\lambda \in \mathbb{R}^m} \| \nabla f(x^k) + \nabla h(x^k)^T \lambda \|.
-\end{equation}
-
-The  $k$-th iteration of the algorithm consists of a normal and a tangent step. Given  $x^{k-1}$, the normal step computes a couple  $(x^k_c,\rho^k)$ satisfying  $x^k_c \in C(\rho^k)$. The sequence  $\{\rho^k\}$ is decreasing to zero.
-On the other hand, the tangent step aims at reducing the dual feasibility and computes  $x^k:=x^k_c + d^k$ such that
-\begin{equation}\label{eq:dual_feasibility_step}
-    d^k \in \arg\min{d \in \mathbb{R}^n} \nabla f(x^k_c)^T d + \frac{1}{2} d^T B d \quad \text{subject to } \quad \nabla h(x^k_c) d = 0, \ \| d \| \leq \Delta,
-\end{equation}
-where  $B$ is a symmetric approximation of the Lagrangian Hessian at  $x^k_c$, and,  $\Delta>0$ is a trust-region parameter, in particular, chosen such that  $\|h(x^k)\| \leq 2\rho^k$. 
-
-![The step and the trust cylinders.  $x^k_c$ satisfies  $\|h(x^k_c)\| \leq \rho^k$, while  $x^k$ satisfies  $\|h(x^k)\| \leq 2\rho^k$.](trust_cylinder_improved.png){ width=50% }
-
-The following algorithm gives a concise presentation of the main steps. We refer to Algorithm~2.1 (page 4) in [@bielschowsky2008dynamic] for more detailed on the implementation of both steps, the computation of the radii, and the convergence analysis of the algorithm under standard assumptions.  
 
 ## Benchmarks
 
