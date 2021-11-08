@@ -74,7 +74,7 @@ To the best of our knowledge, there is no currently maintained available open-so
 
 `DCISolver.jl` is designed to help application experts quickly solve real-world problems and help researchers improve, compare and analyze new techniques without writing algorithms themselves.
 The user benefits from JuliaSmoothOptimizers's framework to solve nonlinear optimization problems of diverse nature in an accessible fashion, which makes it very suitable for numerical optimization courses.
-Last but not least, the documentation of this package includes benchmarks on classical test sets, like [@cutest], showing that this implementation is also very competitive.
+Last but not least, the documentation of this package includes benchmarks on classical test sets, e.g., CUTEst [@cutest], showing that this implementation is also very competitive.
 
 # Acknowledgements
 
