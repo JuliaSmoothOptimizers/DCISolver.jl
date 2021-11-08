@@ -62,6 +62,7 @@ Julia has a high-level syntax inspired by other well-known languages, such as Ma
 One of Julia's aspects is the ability to access C, Fortran, or Python code without sacrificing speed natively, which helps tackle the two language problems -- prototype on high-level, reimplement in low-level.
 In Julia, one can create a prototype just as quickly as other high-level languages, but the resulting prototype is considerably more efficient [@bezanson2017julia], which is of great importance for methods like DCI that are still under research development.
 Furthermore, the prototype can be improved instead of moving the code to a low-level language until a competitive version is obtained.
+Additionally, solvers coded in pure Julia do not require external compiled dependencies and work with multiple input data types, while solvers in Fortran are limited to simple and double precisions.
 
 There exist solutions to compute local minima of \eqref{eq:nlp} in Julia.
 A classical approach is to model the problem using `JuMP` [@jump], from the JuMP-dev organization, and then pass the model to state-of-the-art solvers via `MathOptInterface.jl` [@legat2021mathoptinterface], a thin wrapper to solvers that are typically available in C or Fortran.
@@ -69,8 +70,7 @@ Another organization for nonlinear optimization is JuliaNLSolvers with `Optim.jl
 Finally, JSO also offers alternative solutions such as thin wrappers to the solvers Artelys Knitro [@byrd2006k] via `NLPModelsKnitro.jl` [@orban-siqueira-nlpmodelsknitro-2020] and Ipopt [@wachter2006implementation] via `NLPModelsIpopt.jl` [@orban-siqueira-nlpmodelsipopt-2020],
 but also `Percival.jl` [@percival-jl], a pure Julia implementation of an augmented Lagrangian penalization method.
 The main advantage of using JSO-compliant solvers is the flexibility in the origin of the inputted problem.
-
-To the best of our knowledge, there is no currently maintained available open-source implementation of the DCI algorithm. Hence, we offer an interesting alternative to augmented Lagrangian or interior-point methods that are regularly used in the references mentioned above. Moreover, solvers coded in pure Julia do not require external compiled dependencies and work with multiple input data types, while solvers in Fortran are limited to simple and double precisions.
+To the best of our knowledge, there is no currently maintained available open-source implementation of DCI. Hence, we offer an interesting alternative to augmented Lagrangian or interior-point methods that are regularly used in the references mentioned above. 
 
 `DCISolver.jl` is designed to help application experts quickly solve real-world problems and help researchers improve, compare and analyze new techniques without writing algorithms themselves.
 The user benefits from JuliaSmoothOptimizers's framework to solve nonlinear optimization problems of diverse nature in an accessible fashion, which makes it very suitable for numerical optimization courses.
