@@ -127,7 +127,7 @@ print_pp_column(:neval_jac, stats) # with respect to number of jacobian evaluati
 
 ## CUTEst benchmark with Knitro
 
-In this second part, we present the result of a similar benchmark with a maximum of 10000 variables and constraints (82 problems), and including the solver [`KNITRO`](https://link.springer.com/chapter/10.1007/0-387-30065-1_4) (Byrd, R. H., Nocedal, J., & Waltz, R. A. (2006). K nitro: An integrated package for nonlinear optimization. In Large-scale nonlinear optimization (pp. 35-59). Springer, Boston, MA.) via [`NLPModelsKnitro.jl`](https://github.com/JuliaSmoothOptimizers/NLPModelsKnitro.jl). The script is included in [/docs/script/script10000_knitro.jl)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/docs/script/script10000_knitro.jl). We report here a performance profile with respect
-to the elapsed time to solve the problems.
+In this second part, we present the result of a similar benchmark with a maximum of 10000 variables and constraints (82 problems), and including the solver [`KNITRO`](https://link.springer.com/chapter/10.1007/0-387-30065-1_4) (Byrd, R. H., Nocedal, J., & Waltz, R. A. (2006). K nitro: An integrated package for nonlinear optimization. In Large-scale nonlinear optimization (pp. 35-59). Springer, Boston, MA.) via [`NLPModelsKnitro.jl`](https://github.com/JuliaSmoothOptimizers/NLPModelsKnitro.jl). The script is included in [/benchmark/script10000_knitro.jl)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/benchmark/script10000_knitro.jl). We report here a performance profile with respect
+to the elapsed time to solve the problems and to the sum of evaluations of objective and constrain functions, see [/benchmark/figures.jl)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/benchmark/figures.jl) for the code generating the profile wall.
 
 ![](./assets/ipopt_knitro_dcildl_82.png)
