@@ -84,7 +84,7 @@ However, interfaces to low-level languages have limitations that pure Julia impl
 
 JSO offers both types of solution mechanisms with thin wrappers to Artelys Knitro [@byrd2006k] via `NLPModelsKnitro.jl` [@orban-siqueira-nlpmodelsknitro-2020] and Ipopt [@wachter2006implementation] via `NLPModelsIpopt.jl` [@orban-siqueira-nlpmodelsipopt-2020] that let users pass in an `AbstractNLPModel`, and `Percival.jl` [@percival-jl], a pure Julia implementation of an augmented Lagrangian method based on bound-constrained subproblems.
 One main advantage of JSO-compliant solvers is the consistent API; the origin of the input problem is irrelevant.
-Finally, to the best of our knowledge, there is no available open-source implementation of DCI in existence. Hence, we offer an interesting alternative to augmented Lagrangian and interior-point methods in the form of an evolving, research level yet stable and mature, solver.
+Finally, to the best of our knowledge, there is no available maintained open-source implementation of DCI in existence. The original authors did not make their implementation public, and the other known implementation is `dcicpp` [@dcicpp], extending the original method to inequalities in the Ph.D. thesis by @siqueira2013controle, and it has had no updates in the last 5 years. Hence, we offer an interesting alternative to augmented Lagrangian and interior-point methods in the form of an evolving, research level yet stable and mature, solver.
 
 <!--
 NOTE: This paragraph is about JSO, not DCI. Focus on DCI.
