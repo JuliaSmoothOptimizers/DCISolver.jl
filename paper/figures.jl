@@ -5,9 +5,9 @@ using JLD2, Plots, SolverBenchmark
 solved(df) = (df.status .== :first_order)
 
 # Number of problems solved by ipopt
-@show length(stats[:ipopt][solved(stats[:ipopt]), [:name, :elapsed_time, :status]])
+@show sum(solved(stats[:ipopt]))
 # Number of problems solved by dci
-@show length(stats[:dcildl][solved(stats[:dcildl]), [:name, :elapsed_time, :status]])
+@show sum(solved(stats[:dcildl]))
 
 tim_dci = stats[:dcildl][solved(stats[:dcildl]), :elapsed_time]
 tim_ipopt = stats[:ipopt][solved(stats[:dcildl]), :elapsed_time]
@@ -32,5 +32,5 @@ costs = [
   df -> .!solved(df) * Inf + df.neval_obj + df.neval_cons,
 ]
 costnames = ["Time", "Evaluations of obj + cons"]
-p = profile_solvers(stats, costs, costnames)
+p = profile_solvers(stats, costs, costnames, width=500, height=500)
 png(p, "ipopt_dcildl_82")
