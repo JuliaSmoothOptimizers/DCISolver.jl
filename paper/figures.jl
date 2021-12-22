@@ -1,5 +1,7 @@
 using Pkg; Pkg.activate(".")
 using JLD2, Plots, SolverBenchmark
+using PyPlot
+pyplot()
 
 @load "ipopt_dcildl_82.jld2" stats
 solved(df) = (df.status .== :first_order)
@@ -32,5 +34,7 @@ costs = [
   df -> .!solved(df) * Inf + df.neval_obj + df.neval_cons,
 ]
 costnames = ["Time", "Evaluations of obj + cons"]
-p = profile_solvers(stats, costs, costnames, width=500, height=500)
+p = profile_solvers(stats, costs, costnames, width=400, height=400)
+plot!(xticks = ([0.0, 5.0, 10.0, 15.0], ["2⁰", "2⁵", "2¹⁰", "2¹⁵"]))
+plot!(xtickfontsize=9)
 png(p, "ipopt_dcildl_82")
