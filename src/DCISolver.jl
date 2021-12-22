@@ -17,7 +17,19 @@ include("dci_tangent.jl")
 include("main.jl")
 
 """
+    dci(nlp; kwargs...)
     dci(nlp, x; kwargs...)
+    dci(nlp, meta, x)
+
+Compute a local minimum of an equality-constrained optimization problem `nlp<:AbstractNLPModel`, see `NLPModels.jl`.
+The returned value is a `GenericExecutionStats`, see `SolverCore.jl`.
+
+If `x` is not specified, then `nlp.meta.x0` is used as an initial guess.
+The keyword arguments are used to initialize a [`MetaDCI`](@ref).
+
+For advanced usage, the principal call to the solver uses a [`DCIWorkspace`](@ref).
+
+    dci(nlp, meta, workspace)
 
 This method implements the Dynamic Control of Infeasibility for
 equality-constrained problems described in
@@ -27,6 +39,12 @@ equality-constrained problems described in
     SIAM J. Optim., 19(3), 1299–1325.
     https://doi.org/10.1137/070679557
 
+# Examples
+```jldoctest
+julia> using DCISolver, ADNLPModels
+julia> nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0]);
+julia> stats = dci(nlp)
+```
 """
 function dci(nlp::AbstractNLPModel, x::AbstractVector{T}; kwargs...) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)

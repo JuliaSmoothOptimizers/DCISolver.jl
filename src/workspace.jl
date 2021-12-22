@@ -1,3 +1,8 @@
+"""
+    DCIWorkspace(nlp, meta, x)
+
+Pre-allocate the memory used during the [`dci`](@ref) call.
+"""
 struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, Op}
   x0::S
   x::S
