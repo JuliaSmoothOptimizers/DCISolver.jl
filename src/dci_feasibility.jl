@@ -1,8 +1,23 @@
-"""    feasibility_step(nls, x, cx, Jx)
+"""
+    feasibility_step(nls, x, cx, normcx, Jx, ρ, ctol, meta, workspace; kwargs...)
 
-Approximately solves min ‖c(x)‖.
+Approximately solves `min ‖c(x)‖` using a trust-region Levenberg-Marquardt method, i.e. given `xₖ`, finds `min ‖cₖ + Jₖd‖`.
 
-Given xₖ, finds min ‖cₖ + Jₖd‖
+# Arguments
+- `η₁::AbstractFloat = meta.feas_η₁`: decrease the trust-region radius when Ared/Pred < η₁.
+- `η₂::AbstractFloat = meta.feas_η₂`: increase the trust-region radius when Ared/Pred > η₂.
+- `σ₁::AbstractFloat = meta.feas_σ₁`: decrease coefficient of the trust-region radius.
+- `σ₂::AbstractFloat = meta.feas_σ₂`:increase coefficient of the trust-region radius.
+- `Δ₀::T = meta.feas_Δ₀`: initial trust-region radius.
+- `bad_steps_lim::Integer = meta.bad_steps_lim`: consecutive bad steps before using a second order step.
+- `expected_decrease::T = meta.feas_expected_decrease`: bad steps are when `‖c(z)‖ / ‖c(x)‖ >feas_expected_decrease`.
+- `max_eval::Int = 1_000`: maximum evaluations.
+- `max_time::AbstractFloat = 60.0`: maximum time.
+- `max_feas_iter::Int = typemax(Int64)`: maximum number of iterations.
+
+# Output
+- `z`, `cz`, `normcz`, `Jz`: the new iterate, and updated evaluations.
+- `status`: Computation status. Possible outcomes are: `:success`, `max_eval`, `max_time`, `max_iter`, `unknown_tired`, `:infeasible`, `:unknown`.
 """
 function feasibility_step(
   nlp::AbstractNLPModel,
@@ -172,16 +187,23 @@ function feasibility_step(
   return z, cz, normcz, Jz, status
 end
 
-"""    feasibility_step(nls, x, cx, Jx)
+@doc raw"""
+    TR_dogleg(cz, Jz, ctol, Δ, normcz, Jd, meta)
 
-Compute a direction d such that
-min ‖cₖ + Jₖd‖ s.t. ||d|| ≤ Δ
+Compute a direction `d` such that
+```math
+\begin{aligned}
+\min_{d} \quad & \|c + Jz' d \| \\
+\text{s.t.} \quad & \|d\| \leq \Delta,
+\end{aligned}
+```
 using a dogleg.
 
-Also checks if problem is infeasible.
-
-Returns 4 entries:
-(d, Jd, solved, infeasible)
+# Output
+- `d`: solution
+- `Jd`: product of the solution with `J`.
+- `infeasible`: `true` if the problem is infeasible.
+- `solved`: `true` if the problem has been successfully solved.
 """
 function TR_dogleg(
   cz::AbstractVector{T},
@@ -234,6 +256,24 @@ function TR_dogleg(
   return d, Jd, infeasible, solved
 end
 
+@doc raw"""
+    TR_lsmr(cz, Jz, ctol, Δ, normcz, Jd, meta)
+
+Compute a direction `d` such that
+```math
+\begin{aligned}
+\min_{d} \quad & \|c + Jz' d \| \\
+\text{s.t.} \quad & \|d\| \leq \Delta,
+\end{aligned}
+```
+using `lsmr` method from `Krylov.jl`.
+
+# Output
+- `d`: solution
+- `Jd`: product of the solution with `J`.
+- `infeasible`: `true` if the problem is infeasible.
+- `solved`: `true` if the problem has been successfully solved.
+"""
 function TR_lsmr(
   cz::AbstractVector{T},
   Jz,

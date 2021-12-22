@@ -1,5 +1,15 @@
 """
-1st idea: we stop whenever the fonction looks convex-ish
+    _compute_newton_step!(nlp, LDL, g, γ, δ, dcp, vals, meta, workspace)
+
+Compute a Newton direction `dn` via a factorization of an SQD matrix.
+
+# Output
+- `dn`: solution
+- `dnBdn` and `dcpBdn`: updated scalar products.
+- `γ_too_large`: `true` if the regularization is too large.
+- `γ`: updated value of the regularization `γ`.
+- `δ`: updated value of the regularization `δ`.
+- `vals`: updated value of the SQD matrix.
 """
 function _compute_newton_step!(
   nlp::AbstractNLPModel,

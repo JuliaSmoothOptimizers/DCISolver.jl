@@ -1,18 +1,32 @@
-"""
-min q(d):=¹/₂dᵀBd + dᵀg
-s.t Ad = 0
-    ‖d‖ ≦ Δ
-where B is an approximation of hessian of the Lagrangian, A is the jacobian
-matrix and `g` is the projected gradient.
+@doc raw"""
+    (z, cz, fz, status, Δ, Δℓ, γ, δ) = tangent_step!(nlp, z, λ, cz, normcz, fz, LDL, vals, g, ℓzλ, gBg, ρ, γ, δ, meta, workspace; kwargs...)
 
-Return status with outcomes:
-- :cauchy_step, :newton, :dogleg,
-- :unknown if we didn't enter the loop.
-- :small_horizontal_step
-- :tired if we stop due to max_eval or max_time
-- :success if we computed z such that ‖c(z)‖ ≤ meta.ρbar * ρ and Δℓ ≥ η₁ q(d)
+Solve the following problem
+```math
+\begin{aligned}
+\min_{d} \quad & q(d):=\frac{1}{2} d^T B d + d^T g \\
+\text{s.t.} \quad & Ad = 0,
+& \|d\| \leq \Delta,
+\end{aligned}
+```
+where `B` is an approximation of the Hessian of the Lagrangian, `A` is the jacobian
+matrix, and `g` is the projected gradient.
 
-See https://github.com/JuliaSmoothOptimizers/SolverTools.jl/blob/78f6793f161c3aac2234aee8a27aa07f1df3e8ee/src/trust-region/trust-region.jl#L37
+# Output
+- `z`, `cz`, and `fz`: the new iterate, and updated evaluations.
+- `status`: computation status.
+- `Δ`: trust-region parameter.
+- `Δℓ`: differential in Lagrangian computation.
+- `γ`, `δ`: updated values for the regularization parameters.
+
+Return `status` with possible outcomes:
+- `:cauchy_step`, `:newton`, `:dogleg` if successful step.
+- `:unknown` if we didn't enter the loop.
+- `:small_horizontal_step`.
+- `:tired` if we stop due to `max_eval` or `max_time`.
+- `:success` if we computed `z` such that `‖c(z)‖ ≤ meta.ρbar * ρ` and `Δℓ ≥ η₁ q(d)`.
+
+See [`SolverTools.jl`](https://github.com/JuliaSmoothOptimizers/SolverTools.jl/blob/78f6793f161c3aac2234aee8a27aa07f1df3e8ee/src/trust-region/trust-region.jl#L37)
 for `SolverTools.aredpred`
 """
 function tangent_step!(
@@ -123,13 +137,30 @@ function tangent_step!(
   return z, cz, fz, status, Δ, Δℓ, γ, δ #ℓzλ
 end
 
-"""
-Compute a direction `d` with three possible outcomes:
+@doc raw"""
+    (d, dBd, status, γ, δ, vals) = compute_descent_direction!(nlp::AbstractNLPModel, gBg, g, Δ, LDL, γ, δ, vals, d, meta, workspace)
+
+Compute a direction `d` solution of
+```math
+\begin{aligned}
+\min_{d} \quad & q(d) \\
+\text{s.t.} \quad & \|d\| \leq \Delta.
+\end{aligned}
+```
+
+# Output
+The returned arguments are:
+- `d`: the computed direction.
+- `dBd`: updated scalar product.
+- `status`: computation status.
+- `γ`, `δ`: updated values for the regularization parameters.
+- `vals`: update values for the SQD system.
+
+Return `status` has four possible outcomes:
 - `:cauchy_step`
 - `:newton`
 - `:dogleg`
 - `:interior_cauchy_step` when γ is too large.
-for `min_d q(d) s.t. ‖d‖ ≤ Δ`.
 """
 function compute_descent_direction!(
   nlp::AbstractNLPModel,
@@ -184,14 +215,23 @@ function compute_descent_direction!(
   return d, dBd, status, γ, δ, vals
 end
 
-"""
-Compute a solution to
-min_α q(-α g) s.t. ‖αg‖_2 ≤ Δ
+@doc raw"""
+    _compute_gradient_step!(nlp, gBg, g, Δ, dcp)
 
-return `dcp_on_boundary` true if ‖αg‖ = Δ,
-return `dcp = - α g`
-return `dcpBdcp = α^2 gBg`
-and `α` the solution.
+Solve the following problem
+```math
+\begin{aligned}
+\min_{α} \quad & q(-α g) \\
+\text{s.t.} \quad & \|αg\| \leq \Delta.
+\end{aligned}
+```
+
+# Output
+The returned arguments are:
+- `dcp_on_boundary` true if `‖αg‖ = Δ`,
+- `dcp = - α g`,
+- `dcpBdcp = α^2 gBg`,
+- `α` the solution.
 """
 function _compute_gradient_step!(
   nlp::AbstractNLPModel,
@@ -219,8 +259,10 @@ function _compute_gradient_step!(
 end
 
 """
-Given two directions dcp and dn, compute the largest 0 ≤ τ ≤ 1 such that
-‖dn + τ (dcp -dn)‖ = Δ
+    _compute_step_length(norm2dn, dotdndcp, norm2dcp, Δ)
+
+Given two directions `dcp` and `dn`, compute the largest `0 ≤ τ ≤ 1` such that `‖dn + τ (dcp -dn)‖ = Δ`.
+Returns `τ`.
 """
 function _compute_step_length(norm2dn::T, dotdndcp::T, norm2dcp::T, Δ::T) where {T <: AbstractFloat}
   # d = τ dcp + (1 - τ) * dn = dn + τ * (dcp - dn)

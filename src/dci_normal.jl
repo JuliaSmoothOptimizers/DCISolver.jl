@@ -1,4 +1,14 @@
-# Trust-cylinder Normal step: find z such that ||h(z)|| ≤ ρ
+"""
+    normal_step!(nlp, x, cx, Jx, fx, ∇fx, λ, ℓxλ, ∇ℓxλ, dualnorm, primalnorm, ρmax, ϵp, max_eval, max_time, max_iter, meta, workspace)
+
+Normal step: find `z` such that `||h(z)|| ≤ ρ` where `` is the trust-cylinder radius.
+
+# Output
+- `z`, `cz`, `fz`, `ℓzλ`, `∇ℓzλ`:  the new iterate, and updated evaluations.
+- `ρ`: updated trust-cylinder radius.
+- `primalnorm`, `dualnorm`: updated primal and dual feasibility norms.
+- `status`: Computation status. The possible outcomes are: `:init_success`, `:success`, `:max_eval`, `:max_time`, `:max_iter`, `:unknown_tired`, `:infeasible`, `:unknown`.
+"""
 function normal_step!(
   nlp::AbstractNLPModel,
   x::AbstractVector{T},
@@ -129,18 +139,23 @@ function normal_step!(
   return z, cz, fz, ℓzλ, ∇ℓzλ, ρ, primalnorm, dualnorm, status
 end
 
-#Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
-#No evaluations of functions here.
-# ρ = O(‖g_p(z)‖) and 
-#in the paper ρ = ν n_p(z) ρ_max with n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)
-#
-# T.M., 2021 Feb. 5th: what if dualnorm is excessively small ?
-#            Feb. 8th: don't let ρ decrease too crazy
+"""
+    compute_ρ(dualnorm, primalnorm, norm∇fx, ρmax, ϵ, iter, meta::MetaDCI)
+    compute_ρ(dualnorm, primalnorm, norm∇fx, ρmax, ϵ, iter, p1, p2)
+
+Update and return the trust-cylinder radius `ρ`.
+
+Theory asks for ngp ρmax 10^-4 < ρ <= ngp ρmax
+There are no evaluations of functions here.
+
+`ρ = O(‖g_p(z)‖)` and in the paper `ρ = ν n_p(z) ρ_max` with `n_p(z) = norm(g_p(z)) / (norm(g(z)) + 1)`.
+"""
 function compute_ρ(dualnorm, primalnorm, norm∇fx, ρmax, ϵ, iter, meta::MetaDCI)
   p1, p2 = meta.compρ_p1, meta.compρ_p2
   return compute_ρ(dualnorm, primalnorm, norm∇fx, ρmax, ϵ, iter, p1, p2)
 end
-
+# T.M., 2021 Feb. 5th: what if dualnorm is excessively small ?
+#            Feb. 8th: don't let ρ decrease too crazy
 function compute_ρ(
   dualnorm::T,
   primalnorm::T,
