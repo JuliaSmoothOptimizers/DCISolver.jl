@@ -106,7 +106,6 @@ nlp = ADNLPModel(x -> dot(x, x), zeros(5), zeros(5), ones(5))
 @test_throws ErrorException("DCI only works for equality constrained problems") dci(nlp, zeros(5))
 
 @testset "Small equality constrained problems II" begin
-
   tol = 1e-6
 
   @testset "HS7" begin
