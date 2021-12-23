@@ -2,29 +2,14 @@ using HSL, LinearAlgebra, Random, SparseArrays, Test
 
 using DCISolver: factorize!, solve!, success, isposdef, num_neg_eig
 
-function tests()
-  if isdefined(HSL, :libhsl_ma57)
-    test_solver(MA57Struct)
-  else
-    @info("libhsl_ma57 not defined.")
-  end
-  test_solver(LDLFactorizationStruct)
+available_factorization = (LDLFactorizationStruct,)
+if isdefined(HSL, :libhsl_ma57)
+  push!(available_factorization, MA57Struct)
+else
+  @info("libhsl_ma57 not defined.")
 end
 
-function _test_factorization(A, S; tol = 1e-15)
-  (n, n) = size(A)
-  __P = zeros(n, n)
-  for i = 1:n
-    __P[S.P[i], i] = 1.0
-  end
-  In = spdiagm(0 => ones(n))
-  nrm = norm(__P * (S.L + In) * S.D * (S.L + In)' * __P' - A, Inf)
-  test = nrm ≤ tol
-
-  return test
-end
-
-function test_solver(LinearSolver)
+@testset "Test LinearSolver" for LinearSolver in available_factorization
   Random.seed!(0)
   nvar, ncon = 5, 3
   Q = spdiagm(nvar, nvar, 0 => 2 * ones(nvar), -1 => -ones(nvar - 1), 1 => -ones(nvar - 1))
@@ -89,7 +74,15 @@ function test_solver(LinearSolver)
   end
 end
 
-tests()
+function _test_factorization(A, S)
+  (n, n) = size(A)
+  __P = zeros(n, n)
+  for i = 1:n
+    __P[S.P[i], i] = 1.0
+  end
+  In = spdiagm(0 => ones(n))
+  nrm = norm(__P * (S.L + In) * S.D * (S.L + In)' * __P' - A, Inf)
+end
 
 @testset "LDLFactorizations with regularization" begin
   B = [
@@ -114,5 +107,6 @@ tests()
   Me = LDLFactorizationStruct(10, rows, cols, vals, tol = ϵ, r2 = ϵ)
   factorize!(Me)
   @test success(Me)
-  @test _test_factorization(A, Me.factor; tol = ϵ)
+  nrm = _test_factorization(A, Me.factor)
+  @test nrm ≤ ϵ
 end
