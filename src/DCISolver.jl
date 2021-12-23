@@ -17,16 +17,40 @@ include("dci_tangent.jl")
 include("main.jl")
 
 """
+    dci(nlp; kwargs...)
     dci(nlp, x; kwargs...)
+    dci(nlp, meta, x)
 
+Compute a local minimum of an equality-constrained optimization problem using DCI algorithm from Bielschowsky & Gomes (2008).
+
+# Arguments
+- `nlp::AbstractNLPModel`: the model solved, see `NLPModels.jl`.
+- `x`: Initial guess. If `x` is not specified, then `nlp.meta.x0` is used.
+- `meta`: The keyword arguments are used to initialize a [`MetaDCI`](@ref).
+
+For advanced usage, the principal call to the solver uses a [`DCIWorkspace`](@ref).
+
+    dci(nlp, meta, workspace)
+
+# Output
+The returned value is a `GenericExecutionStats`, see `SolverCore.jl`.
+
+# References
 This method implements the Dynamic Control of Infeasibility for
 equality-constrained problems described in
 
     Dynamic Control of Infeasibility in Equality Constrained Optimization
     Roberto H. Bielschowsky and Francisco A. M. Gomes
-    SIAM J. Optim., 19(3), 1299–1325.
+    SIAM J. Optim., 19(3), 2008, 1299–1325.
     https://doi.org/10.1137/070679557
 
+# Examples
+```jldoctest
+julia> using DCISolver, ADNLPModels
+julia> nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0]);
+julia> stats = dci(nlp)
+"Execution stats: first-order stationary"
+```
 """
 function dci(nlp::AbstractNLPModel, x::AbstractVector{T}; kwargs...) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)
@@ -42,11 +66,10 @@ function dci(
 end
 dci(nlp::AbstractNLPModel; kwargs...) = dci(nlp, nlp.meta.x0; kwargs...)
 
-"""compute_gBg
-  B is a symmetric sparse matrix
-  whose lower triangular given in COO: (rows, cols, vals)
-
-  Compute ∇ℓxλ' * B * ∇ℓxλ
+"""
+    compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
+  
+Compute `gBg = ∇ℓxλ' * B * ∇ℓxλ`, where `B` is a symmetric sparse matrix whose lower triangular is given in COO-format.
 """
 function compute_gBg(
   nlp::AbstractNLPModel,
@@ -56,7 +79,7 @@ function compute_gBg(
   ∇ℓzλ::AbstractVector{T},
 ) where {T}
   gBg = zero(T)
-  for k = 1:(nlp.meta.nnzh)
+  for k = 1:(nlp.meta.nnzh) # TODO: use |vals| and remove dependency in nlp
     i, j, v = rows[k], cols[k], vals[k]
     #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
     gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2)
@@ -65,10 +88,9 @@ function compute_gBg(
 end
 
 """
-`regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)`
-  Compute the structure for the saddle system [H + γI  [Jᵀ]; J -δI]
-  in COO-format in the following order:
-  H J γ -δ
+    regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
+
+Compute the structure for the saddle system `[H + γI  [Jᵀ]; J -δI]` in COO-format `(rows, cols, vals)` in the following order: `H, J, γ, -δ,`.
 """
 function regularized_coo_saddle_system!(
   nlp::AbstractNLPModel,
@@ -106,7 +128,10 @@ function regularized_coo_saddle_system!(
 end
 
 """
-Compute the solution of ‖Jx' λ - ∇fx‖
+    compute_lx!(Jx, ∇fx, λ, meta)
+
+Compute the solution of `‖Jx' λ - ∇fx‖` using solvers from `Krylov.jl` as defined by `meta.λ_struct.comp_λ_solver`.
+Return the solution `λ`.
 """
 function compute_lx!(
   Jx,
