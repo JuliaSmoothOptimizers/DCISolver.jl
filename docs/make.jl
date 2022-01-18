@@ -14,7 +14,7 @@ function preprocess_docs(content)
   return string(binder_badge, "\n\n", content)
 end
 
-Literate.markdown(EXAMPLE, OUTPUT; preprocess=preprocess_docs, codefence="```julia" => "```")
+Literate.markdown(EXAMPLE, OUTPUT; preprocess = preprocess_docs, codefence = "```julia" => "```")
 Literate.notebook(EXAMPLE, OUTPUT)
 Literate.script(EXAMPLE, OUTPUT)
 
