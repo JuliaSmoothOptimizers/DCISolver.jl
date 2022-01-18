@@ -15,7 +15,7 @@ function preprocess_docs(content)
 end
 
 Literate.markdown(EXAMPLE, OUTPUT; preprocess = preprocess_docs, codefence = "```julia" => "```")
-Literate.notebook(EXAMPLE, OUTPUT)
+Literate.notebook(EXAMPLE, OUTPUT, documenter=false, execute=false)
 Literate.script(EXAMPLE, OUTPUT)
 
 pages = [

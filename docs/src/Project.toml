@@ -9,6 +9,7 @@ NLPModelsModifiers = "e01155f1-5c6f-4375-a9d8-616dd036575f"
 PDENLPModels = "80da258d-c172-4540-9646-64f172512520"
 
 [compat]
+julia = "1.6"
 Gridap = "0.15.5"
 JSOSolvers = "0.7.4"
 LDLFactorizations = "0.8.1"
