@@ -3,11 +3,20 @@ using ADNLPModels
 using Documenter
 using Printf
 using DCISolver
+using Literate
+
+EXAMPLE = joinpath(@__DIR__, "assets", "example.jl")
+OUTPUT = joinpath(@__DIR__, "src")
+
+Literate.markdown(EXAMPLE, OUTPUT)
+Literate.notebook(EXAMPLE, OUTPUT)
+Literate.script(EXAMPLE, OUTPUT)
 
 pages = [
   "Introduction" => "index.md",
   "Benchmark" => "benchmark.md",
   "Fine-tune DCI" => "fine-tuneDCI.md",
+  "Large-scale example" => "example.md",
   "Reference" => "reference.md",
 ]
 
