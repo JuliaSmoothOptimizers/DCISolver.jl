@@ -103,7 +103,7 @@ reset!(nlp);
 using DCISolver, Logging
 
 stats_dci = with_logger(NullLogger()) do
-    dci(nlp, stats_trunk.solution, atol = 1e-5, rtol = 0.0)
+  dci(nlp, stats_trunk.solution, atol = 1e-5, rtol = 0.0)
 end
 
 # The problem was successfully solved, and we can extract the function evaluations from the stats.
@@ -113,6 +113,7 @@ stats_dci.counters
 stats_ipopt.elapsed_time, stats_dci.elapsed_time
 
 # and also check objective value, feasibility and dual feasibility of `ipopt` and `dci`.
-(stats_ipopt.objective, stats_ipopt.primal_feas, stats_ipopt.dual_feas), (stats_dci.objective, stats_dci.primal_feas, stats_dci.dual_feas)
+(stats_ipopt.objective, stats_ipopt.primal_feas, stats_ipopt.dual_feas),
+(stats_dci.objective, stats_dci.primal_feas, stats_dci.dual_feas)
 
 # Overall `DCISolver` is doing great for solving large-scale optimization problems!
