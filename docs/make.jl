@@ -8,7 +8,13 @@ using Literate
 EXAMPLE = joinpath(@__DIR__, "assets", "example.jl")
 OUTPUT = joinpath(@__DIR__, "src")
 
-Literate.markdown(EXAMPLE, OUTPUT)
+# Generate markdown
+binder_badge = "# [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/JuliaSmoothOptimizers/DCISolver.jl/gh-pages?labpath=dev%2Fexample.ipynb)"
+function preprocess_docs(content)
+  return string(binder_badge, "\n\n", content)
+end
+
+Literate.markdown(EXAMPLE, OUTPUT; preprocess=preprocess_docs, codefence="```julia" => "```")
 Literate.notebook(EXAMPLE, OUTPUT)
 Literate.script(EXAMPLE, OUTPUT)
 

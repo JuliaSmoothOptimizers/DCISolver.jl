@@ -74,6 +74,7 @@ nlp = GridapPDENLPModel(x0, f, trian, Ypde, Ycon, Xpde, Xcon, op, name = "Contro
 # We use `FeasibilityResidual` from [NLPModelsModifiers.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsModifiers.jl) to convert the NLPModel as an NLSModel.
 # Then, using `trunk`, a solver for least-squares problems implemented in [JSOSolvers.jl](https://github.com/JuliaSmoothOptimizers/JSOSolvers.jl), we find An
 # improved guess which is close to being feasible for our large-scale problem.
+# By default, a JSO-compliant solver such as `trunk` (the same applies to `dci`) uses by default `nlp.meta.x0` as an initial guess.
 using JSOSolvers, NLPModelsModifiers
 
 nls = FeasibilityResidual(nlp)
