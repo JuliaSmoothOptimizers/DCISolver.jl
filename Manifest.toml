@@ -115,6 +115,12 @@ version = "3.41.0"
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 
+[[deps.DCISolver]]
+deps = ["HSL", "Krylov", "LDLFactorizations", "LinearAlgebra", "NLPModels", "Printf", "SolverCore", "SolverTools", "SparseArrays"]
+git-tree-sha1 = "f17776738231b2d8bd71edc36b23ce1f83d6659c"
+uuid = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
+version = "0.2.5"
+
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
 git-tree-sha1 = "3daef5523dd2e769dad2365274f760ff5f282c7d"
@@ -206,6 +212,12 @@ deps = ["AbstractTrees", "BSON", "BlockArrays", "Combinatorics", "DocStringExten
 git-tree-sha1 = "561e29739fc9f802ba294857f3ad207bac4d26eb"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 version = "0.15.5"
+
+[[deps.HSL]]
+deps = ["BinaryProvider", "Libdl", "LinearAlgebra", "METIS4_jll", "OpenBLAS32_jll", "SHA", "SparseArrays", "Test"]
+git-tree-sha1 = "bfe35eb36d387c1d0913aa2359210dac32764e19"
+uuid = "34c5aeac-e683-54a6-a0e9-6e0fdc586c50"
+version = "0.2.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "Dates", "IniFile", "Logging", "MbedTLS", "NetworkOptions", "Sockets", "URIs"]
@@ -348,6 +360,12 @@ version = "0.3.6"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[deps.METIS4_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "4cc10a1e19def07a565519492530b38659487516"
+uuid = "40b5814e-7855-5c9f-99f7-a735ce3fdf8b"
+version = "4.0.3+0"
 
 [[deps.METIS_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]

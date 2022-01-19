@@ -1,4 +1,5 @@
 [deps]
+DCISolver = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 JSOSolvers = "10dff2fc-5484-5881-a0e0-c90441020f8a"
 LDLFactorizations = "40e66cde-538c-5869-a4ad-c39174c6795b"
@@ -9,6 +10,7 @@ NLPModelsModifiers = "e01155f1-5c6f-4375-a9d8-616dd036575f"
 PDENLPModels = "80da258d-c172-4540-9646-64f172512520"
 
 [compat]
+DCISolver = "0.2.5"
 Gridap = "0.15.5"
 JSOSolvers = "0.7.4"
 LDLFactorizations = "0.8.1"
