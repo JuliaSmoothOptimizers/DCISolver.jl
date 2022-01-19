@@ -15,7 +15,12 @@ function preprocess_docs(content)
 end
 
 Literate.markdown(EXAMPLE, OUTPUT; preprocess = preprocess_docs, codefence = "```julia" => "```")
-Literate.notebook(EXAMPLE, OUTPUT)
+
+link_to_env = "# The environment used in this tutorial is the following [Project.toml](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/gh-pages/Project.toml) and [Manifest.toml](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/gh-pages/Manifest.toml). "
+function preprocess_notebook(content)
+  return string(link_to_env, "\n\n", content)
+end
+Literate.notebook(EXAMPLE, OUTPUT; preprocess=preprocess_notebook, documenter=false, execute=false)
 Literate.script(EXAMPLE, OUTPUT)
 
 pages = [
