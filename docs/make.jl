@@ -20,7 +20,11 @@ link_to_env = "# The environment used in this tutorial is the following [Project
 function preprocess_notebook(content)
   return string(link_to_env, "\n\n", content)
 end
-Literate.notebook(EXAMPLE, OUTPUT; preprocess=preprocess_notebook, documenter=false, execute=false)
+Literate.notebook(
+  EXAMPLE,
+  OUTPUT;
+  preprocess = preprocess_notebook,
+)
 Literate.script(EXAMPLE, OUTPUT)
 
 pages = [
