@@ -14,8 +14,8 @@
 [codecov-url]: https://codecov.io/gh/JuliaSmoothOptimizers/DCISolver.jl
 [release-img]: https://img.shields.io/github/v/release/JuliaSmoothOptimizers/DCISolver.jl.svg?style=flat-square
 [release-url]: https://github.com/JuliaSmoothOptimizers/DCISolver.jl/releases
-[doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.4742979.svg
-[doi-url]: https://doi.org/10.5281/zenodo.4742979
+[doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.5794493.svg
+[doi-url]: https://doi.org/10.5281/zenodo.5794493
 
 DCI is a solver for equality-constrained nonlinear problems, i.e.,
 optimization problems of the form
