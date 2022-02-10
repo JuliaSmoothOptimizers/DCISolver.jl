@@ -29,7 +29,7 @@ bibliography: paper.bib
 
 # Summary
 
-`DCISolver.jl` is a new Julia implementation of the Dynamic Control of Infeasibility method (DCI), introduced by @bielschowsky2008dynamic, for solving the equality-constrained nonlinear optimization problem
+`DCISolver.jl` is a new Julia [@bezanson2017julia] implementation of the Dynamic Control of Infeasibility method (DCI), introduced by @bielschowsky2008dynamic, for solving the equality-constrained nonlinear optimization problem
 \begin{equation}\label{eq:nlp}
     \underset{x \in \mathbb{R}^n}{\text{minimize}} \quad f(x) \quad \text{subject to} \quad h(x) = 0,
 \end{equation}
@@ -64,7 +64,7 @@ However, interfaces to low-level languages have limitations that pure Julia impl
 To the best of our knowledge, there is no available maintained open-source implementation of DCI in existence. The original authors did not make their implementation public, and the other known implementation is `dcicpp` [@dcicpp], extending the original method to inequalities in the Ph.D. thesis by @siqueira2013controle, and it has had no updates in the last 5 years. Hence, we offer an interesting alternative to augmented Lagrangian and interior-point methods in the form of an evolving, research level yet stable solver.
 
 `DCISolver.jl` can solve large-scale problems and can be benchmarked easily against other JSO-compliant solvers using `SolverBenchmark.jl` [@orban-siqueira-solverbenchmark-2020].
-We include below performance profiles [@dolan2002benchmarking] of `DCISolver.jl` against Ipopt on 82 problems from CUTEst [@cutest] with up to 10 000 variables and 10 000 constraints. Ipopt solved 72 problems (88%) successfully, which is one more than DCI. Without explaining performance profiles in full detail, the plot on the left shows that Ipopt is the fastest on 20 of the problems (28%), while DCI is the fastest on 51 of the problems (72%) among the 71 problems solved by both solvers. The plot on the right shows that Ipopt used fewer evaluations of objective and constraint functions on 50 of the problems (70%), DCI used fewer evaluations on 17 of the problems (24%), and there was a tie in the number of evaluations on 4 problems (6%).
+We include below performance profiles [@dolan2002benchmarking] of `DCISolver.jl` against Ipopt on 82 problems from CUTEst [@cutest] with up to 10,000 variables and 10,000 constraints. Ipopt solved 72 problems (88%) successfully, which is one more than DCI. Without explaining performance profiles in full detail, the plot on the left shows that Ipopt is the fastest on 20 of the problems (28%), while DCI is the fastest on 51 of the problems (72%) among the 71 problems solved by both solvers. The plot on the right shows that Ipopt used fewer evaluations of objective and constraint functions on 50 of the problems (70%), DCI used fewer evaluations on 17 of the problems (24%), and there was a tie in the number of evaluations on 4 problems (6%).
 Overall, this performance profile is very encouraging for such a young implementation.
 The package's documentation includes more extensive benchmarks on classical test sets showing that `DCISolver.jl` is also competitive with Artelys Knitro.
 
