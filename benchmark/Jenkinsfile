@@ -1,4 +1,4 @@
-def bmarkFile = 'run_benchmarks.jl'
+def bmarkFile = 'benchmarks.jl'
 def prNumber = BRANCH_NAME.tokenize("PR-")[0]
 pipeline {
   agent any
@@ -64,13 +64,16 @@ pipeline {
   stages {
     stage('clone repo') {
       when {
-        expression { REPO_EXISTS == 'false' }
+        expression { REPO_EXISTS == 'false' && env.comment }
       }
       steps {
         sh 'git clone https://${GITHUB_AUTH}@github.com/$org/$repo.git'
       }
     }
     stage('checkout on new branch') {
+      when {
+        expression { env.comment }
+      }
       steps {
         dir(WORKSPACE + "/$repo") {
           sh '''
@@ -84,9 +87,26 @@ pipeline {
             git checkout $LOCAL_BRANCH_NAME --
           '''
         }
+        sh "git clone https://github.com/ProofOfConceptForJuliSmoothOptimizers/BenchmarkSetup.git || true"
+      }
+    }
+    stage('setup benchmark repository') {
+      when {
+        expression { env.comment }
+      }
+      steps {
+        dir(WORKSPACE + "/BenchmarkSetup") {
+          sh '''
+            git fetch origin
+            git pull --ff-only origin master
+          '''
+        }   
       }
     }
     stage('run benchmarks') {
+      when {
+        expression { env.comment }
+      }
       steps {
         script {
           def data = env.comment.tokenize(' ')
@@ -96,7 +116,7 @@ pipeline {
         }
         dir(WORKSPACE + "/$repo") {
         sh "mkdir -p $HOME/benchmarks/${org}/${repo}"
-        sh "qsub -N ${repo}_${pullrequest} -V -cwd -o $HOME/benchmarks/${org}/${repo}/${pullrequest}_${BUILD_NUMBER}_bmark_output.log -e $HOME/benchmarks/${org}/${repo}/${pullrequest}_${BUILD_NUMBER}_bmark_error.log push_benchmarks.sh $bmarkFile"
+        sh "qsub -N ${repo}_${pullrequest} -V -cwd -o $HOME/benchmarks/${org}/${repo}/${pullrequest}_${BUILD_NUMBER}_bmark_output.log -e $HOME/benchmarks/${org}/${repo}/${pullrequest}_${BUILD_NUMBER}_bmark_error.log ../BenchmarkSetup/benchmark/push_benchmarks.sh ${bmarkFile}"
         }   
       }
     }
@@ -106,13 +126,7 @@ pipeline {
       echo "SUCCESS!"  
     }
     cleanup {
-      dir(WORKSPACE + "/$repo") {
       sh 'printenv'
-      sh '''
-      git clean -fd
-      git checkout main
-      '''
-      }
     }
   }
 }
