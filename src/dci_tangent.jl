@@ -80,7 +80,7 @@ function tangent_step!(
     end
 
     @. xt = z + d
-    cons!(nlp, xt, cz)
+    cons_norhs!(nlp, xt, cz)
     normcz = norm(cz)
 
     if normcz ≤ meta.ρbar * ρ
