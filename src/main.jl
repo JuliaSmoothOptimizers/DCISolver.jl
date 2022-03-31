@@ -22,7 +22,7 @@ function dci(
   x .= workspace.x0
   fz = fx = obj(nlp, x)
   grad!(nlp, x, ∇fx)
-  cons!(nlp, x, cx) # issue with the type of cx
+  cons_norhs!(nlp, x, cx) # issue with the type of cx
 
   #T.M: we probably don't want to compute Jx and λ, if cx > ρ
   λ, ∇ℓxλ = workspace.λ, workspace.∇ℓxλ

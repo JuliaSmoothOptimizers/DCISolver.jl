@@ -25,9 +25,9 @@ end
     ADNLPModel(
       x -> 2x[1]^2 + x[1] * x[2] + x[2]^2 - 9x[1] - 9x[2],
       [1.0; 2.0],
-      x -> [4x[1] + 6x[2] - 10],
-      zeros(1),
-      zeros(1),
+      x -> [4x[1] + 6x[2]],
+      10 * ones(1),
+      10 * ones(1),
       name = "Simple linear-quadratique problem",
     ),
     ADNLPModel(

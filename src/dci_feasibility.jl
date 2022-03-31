@@ -69,7 +69,7 @@ function feasibility_step(
       status = :too_small
     else
       @. zp = z + d
-      cons!(nlp, zp, czp)
+      cons_norhs!(nlp, zp, czp)
       normczp = norm(czp)
 
       @. Jd += cz
@@ -123,7 +123,7 @@ function feasibility_step(
         @warn "Fail 2nd order correction in feasibility_step: $(stats.status)"
       end
       @. zp = z - d
-      cons!(nlp, zp, czp)
+      cons_norhs!(nlp, zp, czp)
       nczp = norm(czp)
       if nczp < normcz #even if d is small we keep going
         infeasible = false

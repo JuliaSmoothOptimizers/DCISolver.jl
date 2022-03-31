@@ -7,6 +7,14 @@ using LinearAlgebra, SparseArrays
 #JSO packages
 using HSL, Krylov, NLPModels, SolverCore, SolverTools
 
+function cons_norhs!(nlp, x, cx)
+  cons!(nlp, x, cx)
+  if nlp.meta.ncon > 0
+    cx .-= get_lcon(nlp)
+  end
+  return cx
+end
+
 export dci
 
 include("param_struct.jl")
