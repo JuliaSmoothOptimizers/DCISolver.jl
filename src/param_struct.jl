@@ -5,7 +5,7 @@ Keyword arguments correspond to input parameters of `cgls` from `Krylov.jl` used
 Returns a `comp_λ_cgls` structure.
 """
 struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
-  comp_λ_solver::CglsSolver{T, S}
+  comp_λ_solver::CglsSolver{T, T, S}
   M # =I,
   λ::T # =zero(T), 
   atol::T # =√eps(T), 
@@ -55,7 +55,7 @@ Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used
 Returns a `TR_lsmr_struct` structure.
 """
 struct TR_lsmr_struct{T <: AbstractFloat, S <: AbstractVector{T}}
-  lsmr_solver::LsmrSolver{T, S}
+  lsmr_solver::LsmrSolver{T, T, S}
   M # =I,
   #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
@@ -97,7 +97,7 @@ Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used
 Returns a `TR_dogleg_struct` structure.
 """
 struct TR_dogleg_struct{T <: AbstractFloat, S <: AbstractVector{T}}
-  lsmr_solver::LsmrSolver{T, S} # There is another lsmr call here
+  lsmr_solver::LsmrSolver{T, T, S} # There is another lsmr call here
 end
 
 function TR_dogleg_struct(m, n, ::Type{S}; kwargs...) where {T, S <: AbstractVector{T}}
