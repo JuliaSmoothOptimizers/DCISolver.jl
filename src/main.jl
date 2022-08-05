@@ -1,7 +1,7 @@
 function dci(
   nlp::AbstractNLPModel{T, S},
   meta::MetaDCI{T, In, COO},
-  workspace::DCIWorkspace{T, S, Si, Op},
+  workspace::DCIWorkspace{T, S, Si, Op};
 ) where {T, S, In, Si, Op, COO}
   if !(nlp.meta.minimize)
     error("DCI only works for minimization problem")
@@ -14,6 +14,7 @@ function dci(
   tired_check(nlp, eltime, iter, meta) = begin
     (evals(nlp) > meta.max_eval || eltime > meta.max_time || iter > meta.max_iter)
   end
+  verbose = meta.verbose
 
   z, x = workspace.z, workspace.x
   ∇fx, cx = workspace.∇fx, workspace.cx
@@ -72,7 +73,7 @@ function dci(
 
   iter = 0
 
-  @info log_header(
+  verbose > 0 && @info log_header(
     [:stage, :iter, :nf, :fx, :lag, :dual, :primal, :ρmax, :ρ, :status, :nd, :Δ],
     [
       String,
@@ -97,7 +98,7 @@ function dci(
       :nd => "‖d‖",
     ),
   )
-  @info log_row(
+  verbose > 0 && @info log_row(
     Any["init", iter, evals(nlp), fx, ℓxλ, dualnorm, primalnorm, ρmax, ρ, Symbol, Float64, Float64],
   )
 
@@ -122,6 +123,7 @@ function dci(
       meta.max_iter_normal_step,
       meta,
       workspace,
+      (verbose > 0 && mod(iter, verbose) == 0),
     )
     # Convergence test
     solved = primalnorm < ϵp && (dualnorm < ϵd || fz < meta.unbounded_threshold)
@@ -174,6 +176,7 @@ function dci(
       δ,
       meta,
       workspace,
+      (verbose > 0 && mod(iter, verbose) == 0),
       Δ = Δtg,
       max_eval = meta.max_eval,
       max_time = rmng_time,
@@ -214,7 +217,7 @@ function dci(
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
 
-    @info log_row(
+    verbose > 0 && mod(iter, verbose) == 0 && @info log_row(
       Any[
         "T",
         iter,

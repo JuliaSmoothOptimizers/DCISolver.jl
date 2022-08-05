@@ -28,6 +28,7 @@ function normal_step!(
   max_iter,
   meta::MetaDCI,
   workspace::DCIWorkspace,
+  verbose::Bool,
 ) where {T}
 
   #assign z variable:
@@ -79,7 +80,7 @@ function normal_step!(
     iter_normal_step += 1
     ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, iter_normal_step, meta)
 
-    @info log_row(
+    verbose && @info log_row(
       Any[
         "N",
         iter_normal_step,
