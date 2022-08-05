@@ -57,9 +57,7 @@ reset!(nlp);
 
 using DCISolver, Logging
 
-stats_dci = with_logger(NullLogger()) do
-  dci(nlp, stats_trunk.solution, atol = 1e-5, rtol = 0.0)
-end
+stats_dci = dci(nlp, stats_trunk.solution, verbose = 0, atol = 1e-5, rtol = 0.0)
 
 stats_dci.counters
 
