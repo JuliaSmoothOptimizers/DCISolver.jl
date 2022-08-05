@@ -31,7 +31,8 @@ ctol = 1e-5
     ρ,
     ctol,
     meta_dci,
-    workspace_dci;
+    workspace_dci,
+    false;
     η₁ = 1e-3,
     η₂ = 0.66,
     σ₁ = 0.25,
@@ -53,7 +54,8 @@ ctol = 1e-5
     ρ,
     ctol,
     meta_dci,
-    workspace_dci;
+    workspace_dci,
+    false;
     η₁ = 1e-3,
     η₂ = 0.66,
     σ₁ = 0.25,
@@ -92,7 +94,8 @@ end
     ρ,
     ctol,
     meta_dci,
-    workspace_dci;
+    workspace_dci,
+    false;
     η₁ = 1e-3,
     η₂ = 0.66,
     σ₁ = 0.25,
@@ -114,7 +117,8 @@ end
     ρ,
     ctol,
     meta_dci,
-    workspace_dci;
+    workspace_dci,
+    false;
     η₁ = 1e-3,
     η₂ = 0.66,
     σ₁ = 0.25,
