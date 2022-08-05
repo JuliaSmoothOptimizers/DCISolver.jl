@@ -2,6 +2,7 @@
 ADNLPModels = "54578032-b7ea-4c30-94aa-7cbd1cce6c9a"
 CUTEst = "1b53aba6-35b6-5f92-a507-53c67d53f819"
 CaNNOLeS = "5a1c9e79-9c58-5ec0-afc4-3298fdea2875"
+DCISolver = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"

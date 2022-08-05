@@ -53,10 +53,14 @@ equality-constrained problems described in
     https://doi.org/10.1137/070679557
 
 # Examples
-```jldoctest
-julia> using DCISolver, ADNLPModels
-julia> nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0]);
-julia> stats = dci(nlp)
+```jldoctest; output = false
+using ADNLPModels, DCISolver
+nlp = ADNLPModel(x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, [-1.2; 1.0])
+stats = dci(nlp, verbose = 0)
+stats
+
+# output
+
 "Execution stats: first-order stationary"
 ```
 """

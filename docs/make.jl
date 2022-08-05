@@ -33,6 +33,7 @@ pages = [
 
 makedocs(
   sitename = "DCISolver.jl",
+  strict = true,
   format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
   modules = [DCISolver],
   pages = pages,
