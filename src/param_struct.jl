@@ -230,7 +230,7 @@ function MetaDCI(
   rtol::T = T(1e-5),
   ctol::T = T(1e-5),
   unbounded_threshold::T = -T(1e5),
-  verbose::Union{Integer,Bool} = 0,
+  verbose::Union{Integer, Bool} = 0,
   max_eval::Integer = 50000,
   max_time::Float64 = 120.0,
   max_iter::Integer = 500,
