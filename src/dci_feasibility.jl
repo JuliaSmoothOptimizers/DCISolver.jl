@@ -28,7 +28,8 @@ function feasibility_step(
   ρ::T,
   ctol::AbstractFloat,
   meta::MetaDCI,
-  workspace;
+  workspace,
+  verbose::Bool;
   η₁::AbstractFloat = meta.feas_η₁,
   η₂::AbstractFloat = meta.feas_η₂,
   σ₁::AbstractFloat = meta.feas_σ₁,
@@ -96,7 +97,7 @@ function feasibility_step(
       end
     end
 
-    @info log_row(
+    verbose && @info log_row(
       Any[
         "F",
         feas_iter,
@@ -141,7 +142,7 @@ function feasibility_step(
         #should we increase the iteration limit if we busted it?
         #Adding regularization might be more efficient
       end
-      @info log_row(
+      verbose && @info log_row(
         Any[
           "F-safe",
           feas_iter,

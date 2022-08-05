@@ -65,6 +65,7 @@ function normal_step!(
       ϵp,
       meta,
       workspace,
+      verbose,
       max_eval = max_eval,
       max_time = max_time,
     )
