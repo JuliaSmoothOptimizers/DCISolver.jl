@@ -21,6 +21,7 @@ function _compute_newton_step!(
   vals::AbstractVector{T},
   meta::MetaDCI,
   workspace,
+  verbose::Bool,
 ) where {T}
   m, n = nlp.meta.ncon, nlp.meta.nvar
   nnzh, nnzj = nlp.meta.nnzh, nlp.meta.nnzj
@@ -39,7 +40,7 @@ function _compute_newton_step!(
   γ0 = copy(γ)
   status = :unknown #:γ_too_large, :success_fact, :regularize
 
-  @info log_header(
+  verbose && @info log_header(
     [:stage, :-, :-, :gamma, :delta, :delta_min, :-, :slope, :-, :-, :-, :-],
     [String, Int, Int, Float64, Float64, Float64, Float64, Float64, Float64, Symbol],
     hdr_override = Dict(:gamma => "γ", :delta => "δ", :delta_min => "δmin"),
@@ -66,7 +67,7 @@ function _compute_newton_step!(
       status = :regularize
     end
     #T.M: to be included in the main logging.
-    @info log_row(
+    verbose && @info log_row(
       Any["Fact", Int, Int, γ, δ, δmin, Float64, slope, Float64, status, norm(dn), Float64],
     )
 

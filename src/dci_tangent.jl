@@ -45,7 +45,8 @@ function tangent_step!(
   γ::T,
   δ::T,
   meta::MetaDCI,
-  workspace::DCIWorkspace;
+  workspace::DCIWorkspace,
+  verbose::Bool;
   Δ::AbstractFloat = meta.tan_Δ,
   η₁::AbstractFloat = meta.tan_η₁,
   η₂::AbstractFloat = meta.tan_η₂,
@@ -69,7 +70,7 @@ function tangent_step!(
   while !((normcz ≤ meta.ρbar * ρ && r ≥ η₁) || tired)
     #Compute a descent direction d (no evals)
     d, dBd, status, γ, δ, vals =
-      compute_descent_direction!(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta, workspace)
+      compute_descent_direction!(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta, workspace, verbose)
     n2d = dot(d, d)
     if √n2d > Δ
       d .*= Δ / √n2d #Just in case.
@@ -108,7 +109,7 @@ function tangent_step!(
       Δ *= σ₁^m
     end
 
-    @info log_row(
+    verbose && @info log_row(
       Any[
         "Tr",
         iter,
@@ -174,6 +175,7 @@ function compute_descent_direction!(
   d::AbstractVector{T},
   meta::MetaDCI,
   workspace::DCIWorkspace,
+  verbose::Bool,
 ) where {T}
   m, n = nlp.meta.ncon, nlp.meta.nvar
   dcp = workspace.dcp
@@ -187,7 +189,7 @@ function compute_descent_direction!(
     d = dcp
   else
     dn, dnBdn, dcpBdn, γ_too_large, γ, δ, vals =
-      _compute_newton_step!(nlp, LDL, g, γ, δ, dcp, vals, meta, workspace)
+      _compute_newton_step!(nlp, LDL, g, γ, δ, dcp, vals, meta, workspace, verbose)
     norm2dn = dot(dn, dn)
     if γ_too_large || dnBdn ≤ 1e-10 #or same test as gBg in _compute_gradient_step ?
       #dn = 0 here.

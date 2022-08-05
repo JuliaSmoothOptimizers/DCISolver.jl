@@ -125,6 +125,7 @@ The keyword arguments may include:
 - `rtol::T=T(1e-5)`: relative tolerance.
 - `ctol::T=T(1e-5)`: feasibility tolerance.
 - `unbounded_threshold::T=T(-1e5)`: below this threshold the problem is unbounded.
+- `verbose::Int = 0`: if > 0, display iteration details every `verbose` iteration.
 - `max_eval::Integer=50000`: maximum number of cons + obj evaluations.
 - `max_time::Float64=120.0`: maximum number of seconds.
 - `max_iter::Integer=500`: maximum number of iterations.
@@ -170,6 +171,8 @@ struct MetaDCI{
   rtol::T # ϵd = atol + rtol * dualnorm
   ctol::T # feasibility tolerance
   unbounded_threshold::T
+
+  verbose::Int
 
   #Evaluation limits
   max_eval::In # max number of cons + obj evals
@@ -227,6 +230,7 @@ function MetaDCI(
   rtol::T = T(1e-5),
   ctol::T = T(1e-5),
   unbounded_threshold::T = -T(1e5),
+  verbose::Union{Integer,Bool} = 0,
   max_eval::Integer = 50000,
   max_time::Float64 = 120.0,
   max_iter::Integer = 500,
@@ -270,6 +274,7 @@ function MetaDCI(
     rtol,
     ctol,
     unbounded_threshold,
+    convert(Int, verbose),
     max_eval,
     max_time,
     max_iter,
