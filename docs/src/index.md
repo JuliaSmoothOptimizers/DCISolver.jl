@@ -46,9 +46,7 @@ nlp = ADNLPModel(
   [0.0], [0.0],
   name = "Rosenbrock with x₁x₂=1"
 )
-stats = with_logger(NullLogger()) do
-  dci(nlp)
-end
+stats = dci(nlp, verbose = 0)
 
 println(stats)
 ```
