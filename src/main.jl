@@ -217,22 +217,24 @@ function dci(
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)
 
-    verbose > 0 && mod(iter, verbose) == 0 && @info log_row(
-      Any[
-        "T",
-        iter,
-        evals(nlp),
-        fx,
-        ℓxλ,
-        dualnorm,
-        primalnorm,
-        ρmax,
-        ρ,
-        tg_status,
-        Float64,
-        Float64,
-      ],
-    )
+    verbose > 0 &&
+      mod(iter, verbose) == 0 &&
+      @info log_row(
+        Any[
+          "T",
+          iter,
+          evals(nlp),
+          fx,
+          ℓxλ,
+          dualnorm,
+          primalnorm,
+          ρmax,
+          ρ,
+          tg_status,
+          Float64,
+          Float64,
+        ],
+      )
     iter += 1
     solved = primalnorm < ϵp && (dualnorm < ϵd || fx < meta.unbounded_threshold)
     eltime = time() - start_time
