@@ -94,7 +94,7 @@ using NLPModelsIpopt
 stats_ipopt = ipopt(nlp, x0 = stats_trunk.solution, tol = 1e-5, print_level = 0)
 
 # The problem was successfully solved, and we can extract the function evaluations from the stats.
-stats_ipopt.counters
+nlp.counters
 
 # Reinitialize the counters before re-solving.
 reset!(nlp);
@@ -105,7 +105,7 @@ using DCISolver, Logging
 stats_dci = dci(nlp, stats_trunk.solution, verbose = 0, atol = 1e-5, rtol = 0.0)
 
 # The problem was successfully solved, and we can extract the function evaluations from the stats.
-stats_dci.counters
+nlp.counters
 
 # We now compare the two solvers with respect to the time spent,
 stats_ipopt.elapsed_time, stats_dci.elapsed_time
