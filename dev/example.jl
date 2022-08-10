@@ -51,7 +51,7 @@ using NLPModelsIpopt
 
 stats_ipopt = ipopt(nlp, x0 = stats_trunk.solution, tol = 1e-5, print_level = 0)
 
-stats_ipopt.counters
+nlp.counters
 
 reset!(nlp);
 
@@ -59,7 +59,7 @@ using DCISolver, Logging
 
 stats_dci = dci(nlp, stats_trunk.solution, verbose = 0, atol = 1e-5, rtol = 0.0)
 
-stats_dci.counters
+nlp.counters
 
 stats_ipopt.elapsed_time, stats_dci.elapsed_time
 
