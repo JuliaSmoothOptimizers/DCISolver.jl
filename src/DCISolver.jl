@@ -124,17 +124,17 @@ function regularized_coo_saddle_system!(
   # J (nvar .+ 1:ncon, 1:nvar)
   nnz_idx = nnzh .+ (1:nnzj)
   @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
-  rows[nnz_idx] .+= nvar
+  view(rows, nnz_idx) .+= nvar
   # γI (1:nvar, 1:nvar)
   nnz_idx = nnzh .+ nnzj .+ (1:nvar)
-  rows[nnz_idx] .= 1:nvar
-  cols[nnz_idx] .= 1:nvar
-  vals[nnz_idx] .= γ
+  view(rows, nnz_idx) .= 1:nvar
+  view(cols, nnz_idx) .= 1:nvar
+  view(vals, nnz_idx) .= γ
   # -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
   nnz_idx = nnzh .+ nnzj .+ nvar .+ (1:ncon)
-  rows[nnz_idx] .= nvar .+ (1:ncon)
-  cols[nnz_idx] .= nvar .+ (1:ncon)
-  vals[nnz_idx] .= -δ
+  view(rows, nnz_idx) .= nvar .+ (1:ncon)
+  view(cols, nnz_idx) .= nvar .+ (1:ncon)
+  view(vals, nnz_idx) .= -δ
 
   return rows, cols, vals
 end
