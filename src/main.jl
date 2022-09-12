@@ -262,16 +262,14 @@ function dci(
     :unknown
   end
 
-  return GenericExecutionStats(
-    status,
-    nlp,
-    solution = x,
-    objective = fx,
-    dual_feas = dualnorm,
-    primal_feas = primalnorm,
-    iter = iter,
-    elapsed_time = eltime,
-    multipliers = λ,
-    solver_specific = Dict(:lagrangian => ℓxλ),
-  ) #add more?
+  stats = GenericExecutionStats(nlp)
+  set_status!(stats, status)
+  set_solution!(stats, x)
+  set_objective!(stats, fx)
+  set_residuals!(stats, primalnorm, dualnorm)
+  set_iter!(stats, iter)
+  set_time!(stats, eltime)
+  set_multipliers!(stats, λ, stats.multipliers_L, stats.multipliers_U)
+  set_solver_specific!(stats, :lagrangian, ℓxλ)
+  stats
 end
