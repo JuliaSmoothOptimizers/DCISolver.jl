@@ -34,6 +34,11 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 > SIAM Journal on Optimization, 19(3), 1299-1325 (2008).
 > [10.1007/s10589-020-00201-2](https://doi.org/10.1007/s10589-020-00201-2)
 
+> Migot, T., Orban D., & Siqueira A. S.
+> DCISolver. jl: A Julia Solver for Nonlinear Optimization using Dynamic Control of Infeasibility.
+> Journal of Open Source Software 70(7), 3991 (2022).
+> [10.21105/joss.03991](https://doi.org/10.21105/joss.03991)
+
 ## How to Cite
 
 If you use DCISolver.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/main/CITATION.bib).
