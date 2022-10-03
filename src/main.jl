@@ -101,7 +101,20 @@ function SolverCore.solve!(
     ),
   )
   verbose > 0 && @info log_row(
-    Any["init", stats.iter, evals(nlp), fx, ℓxλ, dualnorm, primalnorm, ρmax, ρ, Symbol, Float64, Float64],
+    Any[
+      "init",
+      stats.iter,
+      evals(nlp),
+      fx,
+      ℓxλ,
+      dualnorm,
+      primalnorm,
+      ρmax,
+      ρ,
+      Symbol,
+      Float64,
+      Float64,
+    ],
   )
 
   status = get_status(nlp, stats, meta, solved, fx, stalled, infeasible)
@@ -269,7 +282,7 @@ function SolverCore.solve!(
   stats
 end
 
-function evals(nlp::AbstractNLPModel) 
+function evals(nlp::AbstractNLPModel)
   return neval_obj(nlp) + neval_cons(nlp)
 end
 

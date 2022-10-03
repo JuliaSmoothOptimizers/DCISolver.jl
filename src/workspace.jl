@@ -4,7 +4,8 @@
 Pre-allocate the memory used during the [`dci`](@ref) call.
 Returns a `DCIWorkspace` structure.
 """
-struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, Op, In, COO} <: AbstractOptimizationSolver
+struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, Op, In, COO} <:
+       AbstractOptimizationSolver
   x0::S
   x::S
   ∇fx::S # grad(nlp, x)
@@ -81,9 +82,13 @@ function DCIWorkspace(
   )
 end
 
-get_meta(workspace::DCIWorkspace{T, S, Si, Op, In, COO}) where {T, S, Si, Op, In, COO} = workspace.meta
+get_meta(workspace::DCIWorkspace{T, S, Si, Op, In, COO}) where {T, S, Si, Op, In, COO} =
+  workspace.meta
 
-function SolverCore.reset!(workspace::DCIWorkspace{T, S, Si, Op, In, COO}, nlp::AbstractNLPModel) where {T, S, Si, Op, In, COO}
+function SolverCore.reset!(
+  workspace::DCIWorkspace{T, S, Si, Op, In, COO},
+  nlp::AbstractNLPModel,
+) where {T, S, Si, Op, In, COO}
   workspace.x0 .= nlp.meta.x0
   # workspace.Jx .= jac_op(nlp, x0)
   # workspace.LDL = ...

@@ -83,7 +83,12 @@ stats
 "Execution stats: first-order stationary"
 ```
 """
-function dci(nlp::AbstractNLPModel, x::AbstractVector{T} = nlp.meta.x0; callback = (args...) -> nothing, kwargs...) where {T}
+function dci(
+  nlp::AbstractNLPModel,
+  x::AbstractVector{T} = nlp.meta.x0;
+  callback = (args...) -> nothing,
+  kwargs...,
+) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)
   return dci(nlp, meta, x; callback = callback, kwargs...)
 end
