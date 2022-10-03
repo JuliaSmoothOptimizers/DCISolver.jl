@@ -1,5 +1,5 @@
 """
-    DCIWorkspace(nlp, meta, x)
+    DCIWorkspace(nlp, meta, x = nlp.meta.x0)
 
 Pre-allocate the memory used during the [`dci`](@ref) call.
 Returns a `DCIWorkspace` structure.
@@ -42,7 +42,7 @@ end
 function DCIWorkspace(
   nlp::AbstractNLPModel{T, S},
   meta::MetaDCI{T, In, COO},
-  x0::S,
+  x0::S = nlp.meta.x0,
 ) where {T, S <: AbstractVector{T}, In <: Integer, COO <: SymCOOSolver}
   n, m = nlp.meta.nvar, nlp.meta.ncon
   nnz = nlp.meta.nnzh + nlp.meta.nnzj + n + m

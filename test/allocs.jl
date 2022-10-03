@@ -3,9 +3,8 @@ using NLPModelsTest, BenchmarkTools
 for (problem, allocs) in ((:MGH01Feas, 7464), (:HS6, 7160))
   nlp = eval(problem)()
   stats = GenericExecutionStats(nlp)
-  x = nlp.meta.x0
-  meta = DCISolver.MetaDCI(x, nlp.meta.y0)
-  solver = DCISolver.DCIWorkspace(nlp, meta, x)
+  meta = DCISolver.MetaDCI(nlp)
+  solver = DCISolver.DCIWorkspace(nlp, meta)
   b = @ballocated solve!($solver, $nlp, $stats)
   @test b ≤ allocs
 end
