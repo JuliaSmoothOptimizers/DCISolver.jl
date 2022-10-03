@@ -1,14 +1,16 @@
-function dci(
+function SolverCore.solve!(
+  workspace::DCIWorkspace{T, S, Si, Op, In, COO},
   nlp::AbstractNLPModel{T, S},
-  meta::MetaDCI{T, In, COO},
-  workspace::DCIWorkspace{T, S, Si, Op};
-) where {T, S, In, Si, Op, COO}
+  stats::GenericExecutionStats{T, S, V, Tsp},
+) where {T, S, V, Tsp, Si, Op, In, COO}
+  meta = get_meta(workspace)
   if !(nlp.meta.minimize)
     error("DCI only works for minimization problem")
   end
   if !(equality_constrained(nlp) || unconstrained(nlp))
     error("DCI only works for equality constrained problems")
   end
+  reset!(stats)
 
   evals(nlp) = neval_obj(nlp) + neval_cons(nlp)
   tired_check(nlp, eltime, iter, meta) = begin
@@ -262,7 +264,6 @@ function dci(
     :unknown
   end
 
-  stats = GenericExecutionStats(nlp)
   set_status!(stats, status)
   set_solution!(stats, x)
   set_objective!(stats, fx)

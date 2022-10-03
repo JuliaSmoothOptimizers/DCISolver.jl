@@ -1,5 +1,8 @@
 module DCISolver
 
+using SolverCore
+import SolverCore.solve!
+
 #using SymCOOSolverInterface
 include("SymCOOSolverInterface/SymCOOSolverInterface.jl")
 
@@ -15,7 +18,7 @@ function cons_norhs!(nlp, x, cx)
   return cx
 end
 
-export dci
+export dci, solve!
 
 include("param_struct.jl")
 include("workspace.jl")
@@ -38,7 +41,8 @@ Compute a local minimum of an equality-constrained optimization problem using DC
 
 For advanced usage, the principal call to the solver uses a [`DCIWorkspace`](@ref).
 
-    dci(nlp, meta, workspace)
+    solve!(workspace, nlp)
+    solve!(workspace, nlp, stats)
 
 # Output
 The returned value is a `GenericExecutionStats`, see `SolverCore.jl`.
@@ -68,15 +72,15 @@ function dci(nlp::AbstractNLPModel, x::AbstractVector{T}; kwargs...) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)
   return dci(nlp, meta, x)
 end
+dci(nlp::AbstractNLPModel; kwargs...) = dci(nlp, nlp.meta.x0; kwargs...)
 function dci(
   nlp::AbstractNLPModel,
   meta::MetaDCI{T, In, COO},
   x::AbstractVector{T},
 ) where {T, In, COO}
   workspace = DCIWorkspace(nlp, meta, x)
-  return dci(nlp, meta, workspace)
+  return solve!(workspace, nlp)
 end
-dci(nlp::AbstractNLPModel; kwargs...) = dci(nlp, nlp.meta.x0; kwargs...)
 
 """
     compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
