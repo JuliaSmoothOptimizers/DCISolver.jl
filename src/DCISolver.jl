@@ -47,6 +47,21 @@ For advanced usage, the principal call to the solver uses a [`DCIWorkspace`](@re
 # Output
 The returned value is a `GenericExecutionStats`, see `SolverCore.jl`.
 
+# Callback
+The callback is called at each iteration.
+The expected signature of the callback is `callback(nlp, workspace, stats)`, and its output is ignored.
+Changing any of the input arguments will affect the subsequent iterations.
+In particular, setting `stats.status = :user` will stop the algorithm.
+All relevant information should be available in `nlp` and `workspace`.
+Notably, you can access, and modify, the following:
+- `workspace`: current workspace;
+- `stats`: structure holding the output of the algorithm (`GenericExecutionStats`), which contains, among other things:
+  - `stats.dual_feas`: norm of current gradient;
+  - `stats.iter`: current iteration counter;
+  - `stats.objective`: current objective function value;
+  - `stats.status`: current status of the algorithm. Should be `:unknown` unless the algorithm has attained a stopping criterion. Changing this to anything will stop the algorithm, but you should use `:user` to properly indicate the intention.
+  - `stats.elapsed_time`: elapsed time in seconds.
+
 # References
 This method implements the Dynamic Control of Infeasibility for
 equality-constrained problems described in
@@ -68,18 +83,19 @@ stats
 "Execution stats: first-order stationary"
 ```
 """
-function dci(nlp::AbstractNLPModel, x::AbstractVector{T}; kwargs...) where {T}
+function dci(nlp::AbstractNLPModel, x::AbstractVector{T} = nlp.meta.x0; callback = (args...) -> nothing, kwargs...) where {T}
   meta = MetaDCI(x, nlp.meta.y0; kwargs...)
-  return dci(nlp, meta, x)
+  return dci(nlp, meta, x; callback = callback, kwargs...)
 end
-dci(nlp::AbstractNLPModel; kwargs...) = dci(nlp, nlp.meta.x0; kwargs...)
 function dci(
   nlp::AbstractNLPModel,
   meta::MetaDCI{T, In, COO},
-  x::AbstractVector{T},
+  x::AbstractVector{T};
+  callback = (args...) -> nothing,
+  kwargs...,
 ) where {T, In, COO}
   workspace = DCIWorkspace(nlp, meta, x)
-  return solve!(workspace, nlp)
+  return solve!(workspace, nlp; callback = callback)
 end
 
 """
