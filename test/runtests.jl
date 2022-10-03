@@ -1,7 +1,7 @@
 # stdlib
 using LinearAlgebra, Logging, Test
 # JSO
-using ADNLPModels, Krylov, NLPModels, SolverTest
+using ADNLPModels, Krylov, NLPModels, SolverCore, SolverTest
 # This package
 using DCISolver
 
@@ -25,6 +25,65 @@ include("symcoo_runtests.jl")
     dci(nlp, callback = cb)
   end
   @test stats.iter == 8
+end
+
+@testset "Re-solve with a different initial guess" begin
+  nlp = ADNLPModel(
+    x -> (x[1] - 1)^2,
+    [-1.2; 1.0],
+    x -> [10 * (x[2] - x[1]^2)],
+    zeros(1),
+    zeros(1),
+    name = "HS6",
+  )
+  stats = GenericExecutionStats(nlp)
+
+  x = nlp.meta.x0
+  meta = DCISolver.MetaDCI(x, nlp.meta.y0, atol = 1e-7, rtol = 1e-7, verbose = 0)
+  solver = DCISolver.DCIWorkspace(nlp, meta, x)
+  stats = solve!(solver, nlp, stats)
+  @test isapprox(stats.solution, [1.0; 1.0], atol = 1e-6)
+  @test stats.status == :first_order
+
+  nlp.meta.x0 .= 10.0
+  reset!(solver, nlp)
+
+  stats = solve!(solver, nlp, stats)
+  @test isapprox(stats.solution, [1.0; 1.0], atol = 1e-6)
+  @test stats.status == :first_order
+end
+
+@testset "Re-solve with a different problem" begin
+  nlp = ADNLPModel(
+    x -> (x[1] - 1)^2,
+    [-1.2; 1.0],
+    x -> [10 * (x[2] - x[1]^2)],
+    zeros(1),
+    zeros(1),
+    name = "HS6",
+  )
+  stats = GenericExecutionStats(nlp)
+
+  x = nlp.meta.x0
+  meta = DCISolver.MetaDCI(x, nlp.meta.y0, atol = 1e-7, rtol = 1e-7, verbose = 0)
+  solver = DCISolver.DCIWorkspace(nlp, meta, x)
+  stats = solve!(solver, nlp, stats)
+  @test isapprox(stats.solution, [1.0; 1.0], rtol = 1e-6)
+  @test stats.status == :first_order
+
+  nlp = ADNLPModel(
+    x -> x[1]^2,
+    [-1.2; 1.0],
+    x -> [10 * (x[2] - x[1]^2)],
+    zeros(1),
+    zeros(1),
+    name = "shifted HS6",
+  )
+  reset!(solver, nlp)
+
+  stats = solve!(solver, nlp, stats)
+  @test isapprox(stats.solution, [0.0; 0.0], atol = 1e-6)
+  @test stats.status == :first_order
 end
 
 @testset "Unbounded tests" begin

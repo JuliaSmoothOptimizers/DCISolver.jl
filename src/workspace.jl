@@ -82,3 +82,12 @@ function DCIWorkspace(
 end
 
 get_meta(workspace::DCIWorkspace{T, S, Si, Op, In, COO}) where {T, S, Si, Op, In, COO} = workspace.meta
+
+function SolverCore.reset!(workspace::DCIWorkspace{T, S, Si, Op, In, COO}, nlp::AbstractNLPModel) where {T, S, Si, Op, In, COO}
+  workspace.x0 .= nlp.meta.x0
+  # workspace.Jx .= jac_op(nlp, x0)
+  # workspace.LDL = ...
+  workspace.tr.good_grad = false
+  workspace.tr.radius = workspace.tr.initial_radius
+  return workspace
+end
