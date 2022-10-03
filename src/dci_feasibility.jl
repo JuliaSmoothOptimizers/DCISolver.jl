@@ -69,11 +69,11 @@ function feasibility_step(
       failed_step_comp = true #too small step
       status = :too_small
     else
-      @. zp = z + d
+      zp .= z .+ d
       cons_norhs!(nlp, zp, czp)
       normczp = norm(czp)
 
-      @. Jd += cz
+      Jd .+= cz
       Pred = T(0.5) * (normcz^2 - norm(Jd)^2) # T(0.5) * (normcz^2 - norm(Jd + cz)^2)
       Ared = T(0.5) * (normcz^2 - normczp^2)
 
@@ -251,7 +251,7 @@ function TR_dogleg(
       τ = (-dcpv + sqrt(dcpv^2 + 4 * nv2 * (Δ^2 - ndcp2))) / nv2
       d = dcp + τ * v
     end
-    Jd .= Jz * d # d has been updated
+    mul!(Jd, Jz, d) # d has been updated
   end
 
   return d, Jd, infeasible, solved
@@ -309,7 +309,7 @@ function TR_lsmr(
   end
 
   @. d = -d
-  Jd .= Jz * d #lsmr doesn't return this information
+  mul!(Jd, Jz, d) #lsmr doesn't return this information
 
   return d, Jd, infeasible, solved
 end

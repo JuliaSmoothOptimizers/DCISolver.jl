@@ -8,6 +8,8 @@ using DCISolver
 #using SymCOOSolverInterface #tests
 include("symcoo_runtests.jl")
 
+include("allocs.jl")
+
 @testset "Test callback" begin
   f(x) = (x[1] - 1)^2 + 4 * (x[2] - x[1]^2)^2
   nlp = ADNLPModel(f, [-1.2; 1.0])
