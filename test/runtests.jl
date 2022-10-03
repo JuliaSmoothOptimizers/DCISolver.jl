@@ -8,7 +8,7 @@ using DCISolver
 #using SymCOOSolverInterface #tests
 include("symcoo_runtests.jl")
 
-if v"1.7.0" <= VERSION
+if v"1.8.0" <= VERSION
   include("allocs.jl")
 end
 
