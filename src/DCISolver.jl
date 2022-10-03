@@ -18,7 +18,7 @@ function cons_norhs!(nlp, x, cx)
   return cx
 end
 
-export dci
+export dci, solve!
 
 include("param_struct.jl")
 include("workspace.jl")

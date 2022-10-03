@@ -16,7 +16,8 @@ DCISolver.jl exports the function `dci`:
    dci(nlp :: AbstractNLPModel)
    dci(nlp :: AbstractNLPModel, x :: AbstractVector)
    dci(nlp :: AbstractNLPModel, meta :: MetaDCI, x :: AbstractVector)
-   dci(nlp :: AbstractNLPModel, meta :: MetaDCI, workspace :: DCIWorkspace)
+   solve!(workspace :: DCIWorkspace, nlp :: AbstractNLPModel)
+   solve!(workspace :: DCIWorkspace, nlp :: AbstractNLPModel, stats :: GenericExecutionStats)
 ```
 where `MetaDCI` is a structure handling all the parameters used in the algorithm, and `DCIWorkspace` pre-allocates all the memory used during the iterative process.
 
@@ -56,9 +57,9 @@ The `DCIWorkspace` allows to reuse the same memory if one would re-solve a probl
 
 ```@example ex1
 workspace = DCISolver.DCIWorkspace(nlp, meta, nlp.meta.x0)
-stats = dci(nlp, meta, workspace)
+stats = solve!(workspace, nlp)
 workspace.x0 .= ones(2) # change the initial guess, and resolve
-stats = dci(nlp, meta, workspace)
+stats = solve!(workspace, nlp)
 ```
 
 ## List of possible options
