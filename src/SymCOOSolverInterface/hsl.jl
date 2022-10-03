@@ -24,7 +24,7 @@ function factorize!(M::MA57Struct)
   ma57_factorize(M.factor)
 end
 
-function solve!(x, M::MA57Struct, b)
+function SolverCore.solve!(x, M::MA57Struct, b)
   x .= b
   ma57_solve!(M.factor, x)
 end
