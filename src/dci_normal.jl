@@ -74,7 +74,8 @@ function normal_step!(
     norm∇fz = norm(∇fz) #can be avoided if we use dualnorm
     compute_lx!(Jz, ∇fz, λ, meta)
     ℓzλ = fz + dot(λ, cz)
-    ∇ℓzλ .= ∇fz .+ Jz' * λ
+    mul!(workspace.Jtv, Jz', λ)
+    ∇ℓzλ .= ∇fz .+ workspace.Jtv
     dualnorm = norm(∇ℓzλ)
 
     #update rho

@@ -32,7 +32,8 @@ function SolverCore.solve!(
   compute_lx!(Jx, ∇fx, λ, meta)  # λ = argmin ‖∇f + Jᵀλ‖
   ℓxλ = fx + dot(λ, cx)
   set_solver_specific!(stats, :lagrangian, ℓxλ)
-  ∇ℓxλ .= ∇fx .+ Jx' * λ
+  mul!(workspace.Jtv, Jx', λ)
+  ∇ℓxλ .= ∇fx .+ workspace.Jtv
 
   dualnorm = norm(∇ℓxλ)
   primalnorm = norm(cx)
@@ -243,7 +244,8 @@ function SolverCore.solve!(
     compute_lx!(Jx, ∇fx, λ, meta)
     ℓxλ = fx + dot(λ, cx) #differs from the tangent step as λ is different
     set_solver_specific!(stats, :lagrangian, ℓxλ)
-    ∇ℓxλ .= ∇fx .+ Jx' * λ
+    mul!(workspace.Jtv, Jx', λ)
+    ∇ℓxλ .= ∇fx .+ workspace.Jtv
 
     primalnorm = norm(cx)
     dualnorm = norm(∇ℓxλ)

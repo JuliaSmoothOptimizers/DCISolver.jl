@@ -114,6 +114,7 @@ const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_stru
 
 """
     MetaDCI(x, y; kwargs...)
+    MetaDCI(nlp::AbstractNLPModel, x = nlp.meta.x0, y = nlp.meta.y0; kwargs...)
 
 Structure containing all the parameters used in the [`dci`](@ref) call.
 `x` is an intial guess, and `y` is an initial guess for the Lagrange multiplier.
@@ -221,6 +222,10 @@ struct MetaDCI{
   tan_σ₂::T
   tan_small_d::T
   increase_Δtg::T
+end
+
+function MetaDCI(nlp::AbstractNLPModel, x = nlp.meta.x0, y = nlp.meta.y0; kwargs...)
+  return MetaDCI(x, y; kwargs...)
 end
 
 function MetaDCI(

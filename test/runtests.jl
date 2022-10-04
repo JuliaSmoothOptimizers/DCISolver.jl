@@ -8,6 +8,10 @@ using DCISolver
 #using SymCOOSolverInterface #tests
 include("symcoo_runtests.jl")
 
+if v"1.8.0" <= VERSION
+  include("allocs.jl")
+end
+
 @testset "Test callback" begin
   f(x) = (x[1] - 1)^2 + 4 * (x[2] - x[1]^2)^2
   nlp = ADNLPModel(f, [-1.2; 1.0])
@@ -38,9 +42,8 @@ end
   )
   stats = GenericExecutionStats(nlp)
 
-  x = nlp.meta.x0
-  meta = DCISolver.MetaDCI(x, nlp.meta.y0, atol = 1e-7, rtol = 1e-7, verbose = 0)
-  solver = DCISolver.DCIWorkspace(nlp, meta, x)
+  meta = DCISolver.MetaDCI(nlp, atol = 1e-7, rtol = 1e-7, verbose = 0)
+  solver = DCISolver.DCIWorkspace(nlp, meta)
   stats = solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [1.0; 1.0], atol = 1e-6)
   @test stats.status == :first_order
@@ -65,7 +68,7 @@ end
   stats = GenericExecutionStats(nlp)
 
   x = nlp.meta.x0
-  meta = DCISolver.MetaDCI(x, nlp.meta.y0, atol = 1e-7, rtol = 1e-7, verbose = 0)
+  meta = DCISolver.MetaDCI(nlp, x, atol = 1e-7, rtol = 1e-7, verbose = 0)
   solver = DCISolver.DCIWorkspace(nlp, meta, x)
   stats = solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [1.0; 1.0], rtol = 1e-6)
