@@ -1,6 +1,6 @@
 using NLPModelsTest, BenchmarkTools
 
-for (problem, allocs) in ((:MGH01Feas, 7464), (:HS6, 7160))
+for (problem, allocs) in ((:MGH01Feas, 7512), (:HS6, 7160))
   nlp = eval(problem)()
   stats = GenericExecutionStats(nlp)
   meta = DCISolver.MetaDCI(nlp)
