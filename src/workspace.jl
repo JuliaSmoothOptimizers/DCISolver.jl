@@ -96,3 +96,11 @@ function SolverCore.reset!(
   workspace.tr.radius = workspace.tr.initial_radius
   return workspace
 end
+
+function SolverCore.reset!(
+  workspace::DCIWorkspace{T, S, Si, Op, In, COO},
+) where {T, S, Si, Op, In, COO}
+  workspace.tr.good_grad = false
+  workspace.tr.radius = workspace.tr.initial_radius
+  return workspace
+end

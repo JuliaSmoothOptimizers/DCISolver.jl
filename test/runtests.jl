@@ -49,7 +49,7 @@ end
   @test stats.status == :first_order
 
   nlp.meta.x0 .= 10.0
-  reset!(solver, nlp)
+  reset!(solver)
 
   stats = solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [1.0; 1.0], atol = 1e-6)
