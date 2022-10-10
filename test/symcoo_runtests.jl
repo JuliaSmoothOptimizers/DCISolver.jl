@@ -2,14 +2,14 @@ using HSL, LinearAlgebra, Random, SparseArrays, Test
 
 using DCISolver: factorize!, solve!, success, isposdef, num_neg_eig
 
-available_factorization = (LDLFactorizationStruct,)
+available_factorization = Any[LDLFactorizationStruct]
 if isdefined(HSL, :libhsl_ma57)
   push!(available_factorization, MA57Struct)
 else
   @info("libhsl_ma57 not defined.")
 end
 
-@testset "Test LinearSolver" for LinearSolver in available_factorization
+@testset "Test $(LinearSolver)" for LinearSolver in available_factorization
   Random.seed!(0)
   nvar, ncon = 5, 3
   Q = spdiagm(nvar, nvar, 0 => 2 * ones(nvar), -1 => -ones(nvar - 1), 1 => -ones(nvar - 1))
