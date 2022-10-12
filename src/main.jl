@@ -77,7 +77,7 @@ function SolverCore.solve!(
   set_iter!(stats, 0)
 
   verbose > 0 && @info log_header(
-    [:stage, :iter, :nf, :fx, :lag, :dual, :primal, :ρmax, :ρ, :status, :nd, :Δ],
+    [:stage, :iter, :nf, :fx, :lag, :dual, :primal, :ρmax, :ρ, :status, :nd, :Δ, :time],
     [
       String,
       Int,
@@ -89,6 +89,7 @@ function SolverCore.solve!(
       Float64,
       Float64,
       String,
+      Float64,
       Float64,
       Float64,
     ],
@@ -115,6 +116,7 @@ function SolverCore.solve!(
       Symbol,
       Float64,
       Float64,
+      stats.elapsed_time
     ],
   )
 
@@ -251,6 +253,7 @@ function SolverCore.solve!(
     dualnorm = norm(∇ℓxλ)
     set_residuals!(stats, primalnorm, dualnorm)
 
+    set_time!(stats, time() - start_time)
     verbose > 0 &&
       mod(stats.iter, verbose) == 0 &&
       @info log_row(
@@ -267,11 +270,11 @@ function SolverCore.solve!(
           tg_status,
           Float64,
           Float64,
+          stats.elapsed_time,
         ],
       )
     set_iter!(stats, stats.iter + 1)
     solved = primalnorm < ϵp && (dualnorm < ϵd || fx < meta.unbounded_threshold)
-    set_time!(stats, time() - start_time)
 
     status = get_status(nlp, stats, meta, solved, fx, stalled, infeasible)
     set_status!(stats, status)

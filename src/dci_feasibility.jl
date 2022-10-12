@@ -111,6 +111,7 @@ function feasibility_step(
         status,
         norm(d),
         Δ,
+        time() - start_time,
       ],
     )
 
@@ -156,6 +157,7 @@ function feasibility_step(
           status,
           norm(d),
           Δ,
+          time() - start_time,
         ],
       )
     end
