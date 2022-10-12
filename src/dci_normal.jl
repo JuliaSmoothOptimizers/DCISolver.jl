@@ -82,6 +82,7 @@ function normal_step!(
     iter_normal_step += 1
     ρ = compute_ρ(dualnorm, primalnorm, norm∇fz, ρmax, ϵp, iter_normal_step, meta)
 
+    eltime = time() - start_time
     verbose && @info log_row(
       Any[
         "N",
@@ -96,10 +97,10 @@ function normal_step!(
         normal_status,
         Float64,
         Float64,
+        eltime,
       ],
     )
 
-    eltime = time() - start_time
     many_evals = neval_obj(nlp) + neval_cons(nlp) > max_eval
     tired = many_evals || eltime > max_time || iter_normal_step > max_iter
     infeasible = normal_status == :infeasible

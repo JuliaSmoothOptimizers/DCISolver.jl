@@ -109,6 +109,7 @@ function tangent_step!(
       Δ *= σ₁^m
     end
 
+    el_time = time() - start_time
     verbose && @info log_row(
       Any[
         "Tr",
@@ -123,11 +124,11 @@ function tangent_step!(
         status,
         √n2d,
         Δ,
+        el_time,
       ],
     )
     iter += 1
 
-    el_time = time() - start_time
     tired = neval_obj(nlp) + neval_cons(nlp) > max_eval || el_time > max_time
   end
 
