@@ -116,7 +116,7 @@ function SolverCore.solve!(
       Symbol,
       Float64,
       Float64,
-      stats.elapsed_time
+      stats.elapsed_time,
     ],
   )
 
