@@ -68,7 +68,21 @@ function _compute_newton_step!(
     end
     #T.M: to be included in the main logging.
     verbose && @info log_row(
-      Any["Fact", Int, Int, γ, δ, δmin, Float64, slope, Float64, status, norm(dn), Float64, Float64],
+      Any[
+        "Fact",
+        Int,
+        Int,
+        γ,
+        δ,
+        δmin,
+        Float64,
+        slope,
+        Float64,
+        status,
+        norm(dn),
+        Float64,
+        Float64,
+      ],
     )
 
     if !descent
