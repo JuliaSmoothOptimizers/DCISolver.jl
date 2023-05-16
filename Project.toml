@@ -1,6 +1,6 @@
 name = "DCISolver"
 uuid = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
-authors = ["Abel Soares Siqueira <abel.s.siqueira@gmail.com>"]
+authors = ["Abel Soares Siqueira <abel.s.siqueira@gmail.com> and Tangi Migot <tangi.migot@gmail.com>"]
 version = "0.4.3"
 
 [deps]
