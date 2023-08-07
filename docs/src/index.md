@@ -12,7 +12,7 @@ based on the paper
 > Bielschowsky, R. H., & Gomes, F. A.
 > Dynamic control of infeasibility in equality constrained optimization.
 > SIAM Journal on Optimization, 19(3), 1299-1325 (2008).
-> [10.1007/s10589-020-00201-2](https://doi.org/10.1007/s10589-020-00201-2)
+> [10.1137/070679557](https://doi.org/10.1137/070679557)
 
 `DCISolver` is a JuliaSmoothOptimizers-compliant solver. It takes an [`AbstractNLPModel`](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) as an input and returns a [`GenericExecutionStats`](https://github.com/JuliaSmoothOptimizers/SolverCore.jl/blob/16fc349908f46634f2c9acdddddb009b23634b71/src/stats.jl#L60).
 
