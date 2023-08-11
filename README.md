@@ -32,7 +32,7 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 > Bielschowsky, R. H., & Gomes, F. A.
 > Dynamic control of infeasibility in equality constrained optimization.
 > SIAM Journal on Optimization, 19(3), 1299-1325 (2008).
-> [10.1007/s10589-020-00201-2](https://doi.org/10.1007/s10589-020-00201-2)
+> [10.1137/070679557](https://doi.org/10.1137/070679557)
 
 > Migot, T., Orban D., & Siqueira A. S.
 > DCISolver. jl: A Julia Solver for Nonlinear Optimization using Dynamic Control of Infeasibility.
