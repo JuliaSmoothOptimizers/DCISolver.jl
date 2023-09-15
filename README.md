@@ -41,7 +41,7 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 
 ## How to Cite
 
-If you use DCISolver.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/main/CITATION.bib).
+If you use DCISolver.jl in your work, please cite using the format given in [CITATION.cff](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/main/CITATION.cff).
 
 ## Installation
 
