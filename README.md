@@ -18,7 +18,7 @@ optimization problems of the form
 
 It uses other JuliaSmoothOptimizers packages for development.
 In particular, [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) is used for defining the problem, and [SolverCore](https://github.com/JuliaSmoothOptimizers/SolverCore.jl) for the output.
-It uses [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) by default to compute the factorization in the tangent step. [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl) provides alternative linear solvers if [JuliaHSL](https://licences.stfc.ac.uk/product/julia-hsl) can be downloaded.
+It uses [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) by default to compute the factorization in the tangent step. [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl) provides alternative linear solvers if [libHSL](https://licences.stfc.ac.uk/product/libhsl) can be downloaded.
 The feasibility steps are factorization-free and use iterative methods from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl)
 
 ## References
