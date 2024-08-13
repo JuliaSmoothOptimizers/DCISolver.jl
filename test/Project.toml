@@ -14,7 +14,7 @@ SolverTest = "4343dc35-3317-4c6e-8877-f0cc8502c90e"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
-ADNLPModels = "0.7.0"
+ADNLPModels = "0.8.4"
 BenchmarkTools = "1.4.0"
 HSL = "0.4"
 Krylov = "0.9"
