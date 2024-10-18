@@ -69,8 +69,20 @@ function tangent_step!(
 
   while !((normcz ≤ meta.ρbar * ρ && r ≥ η₁) || tired)
     #Compute a descent direction d (no evals)
-    d, dBd, status, γ, δ, vals =
-      compute_descent_direction!(nlp, gBg, g, Δ, LDL, γ, δ, vals, d, meta, workspace, verbose)
+    d, dBd, status, γ, δ, vals = compute_descent_direction!(
+      nlp,
+      gBg,
+      g,
+      Δ,
+      LDL,
+      γ,
+      δ,
+      vals,
+      d,
+      meta,
+      workspace,
+      verbose,
+    )
     n2d = dot(d, d)
     if √n2d > Δ
       d .*= Δ / √n2d #Just in case.
@@ -114,7 +126,7 @@ function tangent_step!(
       Any[
         "Tr",
         iter,
-        neval_obj(nlp) + neval_cons(nlp),
+        neval_obj(nlp)+neval_cons(nlp),
         fz,
         ℓzλ,
         Float64,
@@ -267,7 +279,12 @@ end
 Given two directions `dcp` and `dn`, compute the largest `0 ≤ τ ≤ 1` such that `‖dn + τ (dcp -dn)‖ = Δ`.
 Returns `τ`.
 """
-function _compute_step_length(norm2dn::T, dotdndcp::T, norm2dcp::T, Δ::T) where {T <: AbstractFloat}
+function _compute_step_length(
+  norm2dn::T,
+  dotdndcp::T,
+  norm2dcp::T,
+  Δ::T,
+) where {T<:AbstractFloat}
   # d = τ dcp + (1 - τ) * dn = dn + τ * (dcp - dn)
   # ‖d‖² = Δ² => τ² ‖dcp - dn‖² + 2τ dnᵀ(dcp - dn) + ‖dn‖² - Δ² = 0
   # Δ = b² - 4ac

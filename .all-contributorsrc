@@ -1,0 +1,5 @@
+{
+  "projectName": "DCISolver",
+  "projectOwner": "JuliaSmoothOptimizers",
+  "files": ["README.md", "docs/src/index.md"]
+}

@@ -3,14 +3,14 @@ using HSL
 export MA57Struct
 
 const Ma57Type = if isdefined(HSL, :libhsl_ma57)
-  Union{Nothing, Ma57}
+  Union{Nothing,Ma57}
 else
   Nothing
 end
 
 mutable struct MA57Struct <: SymCOOSolver
   factor::Ma57Type
-  work
+  work::Any
 end
 
 function MA57Struct(N, rows, cols, vals)

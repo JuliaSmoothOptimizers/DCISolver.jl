@@ -35,7 +35,7 @@ function success end
 
 """
     isposdef(M :: SymCOOSolver)
-Returns whether `M` is positive definite. 
+Returns whether `M` is positive definite.
 """
 
 """

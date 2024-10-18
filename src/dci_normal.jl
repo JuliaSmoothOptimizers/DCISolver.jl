@@ -87,7 +87,7 @@ function normal_step!(
       Any[
         "N",
         iter_normal_step,
-        neval_obj(nlp) + neval_cons(nlp),
+        neval_obj(nlp)+neval_cons(nlp),
         fz,
         ℓzλ,
         dualnorm,

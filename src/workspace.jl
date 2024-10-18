@@ -4,7 +4,7 @@
 Pre-allocate the memory used during the [`dci`](@ref) call.
 Returns a `DCIWorkspace` structure.
 """
-struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, Op, In, COO} <:
+struct DCIWorkspace{T,S<:AbstractVector{T},Si<:AbstractVector{<:Integer},Op,In,COO} <:
        AbstractOptimizationSolver
   x0::S
   x::S
@@ -36,14 +36,14 @@ struct DCIWorkspace{T, S <: AbstractVector{T}, Si <: AbstractVector{<:Integer}, 
   dn::S
   dcp::S
   rhs::S
-  meta::MetaDCI{T, In, COO}
+  meta::MetaDCI{T,In,COO}
 end
 
 function DCIWorkspace(
-  nlp::AbstractNLPModel{T, S},
-  meta::MetaDCI{T, In, COO},
+  nlp::AbstractNLPModel{T,S},
+  meta::MetaDCI{T,In,COO},
   x0::S = nlp.meta.x0,
-) where {T, S <: AbstractVector{T}, In <: Integer, COO <: SymCOOSolver}
+) where {T,S<:AbstractVector{T},In<:Integer,COO<:SymCOOSolver}
   n, m = nlp.meta.nvar, nlp.meta.ncon
   nnz = nlp.meta.nnzh + nlp.meta.nnzj + n + m
   Jx = jac_op(nlp, x0)
@@ -82,13 +82,13 @@ function DCIWorkspace(
   )
 end
 
-get_meta(workspace::DCIWorkspace{T, S, Si, Op, In, COO}) where {T, S, Si, Op, In, COO} =
+get_meta(workspace::DCIWorkspace{T,S,Si,Op,In,COO}) where {T,S,Si,Op,In,COO} =
   workspace.meta
 
 function SolverCore.reset!(
-  workspace::DCIWorkspace{T, S, Si, Op, In, COO},
+  workspace::DCIWorkspace{T,S,Si,Op,In,COO},
   nlp::AbstractNLPModel,
-) where {T, S, Si, Op, In, COO}
+) where {T,S,Si,Op,In,COO}
   workspace.x0 .= nlp.meta.x0
   # workspace.Jx .= jac_op(nlp, x0)
   # workspace.LDL = ...
@@ -98,8 +98,8 @@ function SolverCore.reset!(
 end
 
 function SolverCore.reset!(
-  workspace::DCIWorkspace{T, S, Si, Op, In, COO},
-) where {T, S, Si, Op, In, COO}
+  workspace::DCIWorkspace{T,S,Si,Op,In,COO},
+) where {T,S,Si,Op,In,COO}
   workspace.tr.good_grad = false
   workspace.tr.radius = workspace.tr.initial_radius
   return workspace

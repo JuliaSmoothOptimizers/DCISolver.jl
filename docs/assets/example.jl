@@ -64,7 +64,17 @@ ncon = Gridap.FESpaces.num_free_dofs(Ycon)
 x0 = zeros(npde + ncon);
 
 # Overall, we built a GridapPDENLPModel, which implements the [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) API.
-nlp = GridapPDENLPModel(x0, f, trian, Ypde, Ycon, Xpde, Xcon, op, name = "Control elastic membrane")
+nlp = GridapPDENLPModel(
+  x0,
+  f,
+  trian,
+  Ypde,
+  Ycon,
+  Xpde,
+  Xcon,
+  op,
+  name = "Control elastic membrane",
+)
 
 (nlp.meta.nvar, nlp.meta.ncon)
 

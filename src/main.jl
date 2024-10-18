@@ -1,9 +1,9 @@
 function SolverCore.solve!(
-  workspace::DCIWorkspace{T, S, Si, Op, In, COO},
-  nlp::AbstractNLPModel{T, S},
-  stats::GenericExecutionStats{T, S, V, Tsp};
+  workspace::DCIWorkspace{T,S,Si,Op,In,COO},
+  nlp::AbstractNLPModel{T,S},
+  stats::GenericExecutionStats{T,S,V,Tsp};
   callback = (args...) -> nothing,
-) where {T, S, V, Tsp, Si, Op, In, COO}
+) where {T,S,V,Tsp,Si,Op,In,COO}
   meta = get_meta(workspace)
   if !(nlp.meta.minimize)
     error("DCI only works for minimization problem")
@@ -179,10 +179,10 @@ function SolverCore.solve!(
 
     #Update matrix system
     @views hess_coord!(nlp, z, λ, vals[1:(nlp.meta.nnzh)])
-    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh .+ (1:(nlp.meta.nnzj))])
+    @views jac_coord!(nlp, z, vals[nlp.meta.nnzh.+(1:(nlp.meta.nnzj))])
     if γ != 0.0
       γ = max(γ * meta.decrease_γ, √eps(T))
-      vals[nlp.meta.nnzh .+ nlp.meta.nnzj .+ (1:(nlp.meta.nvar))] .= γ
+      vals[nlp.meta.nnzh.+nlp.meta.nnzj.+(1:(nlp.meta.nvar))] .= γ
     end
 
     gBg = compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)

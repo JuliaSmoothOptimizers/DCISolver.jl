@@ -12,7 +12,7 @@ pipeline {
     GenericTrigger(
      genericVariables: [
         [
-            key: 'action', 
+            key: 'action',
             value: '$.action',
             expressionType: 'JSONPath', //Optional, defaults to JSONPath
             regexpFilter: '[^(created)]', //Optional, defaults to empty string
@@ -100,7 +100,7 @@ pipeline {
             git fetch origin
             git pull --ff-only origin master
           '''
-        }   
+        }
       }
     }
     stage('run benchmarks') {
@@ -117,13 +117,13 @@ pipeline {
         dir(WORKSPACE + "/$repo") {
         sh "mkdir -p $HOME/benchmarks/${org}/${repo}"
         sh "qsub -N ${repo}_${pullrequest} -V -cwd -o $HOME/benchmarks/${org}/${repo}/${pullrequest}_${BUILD_NUMBER}_bmark_output.log -e $HOME/benchmarks/${org}/${repo}/${pullrequest}_${BUILD_NUMBER}_bmark_error.log ../BenchmarkSetup/benchmark/push_benchmarks.sh ${bmarkFile}"
-        }   
+        }
       }
     }
   }
   post {
     success {
-      echo "SUCCESS!"  
+      echo "SUCCESS!"
     }
     cleanup {
       sh 'printenv'

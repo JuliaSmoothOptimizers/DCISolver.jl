@@ -94,18 +94,18 @@ function dci(
 end
 function dci(
   nlp::AbstractNLPModel,
-  meta::MetaDCI{T, In, COO},
+  meta::MetaDCI{T,In,COO},
   x::AbstractVector{T};
   callback = (args...) -> nothing,
   kwargs...,
-) where {T, In, COO}
+) where {T,In,COO}
   workspace = DCIWorkspace(nlp, meta, x)
   return solve!(workspace, nlp; callback = callback)
 end
 
 """
     compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
-  
+
 Compute `gBg = ∇ℓxλ' * B * ∇ℓxλ`, where `B` is a symmetric sparse matrix whose lower triangular is given in COO-format.
 """
 function compute_gBg(
@@ -136,7 +136,7 @@ function regularized_coo_saddle_system!(
   vals::AbstractVector{T};
   γ::T = zero(T),
   δ::T = zero(T),
-) where {S <: Int, T <: AbstractFloat}
+) where {S<:Int,T<:AbstractFloat}
   #n = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon
   #Test length rows, cols, vals
   #@lencheck n rows cols vals
@@ -175,7 +175,7 @@ function compute_lx!(
   ∇fx::AbstractVector{T},
   λ::AbstractVector{T},
   meta::MetaDCI,
-) where {T <: AbstractFloat}
+) where {T<:AbstractFloat}
   l = meta.λ_struct.comp_λ_solver.x
   stats = meta.λ_struct.comp_λ_solver.stats
   Krylov.solve!(
