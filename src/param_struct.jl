@@ -1,18 +1,18 @@
 """
-    `comp_λ_cgls(m, n, ::DataType; kwargs...)` 
+    `comp_λ_cgls(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `cgls` from `Krylov.jl` used in the computation of the Lagrange multipliers.
 Returns a `comp_λ_cgls` structure.
 """
-struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
-  comp_λ_solver::CglsSolver{T, T, S}
-  M # =I,
-  λ::T # =zero(T), 
-  atol::T # =√eps(T), 
+struct comp_λ_cgls{T<:AbstractFloat,S<:AbstractVector{T}}
+  comp_λ_solver::CglsSolver{T,T,S}
+  M::Any # =I,
+  λ::T # =zero(T),
+  atol::T # =√eps(T),
   rtol::T # =√eps(T),
-  #radius :: T=zero(T), 
-  itmax::Int # =0, 
-  #verbose :: Int=0, 
+  #radius :: T=zero(T),
+  itmax::Int # =0,
+  #verbose :: Int=0,
   #history :: Bool=false
 end
 
@@ -25,7 +25,7 @@ function comp_λ_cgls(
   atol::T = √eps(T),
   rtol::T = √eps(T),
   itmax::Int = 5 * (m + n),
-) where {T, S <: AbstractVector{T}}
+) where {T,S<:AbstractVector{T}}
   comp_λ_solver = CglsSolver(m, n, S)
   return comp_λ_cgls(comp_λ_solver, M, λ, atol, rtol, itmax)
 end
@@ -49,22 +49,22 @@ else
 end
 
 """
-    `TR_lsmr_struct(m, n, ::DataType; kwargs...)` 
+    `TR_lsmr_struct(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used in the computation of the trust-region step.
 Returns a `TR_lsmr_struct` structure.
 """
-struct TR_lsmr_struct{T <: AbstractFloat, S <: AbstractVector{T}}
-  lsmr_solver::LsmrSolver{T, T, S}
-  M # =I,
+struct TR_lsmr_struct{T<:AbstractFloat,S<:AbstractVector{T}}
+  lsmr_solver::LsmrSolver{T,T,S}
+  M::Any # =I,
   #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
-  λ::T # =zero(T), 
-  axtol::T # =√eps(T), 
+  λ::T # =zero(T),
+  axtol::T # =√eps(T),
   btol::T # =√eps(T),
-  atol::T # =zero(T), 
+  atol::T # =zero(T),
   rtol::T # =zero(T),
-  etol::T # =√eps(T), 
+  etol::T # =√eps(T),
   #window :: Int=5, #unnecessary
   itmax::Int # =0,  #m + n (set in the code if itmax==0)
   #conlim :: T=1/√eps(T), #set conditioning upper limit
@@ -85,22 +85,22 @@ function TR_lsmr_struct(
   rtol::T = zero(T),
   etol::T = √eps(T),
   itmax::Int = m + n,
-) where {T, S <: AbstractVector{T}}
+) where {T,S<:AbstractVector{T}}
   lsmr_solver = LsmrSolver(n, m, S)
   return TR_lsmr_struct(lsmr_solver, M, λ, axtol, btol, atol, rtol, etol, itmax)
 end
 
 """
-    `TR_dogleg_struct(m, n, ::DataType; kwargs...)` 
+    `TR_dogleg_struct(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used in the computation of the dogleg for the trust-region step.
 Returns a `TR_dogleg_struct` structure.
 """
-struct TR_dogleg_struct{T <: AbstractFloat, S <: AbstractVector{T}}
-  lsmr_solver::LsmrSolver{T, T, S} # There is another lsmr call here
+struct TR_dogleg_struct{T<:AbstractFloat,S<:AbstractVector{T}}
+  lsmr_solver::LsmrSolver{T,T,S} # There is another lsmr call here
 end
 
-function TR_dogleg_struct(m, n, ::Type{S}; kwargs...) where {T, S <: AbstractVector{T}}
+function TR_dogleg_struct(m, n, ::Type{S}; kwargs...) where {T,S<:AbstractVector{T}}
   lsmr_solver = LsmrSolver(n, m, S)
   return TR_dogleg_struct(lsmr_solver)
 end
@@ -157,14 +157,14 @@ The keyword arguments may include:
 - `tan_small_d::T=eps(T)`: Tangent step trust-region parameters: `||d||` is too small.
 - `increase_Δtg::T=10`: Tangent step trust-region parameters: increase if possible, `< 1 / √eps(T)`, the `Δtg` between tangent steps.
 
-For more details, we refer to the package documentation [fine-tuneDCI.md](https://juliasmoothoptimizers.github.io/DCISolver.jl/dev/fine-tuneDCI/). 
+For more details, we refer to the package documentation [fine-tuneDCI.md](https://juliasmoothoptimizers.github.io/DCISolver.jl/dev/fine-tuneDCI/).
 """
 struct MetaDCI{
-  T <: AbstractFloat,
-  In <: Integer,
-  COO <: SymCOOSolver,
-  CGLSStruct <: comp_λ_cgls,
-  TRStruct <: Union{TR_lsmr_struct, TR_dogleg_struct},
+  T<:AbstractFloat,
+  In<:Integer,
+  COO<:SymCOOSolver,
+  CGLSStruct<:comp_λ_cgls,
+  TRStruct<:Union{TR_lsmr_struct,TR_dogleg_struct},
 }
 
   #Tolerances on the problem:
@@ -183,7 +183,7 @@ struct MetaDCI{
 
   #Compute Lagrange multipliers
   λ_struct::CGLSStruct
-  #λ_struct_rescue #one idea is to have a 2nd set in case of emergency 
+  #λ_struct_rescue #one idea is to have a 2nd set in case of emergency
   #good only if we can make a warm-start.
 
   # Solver for the factorization
@@ -235,7 +235,7 @@ function MetaDCI(
   rtol::T = T(1e-5),
   ctol::T = T(1e-5),
   unbounded_threshold::T = -T(1e5),
-  verbose::Union{Integer, Bool} = 0,
+  verbose::Union{Integer,Bool} = 0,
   max_eval::Integer = 50000,
   max_time::Float64 = 120.0,
   max_iter::Integer = 500,
@@ -254,7 +254,11 @@ function MetaDCI(
   bad_steps_lim::Integer = 3,
   feas_expected_decrease::T = T(0.95),
   TR_compute_step::Symbol = :TR_lsmr,
-  TR_struct::Union{TR_lsmr_struct, TR_dogleg_struct} = TR_lsmr_struct(length(x0), length(y0), S),
+  TR_struct::Union{TR_lsmr_struct,TR_dogleg_struct} = TR_lsmr_struct(
+    length(x0),
+    length(y0),
+    S,
+  ),
   compρ_p1::T = T(0.75),
   compρ_p2::T = T(0.90),
   ρbar::T = T(2.0),
@@ -265,7 +269,7 @@ function MetaDCI(
   tan_σ₂::T = T(2.0),
   tan_small_d::T = eps(T),
   increase_Δtg::T = T(10),
-) where {T <: AbstractFloat, S <: AbstractVector{T}}
+) where {T<:AbstractFloat,S<:AbstractVector{T}}
   if !(linear_solver ∈ keys(solver_correspondence))
     @warn "linear solver $linear_solver not found in $(collect(keys(solver_correspondence))). Using :ldlfact instead"
     linear_solver = :ldlfact

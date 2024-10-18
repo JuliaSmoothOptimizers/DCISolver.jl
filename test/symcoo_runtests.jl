@@ -14,7 +14,7 @@ end
   nvar, ncon = 5, 3
   Q = spdiagm(nvar, nvar, 0 => 2 * ones(nvar), -1 => -ones(nvar - 1), 1 => -ones(nvar - 1))
   Qt = tril(Q)
-  A = spdiagm(ncon, nvar, (i => ones(ncon) for i in (0:(nvar - ncon)))...)
+  A = spdiagm(ncon, nvar, (i => ones(ncon) for i in (0:(nvar-ncon)))...)
 
   @testset "Positive definite systems" begin
     rows, cols, vals = findnz(Qt)

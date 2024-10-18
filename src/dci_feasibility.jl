@@ -101,7 +101,7 @@ function feasibility_step(
       Any[
         "F",
         feas_iter,
-        neval_obj(nlp) + neval_cons(nlp),
+        neval_obj(nlp)+neval_cons(nlp),
         Float64,
         Float64,
         Float64,
@@ -111,7 +111,7 @@ function feasibility_step(
         status,
         norm(d),
         Δ,
-        time() - start_time,
+        time()-start_time,
       ],
     )
 
@@ -147,7 +147,7 @@ function feasibility_step(
         Any[
           "F-safe",
           feas_iter,
-          neval_obj(nlp) + neval_cons(nlp),
+          neval_obj(nlp)+neval_cons(nlp),
           Float64,
           Float64,
           Float64,
@@ -157,7 +157,7 @@ function feasibility_step(
           status,
           norm(d),
           Δ,
-          time() - start_time,
+          time()-start_time,
         ],
       )
     end

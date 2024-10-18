@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = DCISolver
+```
+
 # DCISolver - Dynamic Control of Infeasibility Solver
 
 DCI is a solver for equality-constrained nonlinear problems, i.e.,
@@ -26,6 +30,7 @@ We refer to [jso.dev](https://jso.dev) for tutorials on the NLPModel API. This f
 ## Installation
 
 `DCISolver` is a registered package. To install this package, open the Julia REPL (i.e., execute the julia binary), type `]` to enter package mode, and install `DCISolver` as follows
+
 ```
 add DCISolver
 ```
@@ -38,16 +43,19 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 ## Example
 
 We consider in this example the minization of the Rosenbrock function over an equality constraint.
+
 ```math
     \min_x \ 100 * (x₂ - x₁²)² + (x₁ - 1)² \quad \text{s.t.} \quad  x₁x₂=1,
 ```
+
 The problem is modeled using `ADNLPModels.jl` with `[-1.2; 1.0]` as default initial point, and then solved using `dci`.
+
 ```@example
 using DCISolver, ADNLPModels, Logging
 nlp = ADNLPModel(
-  x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, 
+  x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
   [-1.2; 1.0],
-  x -> [x[1] * x[2] - 1], 
+  x -> [x[1] * x[2] - 1],
   [0.0], [0.0],
   name = "Rosenbrock with x₁x₂=1"
 )
@@ -56,9 +64,22 @@ stats = dci(nlp, verbose = 0)
 println(stats)
 ```
 
-# Bug reports and discussions
+## Bug reports and discussions
 
 If you think you found a bug, feel free to open an [issue](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/issues).
 Focused suggestions and requests can also be opened as issues. Before opening a pull request, start an issue or a discussion on the topic, please.
 
 If you want to ask a question not suited for a bug report, feel free to start a discussion [here](https://github.com/JuliaSmoothOptimizers/Organization/discussions). This forum is for general discussion about this repository and the [JuliaSmoothOptimizers](https://github.com/JuliaSmoothOptimizers), so questions about any of our packages are welcome.
+
+## Contributors
+
+```@raw html
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+```

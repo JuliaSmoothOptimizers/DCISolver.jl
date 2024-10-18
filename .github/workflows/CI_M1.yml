@@ -13,9 +13,9 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.6'
-          - '1'
-          - 'nightly'
+          - "1.6"
+          - "1"
+          - "nightly"
         arch:
           - x64
     steps:
