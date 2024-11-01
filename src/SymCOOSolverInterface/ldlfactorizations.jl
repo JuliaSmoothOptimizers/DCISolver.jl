@@ -3,13 +3,13 @@ using LDLFactorizations, LinearAlgebra, SparseArrays
 export LDLFactorizationStruct
 
 # LDLFactorizations
-mutable struct LDLFactorizationStruct{T <: AbstractFloat, Ti <: Int} <: SymCOOSolver
+mutable struct LDLFactorizationStruct{T<:AbstractFloat,Ti<:Int} <: SymCOOSolver
   ndim::Int
   rows::Vector{Ti}
   cols::Vector{Ti}
   vals::Vector{T}
   factorized::Bool #factor.__factorized is for memory allocation
-  factor #specify the structure
+  factor::Any #specify the structure
 end
 
 #r1, r2, tol, n_d parameters for the dynamic regularization
@@ -22,7 +22,7 @@ function LDLFactorizationStruct(
   r2::Real = zero(T),
   tol::Real = zero(T),
   n_d::Int = 0,
-) where {T, Ti}
+) where {T,Ti}
   A = sparse(cols, rows, vals, ndim, ndim)
   S = ldl_analyze(Symmetric(A, :U))
   S.r1 = r1  #-ϵ
@@ -47,12 +47,12 @@ function success(M::LDLFactorizationStruct)
   !isnothing(M.factor) && M.factorized
 end
 
-function isposdef(M::LDLFactorizationStruct{T, Ti}) where {T, Ti}
+function isposdef(M::LDLFactorizationStruct{T,Ti}) where {T,Ti}
   ϵ = eps(T)
   success(M) && count(M.factor.d .≤ -ϵ) == 0
 end
 
-function num_neg_eig(M::LDLFactorizationStruct{T, Ti}) where {T, Ti}
+function num_neg_eig(M::LDLFactorizationStruct{T,Ti}) where {T,Ti}
   ϵ = eps(T)
   count(M.factor.d .≤ -ϵ)
 end

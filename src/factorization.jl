@@ -32,7 +32,7 @@ function _compute_newton_step!(
 
   # When there is room for improvement, we try a dogleg step
   rhs[1:n] .= -g
-  rhs[(n + 1):end] .= zero(T)
+  rhs[(n+1):end] .= zero(T)
   dnBdn = dcpBdn = zero(T)
   gnorm = norm(g)
   slope = NaN
@@ -53,11 +53,11 @@ function _compute_newton_step!(
     if success(LDL)
       solve!(dζ, LDL, rhs)
       dn .= dζ[1:n]
-      dλ = view(dζ, (n + 1):(n + m))
+      dλ = view(dζ, (n+1):(n+m))
       slope = dot(g, dn)
       dnBdn = -slope - γ * dot(dn, dn) - δ * dot(dλ, dλ)
       dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = 0
-      if dnBdn > 0.0 #slope < -1.0e-5 #4 * norm(dn) * gnorm #dnBdn > 0.0 
+      if dnBdn > 0.0 #slope < -1.0e-5 #4 * norm(dn) * gnorm #dnBdn > 0.0
         status = :success
         descent = true
       else
