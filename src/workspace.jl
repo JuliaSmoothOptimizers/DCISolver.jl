@@ -104,3 +104,8 @@ function SolverCore.reset!(
   workspace.tr.radius = workspace.tr.initial_radius
   return workspace
 end
+
+function DCIWorkspace(nlp::AbstractNLPModel)
+  meta = MetaDCI(nlp.meta.x0, nlp.meta.y0)
+  return DCIWorkspace(nlp, meta)
+end
