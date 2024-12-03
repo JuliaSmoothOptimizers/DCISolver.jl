@@ -3,6 +3,7 @@ function SolverCore.solve!(
   nlp::AbstractNLPModel{T, S},
   stats::GenericExecutionStats{T, S, V, Tsp};
   callback = (args...) -> nothing,
+  kwargs...,
 ) where {T, S, V, Tsp, Si, Op, In, COO}
   meta = get_meta(workspace)
   if !(nlp.meta.minimize)
