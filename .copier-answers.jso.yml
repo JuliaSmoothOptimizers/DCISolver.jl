@@ -1,0 +1,9 @@
+PackageName: "DCISolver"
+PackageOwner: "JuliaSmoothOptimizers"
+PackageUUID: "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
+_src_path: "https://github.com/JuliaSmoothOptimizers/JSOBestieTemplate.jl"
+_commit: "7bcc7d0a2905be7ca9d1dd6519e8df59ae89605c"
+AddBreakage: true
+AddBenchmark: false
+AddBenchmarkCI: true
+AddCirrusCI: true
