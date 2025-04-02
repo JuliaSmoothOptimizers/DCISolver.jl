@@ -12,7 +12,7 @@ function SolverCore.solve!(
   if !(equality_constrained(nlp) || unconstrained(nlp))
     error("DCI only works for equality constrained problems")
   end
-  reset!(stats)
+  SolverCore.reset!(stats)
 
   verbose = meta.verbose
 

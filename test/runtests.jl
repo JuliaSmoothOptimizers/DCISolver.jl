@@ -49,7 +49,7 @@ end
   @test stats.status == :first_order
 
   nlp.meta.x0 .= 10.0
-  reset!(solver)
+  SolverCore.reset!(solver)
 
   stats = solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [1.0; 1.0], atol = 1e-6)
@@ -82,7 +82,7 @@ end
     zeros(1),
     name = "shifted HS6",
   )
-  reset!(solver, nlp)
+  SolverCore.reset!(solver, nlp)
 
   stats = solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [0.0; 0.0], atol = 1e-6)
