@@ -5,7 +5,7 @@ Keyword arguments correspond to input parameters of `cgls` from `Krylov.jl` used
 Returns a `comp_λ_cgls` structure.
 """
 struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
-  comp_λ_solver::CglsSolver{T, T, S}
+  comp_λ_solver::CglsWorkspace{T, T, S}
   M # =I,
   λ::T # =zero(T),
   atol::T # =√eps(T),
@@ -26,7 +26,7 @@ function comp_λ_cgls(
   rtol::T = √eps(T),
   itmax::Int = 5 * (m + n),
 ) where {T, S <: AbstractVector{T}}
-  comp_λ_solver = CglsSolver(m, n, S)
+  comp_λ_solver = CglsWorkspace(m, n, S)
   return comp_λ_cgls(comp_λ_solver, M, λ, atol, rtol, itmax)
 end
 
@@ -42,7 +42,7 @@ const comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
 
 Dictonary of the possible structures for the factorization.
 """
-const solver_correspondence = if isdefined(HSL, :libhsl_ma57)
+const solver_correspondence = if LIBHSL_isfunctional()
   Dict(:ma57 => MA57Struct, :ldlfact => LDLFactorizationStruct)
 else
   Dict(:ldlfact => LDLFactorizationStruct)
@@ -55,7 +55,7 @@ Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used
 Returns a `TR_lsmr_struct` structure.
 """
 struct TR_lsmr_struct{T <: AbstractFloat, S <: AbstractVector{T}}
-  lsmr_solver::LsmrSolver{T, T, S}
+  lsmr_solver::LsmrWorkspace{T, T, S}
   M # =I,
   #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
@@ -86,7 +86,7 @@ function TR_lsmr_struct(
   etol::T = √eps(T),
   itmax::Int = m + n,
 ) where {T, S <: AbstractVector{T}}
-  lsmr_solver = LsmrSolver(n, m, S)
+  lsmr_solver = LsmrWorkspace(n, m, S)
   return TR_lsmr_struct(lsmr_solver, M, λ, axtol, btol, atol, rtol, etol, itmax)
 end
 
@@ -97,11 +97,11 @@ Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used
 Returns a `TR_dogleg_struct` structure.
 """
 struct TR_dogleg_struct{T <: AbstractFloat, S <: AbstractVector{T}}
-  lsmr_solver::LsmrSolver{T, T, S} # There is another lsmr call here
+  lsmr_solver::LsmrWorkspace{T, T, S} # There is another lsmr call here
 end
 
 function TR_dogleg_struct(m, n, ::Type{S}; kwargs...) where {T, S <: AbstractVector{T}}
-  lsmr_solver = LsmrSolver(n, m, S)
+  lsmr_solver = LsmrWorkspace(n, m, S)
   return TR_dogleg_struct(lsmr_solver)
 end
 
@@ -204,7 +204,7 @@ struct MetaDCI{
   feas_Δ₀::T
   bad_steps_lim::In
   feas_expected_decrease::T
-  agressive_cgsolver::CgSolver # second-order correction
+  agressive_cgsolver::CgWorkspace # second-order correction
   ## Compute the direction in feasibility step
   TR_compute_step::Symbol #:TR_lsmr, :TR_dogleg
   TR_compute_step_struct::TRStruct
@@ -272,7 +272,7 @@ function MetaDCI(
   end
 
   n = length(x0)
-  agressive_cgsolver = CgSolver(n, n, typeof(x0))
+  agressive_cgsolver = CgWorkspace(n, n, typeof(x0))
 
   return MetaDCI(
     atol,

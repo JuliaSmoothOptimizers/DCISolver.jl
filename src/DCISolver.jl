@@ -215,7 +215,7 @@ function compute_lx!(
 ) where {T <: AbstractFloat}
   l = meta.λ_struct.comp_λ_solver.x
   stats = meta.λ_struct.comp_λ_solver.stats
-  Krylov.solve!(
+  krylov_solve!(
     meta.λ_struct.comp_λ_solver,
     Jx',
     ∇fx,
