@@ -2,7 +2,7 @@ using HSL
 
 export MA57Struct
 
-const Ma57Type = if isdefined(HSL, :libhsl_ma57)
+const Ma57Type = if LIBHSL_isfunctional()
   Union{Nothing, Ma57}
 else
   Nothing
