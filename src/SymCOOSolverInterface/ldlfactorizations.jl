@@ -39,7 +39,7 @@ function factorize!(M::LDLFactorizationStruct)
   return M.factorized
 end
 
-function SolverCore.solve!(x, M::LDLFactorizationStruct, b)
+function symcoo_solve!(x, M::LDLFactorizationStruct, b)
   ldiv!(x, M.factor, b)
 end
 

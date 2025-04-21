@@ -5,7 +5,7 @@ for (problem, allocs) in ((:MGH01Feas, 7512), (:HS6, 7208))
   stats = GenericExecutionStats(nlp)
   meta = DCISolver.MetaDCI(nlp)
   solver = DCISolver.DCIWorkspace(nlp, meta)
-  b = @ballocated solve!($solver, $nlp, $stats)
+  b = @ballocated SolverCore.solve!($solver, $nlp, $stats)
   @test b ≤ allocs
 end
 

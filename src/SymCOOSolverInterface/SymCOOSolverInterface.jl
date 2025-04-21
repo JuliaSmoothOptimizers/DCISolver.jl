@@ -2,14 +2,14 @@
 
 import LinearAlgebra: success, isposdef
 
-#export factorize!, solve!, success, isposdef, num_neg_eig
+#export factorize!, symcoo_solve!, success, isposdef, num_neg_eig
 
 """
 An `SymCOOSolver` is an interface to allow simple usage of different solvers.
 Ideally, having `rows`, `cols`, `vals` and the dimension `ndim` of a symmetric matrix should allow the user to call
     M = LinearSolver(ndim, rows, cols, vals)
     factorize!(M)
-    solve!(x, M, b) # Also x = M \\ b
+    symcoo_solve!(x, M, b) # Also x = M \\ b
 Only the lower triangle of the matrix should be passed.
 """
 abstract type SymCOOSolver end
@@ -22,10 +22,10 @@ Use `success(M)` to check whether the factorization was successful.
 function factorize! end
 
 """
-    solve!(x, M :: SymCOOSolver, b)
+    symcoo_solve!(x, M :: SymCOOSolver, b)
 Solve the system ``M x = b``. `factorize!(M)` should be called first.
 """
-function solve! end
+function symcoo_solve! end
 
 """
     success(M :: SymCOOSolver)

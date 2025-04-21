@@ -51,7 +51,7 @@ function _compute_newton_step!(
     factorize!(LDL)
 
     if success(LDL)
-      solve!(dζ, LDL, rhs)
+      symcoo_solve!(dζ, LDL, rhs)
       dn .= dζ[1:n]
       dλ = view(dζ, (n + 1):(n + m))
       slope = dot(g, dn)
