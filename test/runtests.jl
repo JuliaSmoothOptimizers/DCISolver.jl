@@ -44,14 +44,14 @@ end
 
   meta = DCISolver.MetaDCI(nlp, atol = 1e-7, rtol = 1e-7, verbose = 0)
   solver = DCISolver.DCIWorkspace(nlp, meta)
-  stats = solve!(solver, nlp, stats)
+  stats = SolverCore.solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [1.0; 1.0], atol = 1e-6)
   @test stats.status == :first_order
 
   nlp.meta.x0 .= 10.0
   SolverCore.reset!(solver)
 
-  stats = solve!(solver, nlp, stats)
+  stats = SolverCore.solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [1.0; 1.0], atol = 1e-6)
   @test stats.status == :first_order
 end
@@ -70,7 +70,7 @@ end
   x = nlp.meta.x0
   meta = DCISolver.MetaDCI(nlp, x, atol = 1e-7, rtol = 1e-7, verbose = 0)
   solver = DCISolver.DCIWorkspace(nlp, meta, x)
-  stats = solve!(solver, nlp, stats)
+  stats = SolverCore.solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [1.0; 1.0], rtol = 1e-6)
   @test stats.status == :first_order
 
@@ -84,7 +84,7 @@ end
   )
   SolverCore.reset!(solver, nlp)
 
-  stats = solve!(solver, nlp, stats)
+  stats = SolverCore.solve!(solver, nlp, stats)
   @test isapprox(stats.solution, [0.0; 0.0], atol = 1e-6)
   @test stats.status == :first_order
 end

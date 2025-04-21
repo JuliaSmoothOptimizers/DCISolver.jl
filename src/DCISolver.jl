@@ -18,7 +18,7 @@ function cons_norhs!(nlp, x, cx)
   return cx
 end
 
-export dci, solve!
+export dci
 
 include("param_struct.jl")
 include("workspace.jl")
@@ -100,7 +100,7 @@ function dci(
   kwargs...,
 ) where {T, In, COO}
   workspace = DCIWorkspace(nlp, meta, x)
-  return solve!(workspace, nlp; callback = callback)
+  return SolverCore.solve!(workspace, nlp; callback = callback)
 end
 
 """

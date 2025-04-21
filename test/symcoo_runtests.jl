@@ -1,6 +1,6 @@
 using HSL, LinearAlgebra, Random, SparseArrays, Test
 
-using DCISolver: factorize!, solve!, success, isposdef, num_neg_eig
+using DCISolver: factorize!, symcoo_solve!, success, isposdef, num_neg_eig
 
 available_factorization = Any[LDLFactorizationStruct]
 if isdefined(HSL, :libhsl_ma57)
@@ -24,7 +24,7 @@ end
     x = zeros(nvar)
 
     factorize!(M)
-    solve!(x, M, rhs)
+    symcoo_solve!(x, M, rhs)
     @test norm(x - sol) ≤ 1e-8 * norm(sol)
     @test success(M)
     @test isposdef(M)
@@ -40,7 +40,7 @@ end
     x = zeros(nvar)
 
     factorize!(M)
-    solve!(x, M, rhs)
+    symcoo_solve!(x, M, rhs)
     @test norm(x - sol) ≤ 1e-8 * norm(sol)
     @test success(M)
     @test !isposdef(M)
@@ -66,7 +66,7 @@ end
     x = zeros(nvar + ncon)
 
     factorize!(M)
-    solve!(x, M, rhs)
+    symcoo_solve!(x, M, rhs)
     @test norm(x - sol) ≤ 1e-8 * norm(sol)
     @test success(M)
     @test !isposdef(M)
