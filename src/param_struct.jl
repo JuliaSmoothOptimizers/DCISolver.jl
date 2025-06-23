@@ -1,5 +1,5 @@
 """
-    `comp_λ_cgls(m, n, ::DataType; kwargs...)` 
+    `comp_λ_cgls(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `cgls` from `Krylov.jl` used in the computation of the Lagrange multipliers.
 Returns a `comp_λ_cgls` structure.
@@ -7,12 +7,12 @@ Returns a `comp_λ_cgls` structure.
 struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
   comp_λ_solver::CglsSolver{T, T, S}
   M # =I,
-  λ::T # =zero(T), 
-  atol::T # =√eps(T), 
+  λ::T # =zero(T),
+  atol::T # =√eps(T),
   rtol::T # =√eps(T),
-  #radius :: T=zero(T), 
-  itmax::Int # =0, 
-  #verbose :: Int=0, 
+  #radius :: T=zero(T),
+  itmax::Int # =0,
+  #verbose :: Int=0,
   #history :: Bool=false
 end
 
@@ -49,7 +49,7 @@ else
 end
 
 """
-    `TR_lsmr_struct(m, n, ::DataType; kwargs...)` 
+    `TR_lsmr_struct(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used in the computation of the trust-region step.
 Returns a `TR_lsmr_struct` structure.
@@ -59,12 +59,12 @@ struct TR_lsmr_struct{T <: AbstractFloat, S <: AbstractVector{T}}
   M # =I,
   #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
-  λ::T # =zero(T), 
-  axtol::T # =√eps(T), 
+  λ::T # =zero(T),
+  axtol::T # =√eps(T),
   btol::T # =√eps(T),
-  atol::T # =zero(T), 
+  atol::T # =zero(T),
   rtol::T # =zero(T),
-  etol::T # =√eps(T), 
+  etol::T # =√eps(T),
   #window :: Int=5, #unnecessary
   itmax::Int # =0,  #m + n (set in the code if itmax==0)
   #conlim :: T=1/√eps(T), #set conditioning upper limit
@@ -91,7 +91,7 @@ function TR_lsmr_struct(
 end
 
 """
-    `TR_dogleg_struct(m, n, ::DataType; kwargs...)` 
+    `TR_dogleg_struct(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used in the computation of the dogleg for the trust-region step.
 Returns a `TR_dogleg_struct` structure.
@@ -157,7 +157,7 @@ The keyword arguments may include:
 - `tan_small_d::T=eps(T)`: Tangent step trust-region parameters: `||d||` is too small.
 - `increase_Δtg::T=10`: Tangent step trust-region parameters: increase if possible, `< 1 / √eps(T)`, the `Δtg` between tangent steps.
 
-For more details, we refer to the package documentation [fine-tuneDCI.md](https://juliasmoothoptimizers.github.io/DCISolver.jl/dev/fine-tuneDCI/). 
+For more details, we refer to the package documentation [fine-tuneDCI.md](https://juliasmoothoptimizers.github.io/DCISolver.jl/dev/fine-tuneDCI/).
 """
 struct MetaDCI{
   T <: AbstractFloat,
@@ -183,7 +183,7 @@ struct MetaDCI{
 
   #Compute Lagrange multipliers
   λ_struct::CGLSStruct
-  #λ_struct_rescue #one idea is to have a 2nd set in case of emergency 
+  #λ_struct_rescue #one idea is to have a 2nd set in case of emergency
   #good only if we can make a warm-start.
 
   # Solver for the factorization

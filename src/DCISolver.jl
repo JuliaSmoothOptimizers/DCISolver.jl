@@ -10,6 +10,43 @@ using LinearAlgebra, SparseArrays
 #JSO packages
 using HSL, Krylov, NLPModels, SolverCore, SolverTools
 
+using HSL: HSL, Ma57, ma57_coord, ma57_factorize!, ma57_solve!
+using Krylov: Krylov, CgSolver, CglsSolver, LsmrSolver
+using LDLFactorizations: LDLFactorizations, factorized, ldl_analyze, ldl_factorize!
+using LinearAlgebra: LinearAlgebra, I, Symmetric, convert, ldiv!, mul!, norm, tr
+using NLPModels:
+  NLPModels,
+  AbstractNLPModel,
+  cons!,
+  equality_constrained,
+  get_lcon,
+  hess_coord!,
+  hess_op,
+  hess_structure!,
+  jac_coord!,
+  jac_op,
+  jac_op!,
+  jac_structure!,
+  neval_cons,
+  neval_obj,
+  unconstrained
+using SolverCore:
+  SolverCore,
+  AbstractOptimizationSolver,
+  GenericExecutionStats,
+  log_header,
+  log_row,
+  set_iter!,
+  set_objective!,
+  set_residuals!,
+  set_solution!,
+  set_solver_specific!,
+  set_status!,
+  set_time!,
+  solve!
+using SolverTools: SolverTools, TrustRegion, aredpred!, dot, grad!, obj, objgrad!
+using SparseArrays: SparseArrays, sparse
+
 function cons_norhs!(nlp, x, cx)
   cons!(nlp, x, cx)
   if nlp.meta.ncon > 0
@@ -105,7 +142,7 @@ end
 
 """
     compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
-  
+
 Compute `gBg = ∇ℓxλ' * B * ∇ℓxλ`, where `B` is a symmetric sparse matrix whose lower triangular is given in COO-format.
 """
 function compute_gBg(

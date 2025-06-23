@@ -30,8 +30,9 @@ We refer to [jso.dev](https://jso.dev) for tutorials on the NLPModel API. This f
 ## Installation
 
 `DCISolver` is a registered package. To install this package, open the Julia REPL (i.e., execute the julia binary), type `]` to enter package mode, and install `DCISolver` as follows
-```
-add DCISolver
+
+```julia
+] add DCISolver
 ```
 
 The DCI algorithm is an iterative method that has the flavor of a projected gradient algorithm and could be characterized as
@@ -42,16 +43,19 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 ## Example
 
 We consider in this example the minization of the Rosenbrock function over an equality constraint.
+
 ```math
     \min_x \ 100 * (x₂ - x₁²)² + (x₁ - 1)² \quad \text{s.t.} \quad  x₁x₂=1,
 ```
+
 The problem is modeled using `ADNLPModels.jl` with `[-1.2; 1.0]` as default initial point, and then solved using `dci`.
+
 ```@example
 using DCISolver, ADNLPModels, Logging
 nlp = ADNLPModel(
-  x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2, 
+  x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
   [-1.2; 1.0],
-  x -> [x[1] * x[2] - 1], 
+  x -> [x[1] * x[2] - 1],
   [0.0], [0.0],
   name = "Rosenbrock with x₁x₂=1"
 )
