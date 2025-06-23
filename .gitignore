@@ -1,5 +1,12 @@
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+*.rej
+.DS_Store
+.benchmarkci
 Manifest.toml
-*.jld2
-*.png
-*.mem
-/allocs-pack
+benchmark/*.json
+coverage
+docs/build/
+env
+node_modules

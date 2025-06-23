@@ -1,0 +1,41 @@
+# Changes here will be overwritten by Copier
+AddAllcontributors: true
+AddCitationCFF: true
+AddCodeOfConduct: true
+AddCompatHelperCI: true
+AddContributionDocs: true
+AddCopierCI: false
+AddDependabot: true
+AddDocs: true
+AddDocsCI: true
+AddFormatterAndLinterConfigFiles: true
+AddGitHubPRTemplate: true
+AddGitHubTemplates: true
+AddLintCI: true
+AddLychee: true
+AddMacToCI: true
+AddPrecommit: true
+AddTagBotCI: true
+AddTestCI: true
+AddWinToCI: true
+Authors: Abel Soares Siqueira <abel.s.siqueira@gmail.com> and Tangi Migot <tangi.migot@gmail.com>
+AutoIncludeTests: true
+CheckExplicitImports: true
+CodeOfConductContact: tangi.migot@gmail.com
+ConfigIndentation: 2
+ExplicitImportsChecklist: exclude_all_qualified_access_are_public
+JuliaIndentation: 2
+JuliaMinCIVersion: lts
+JuliaMinVersion: lts
+License: MIT
+LicenseCopyrightHolders: Abel Soares Siqueira and Tangi Migot
+MarkdownIndentation: 2
+PackageName: DCISolver
+PackageOwner: JuliaSmoothOptimizers
+PackageUUID: bee2e536-65f6-11e9-3844-e5bb4c9c55c9
+RunJuliaNightlyOnCI: true
+StrategyConfirmIncluded: true
+StrategyLevel: 3
+StrategyReviewExcluded: true
+UseCirrusCI: false
+_src_path: C:\Users\tangi\.julia\packages\BestieTemplate\jdG8v
