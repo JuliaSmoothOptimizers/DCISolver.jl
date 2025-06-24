@@ -61,9 +61,9 @@ The `DCIWorkspace` allows to reuse the same memory if one would re-solve a probl
 
 ```@example ex1
 workspace = DCISolver.DCIWorkspace(nlp, meta, nlp.meta.x0)
-stats = solve!(workspace, nlp)
+stats = DCISolver.solve!(workspace, nlp)
 workspace.x0 .= ones(2) # change the initial guess, and resolve
-stats = solve!(workspace, nlp)
+stats = DCISolver.solve!(workspace, nlp)
 ```
 
 ## List of possible options
