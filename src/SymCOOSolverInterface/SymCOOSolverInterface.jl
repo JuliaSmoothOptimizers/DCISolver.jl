@@ -1,6 +1,7 @@
 #module SymCOOSolverInterface
 
-import LinearAlgebra: success, isposdef
+import LinearAlgebra: isposdef
+import Base: success
 
 #export factorize!, symcoo_solve!, success, isposdef, num_neg_eig
 
@@ -35,7 +36,7 @@ function success end
 
 """
     isposdef(M :: SymCOOSolver)
-Returns whether `M` is positive definite. 
+Returns whether `M` is positive definite.
 """
 
 """

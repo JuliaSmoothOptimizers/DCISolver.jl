@@ -57,7 +57,7 @@ function _compute_newton_step!(
       slope = dot(g, dn)
       dnBdn = -slope - γ * dot(dn, dn) - δ * dot(dλ, dλ)
       dcpBdn = -dot(g, dcp) - γ * dot(dcp, dn) # dcpᵀ Aᵀ dλ = 0
-      if dnBdn > 0.0 #slope < -1.0e-5 #4 * norm(dn) * gnorm #dnBdn > 0.0 
+      if dnBdn > 0.0 #slope < -1.0e-5 #4 * norm(dn) * gnorm #dnBdn > 0.0
         status = :success
         descent = true
       else
