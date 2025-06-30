@@ -10,8 +10,8 @@ using LinearAlgebra, SparseArrays
 #JSO packages
 using HSL, Krylov, NLPModels, SolverCore, SolverTools
 
-using HSL: HSL, Ma57, ma57_coord, ma57_factorize!, ma57_solve!
-using Krylov: Krylov, CgSolver, CglsSolver, LsmrSolver
+using HSL: HSL, Ma57, ma57_coord, ma57_factorize!, ma57_solve!, LIBHSL_isfunctional
+using Krylov: Krylov, CgWorkspace, CglsWorkspace, LsmrWorkspace, krylov_solve!
 using LDLFactorizations: LDLFactorizations, factorized, ldl_analyze, ldl_factorize!
 using LinearAlgebra: LinearAlgebra, I, Symmetric, convert, ldiv!, mul!, norm, tr
 using NLPModels:
@@ -215,7 +215,7 @@ function compute_lx!(
 ) where {T <: AbstractFloat}
   l = meta.λ_struct.comp_λ_solver.x
   stats = meta.λ_struct.comp_λ_solver.stats
-  Krylov.solve!(
+  krylov_solve!(
     meta.λ_struct.comp_λ_solver,
     Jx',
     ∇fx,
