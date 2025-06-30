@@ -10,8 +10,8 @@ using LinearAlgebra, SparseArrays
 #JSO packages
 using HSL, Krylov, NLPModels, SolverCore, SolverTools
 
-using HSL: HSL, Ma57, ma57_coord, ma57_factorize!, ma57_solve!
-using Krylov: Krylov, CgWorkspace, CglsWorkspace, LsmrWorkspace
+using HSL: HSL, Ma57, ma57_coord, ma57_factorize!, ma57_solve!, LIBHSL_isfunctional
+using Krylov: Krylov, CgWorkspace, CglsWorkspace, LsmrWorkspace, krylov_solve!
 using LDLFactorizations: LDLFactorizations, factorized, ldl_analyze, ldl_factorize!
 using LinearAlgebra: LinearAlgebra, I, Symmetric, convert, ldiv!, mul!, norm, tr
 using NLPModels:
