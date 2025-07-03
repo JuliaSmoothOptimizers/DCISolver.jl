@@ -37,7 +37,7 @@ We refer to [jso.dev](https://jso.dev) for tutorials on the NLPModel API. This f
 
 The DCI algorithm is an iterative method that has the flavor of a projected gradient algorithm and could be characterized as
 a relaxed feasible point method with dynamic control of infeasibility. It is a combination of two steps: a tangent step and a feasibility step.
-It uses [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) by default to compute the factorization in the tangent step. Follow [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl)'s `MA57` installation for an alternative.
+It uses [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) by default to compute the factorization in the tangent step. [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl) provides alternative linear solvers if [libHSL](https://licences.stfc.ac.uk/product/libhsl) can be downloaded.
 The feasibility steps are factorization-free and use iterative methods from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl).
 
 ## Example
