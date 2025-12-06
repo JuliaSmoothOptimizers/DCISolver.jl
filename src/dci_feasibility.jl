@@ -315,3 +315,269 @@ function TR_lsmr(
 
   return d, Jd, infeasible, solved
 end
+
+"""
+    feasibility_step_cannoles(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
+
+Approximately solves `min ‖c(x)‖` using CaNNOLeS solver as an alternative to the trust-region Levenberg-Marquardt method.
+
+CaNNOLeS is a solver for equality-constrained nonlinear least-squares problems that can be used
+to find a feasible point by minimizing the constraint violation.
+
+# Arguments
+- `max_eval::Int = 1_000`: maximum evaluations.
+- `max_time::AbstractFloat = 60.0`: maximum time.
+- `max_iter::Int = typemax(Int64)`: maximum number of iterations.
+- `cannoles_options`: Additional options to pass to the CaNNOLeS solver.
+
+# Output
+- `z`, `cz`, `normcz`, `Jz`: the new iterate, and updated evaluations.
+- `status`: Computation status. Possible outcomes are: `:success`, `max_eval`, `max_time`, `max_iter`, `:infeasible`, `:unknown`.
+"""
+function feasibility_step_cannoles(
+  nlp::AbstractNLPModel,
+  x::AbstractVector{T},
+  cx::AbstractVector{T},
+  normcx::T,
+  Jx,
+  ρ::T,
+  ctol::AbstractFloat,
+  meta::MetaDCI,
+  workspace,
+  verbose::Bool;
+  max_eval::Int = 1_000,
+  max_time::AbstractFloat = 60.0,
+  max_iter::Int = typemax(Int64),
+  cannoles_options = Dict{Symbol, Any}(),
+) where {T}
+
+  nls = FeasibilityResidual(nlp, x)
+
+  default_options = Dict{Symbol, Any}(
+    :atol => ctol,
+    :rtol => ctol,
+    :Fatol => ctol,  # Feasibility tolerance
+    :Frtol => ctol,
+    :max_eval => max_eval,
+    :max_time => max_time,
+    :max_iter => max_iter,
+    :verbose => verbose ? 1 : 0,
+  )
+
+  options = merge(default_options, cannoles_options)
+
+  start_time = time()
+  stats = cannoles(nls; options...)
+  el_time = time() - start_time
+
+  z = stats.solution
+  cons_norhs!(nlp, z, workspace.cz)
+  cz = workspace.cz
+  normcz = norm(cz)
+  Jz = jac_op!(nlp, z, workspace.Jv, workspace.Jtv)
+
+  status = if stats.status == :first_order && normcz ≤ ρ
+    :success
+  elseif stats.status == :first_order || stats.status == :acceptable
+    normcz ≤ ρ ? :success : :unknown
+  elseif stats.status == :max_eval
+    :max_eval
+  elseif stats.status == :max_time
+    :max_time
+  elseif stats.status == :max_iter
+    :max_iter
+  elseif stats.status == :infeasible
+    :infeasible
+  else
+    :unknown
+  end
+  
+  verbose && @info log_row(
+    Any[
+      "F-CaNNOLeS",
+      stats.iter,
+      neval_obj(nlp) + neval_cons(nlp),
+      Float64,
+      Float64,
+      Float64,
+      normcz,
+      Float64,
+      ρ,
+      status,
+      Float64,
+      Float64,
+      el_time,
+    ],
+  )
+  
+  return z, cz, normcz, Jz, status
+end
+
+"""
+    FeasibilityResidual
+
+A wrapper to convert an NLP with equality constraints into a nonlinear least squares
+problem by treating the constraints as residuals. This allows us to use CaNNOLeS
+to solve the feasibility problem min ||c(x)||^2 / 2.
+"""
+mutable struct FeasibilityResidual{T, S, M <: AbstractNLPModel{T, S}} <: AbstractNLSModel{T, S}
+  nlp::M
+  meta::NLPModelMeta{T, S}
+  nls_meta::NLSMeta{T, S}
+  counters::NLSCounters
+end
+
+function FeasibilityResidual(nlp::AbstractNLPModel{T, S}, x0::S) where {T, S}
+  ncon = nlp.meta.ncon
+  nvar = nlp.meta.nvar
+  
+  meta = NLPModelMeta(
+    nvar,
+    x0 = x0,
+    ncon = ncon,
+    lcon = get_lcon(nlp),
+    ucon = get_ucon(nlp),
+    nnzj = nlp.meta.nnzj,
+    nnzh = nlp.meta.nnzh,
+    minimize = true,
+  )
+  
+  nls_meta = NLSMeta{T, S}(
+    ncon,  # nequ - number of residuals equals number of constraints
+    nvar,
+    nnzj = nlp.meta.nnzj,
+    nnzh = nlp.meta.nnzh,
+  )
+  
+  return FeasibilityResidual(nlp, meta, nls_meta, NLSCounters())
+end
+
+function NLPModels.residual!(nls::FeasibilityResidual, x::AbstractVector, rx::AbstractVector)
+  cons!(nls.nlp, x, rx)
+  if nls.nlp.meta.ncon > 0
+    rx .-= get_lcon(nls.nlp)
+  end
+  nls.counters.neval_residual += 1
+  return rx
+end
+
+function NLPModels.jac_structure_residual!(
+  nls::FeasibilityResidual,
+  rows::AbstractVector{<:Integer},
+  cols::AbstractVector{<:Integer},
+)
+  return jac_structure!(nls.nlp, rows, cols)
+end
+
+function NLPModels.jac_nln_structure!(
+  nls::FeasibilityResidual,
+  rows::AbstractVector{<:Integer},
+  cols::AbstractVector{<:Integer},
+)
+  return jac_structure!(nls.nlp, rows, cols)
+end
+
+function NLPModels.jac_coord_residual!(
+  nls::FeasibilityResidual,
+  x::AbstractVector,
+  vals::AbstractVector,
+)
+  jac_coord!(nls.nlp, x, vals)
+  nls.counters.neval_jac_residual += 1
+  return vals
+end
+
+function NLPModels.jprod_residual!(
+  nls::FeasibilityResidual,
+  x::AbstractVector,
+  v::AbstractVector,
+  Jv::AbstractVector,
+)
+  jprod!(nls.nlp, x, v, Jv)
+  nls.counters.neval_jprod_residual += 1
+  return Jv
+end
+
+function NLPModels.jtprod_residual!(
+  nls::FeasibilityResidual,
+  x::AbstractVector,
+  v::AbstractVector,
+  Jtv::AbstractVector,
+)
+  jtprod!(nls.nlp, x, v, Jtv)
+  nls.counters.neval_jtprod_residual += 1
+  return Jtv
+end
+
+function NLPModels.hess_structure!(
+  nls::FeasibilityResidual,
+  rows::AbstractVector{<:Integer},
+  cols::AbstractVector{<:Integer},
+)
+  return hess_structure!(nls.nlp, rows, cols)
+end
+
+function NLPModels.hess_structure_residual!(
+  nls::FeasibilityResidual,
+  rows::AbstractVector{<:Integer},
+  cols::AbstractVector{<:Integer},
+)
+  return hess_structure!(nls.nlp, rows, cols)
+end
+
+function NLPModels.hess_coord_residual!(
+  nls::FeasibilityResidual,
+  x::AbstractVector,
+  v::AbstractVector,
+  vals::AbstractVector,
+)
+  # For feasibility problems, hessian of residuals is zero since residuals are linear
+  fill!(vals, zero(eltype(vals)))
+  nls.counters.neval_hess_residual += 1
+  return vals
+end
+
+function NLPModels.hess_coord!(
+  nls::FeasibilityResidual,
+  x::AbstractVector,
+  y::AbstractVector,
+  vals::AbstractVector;
+  obj_weight::Real = one(eltype(x)),
+)
+  hess_coord!(nls.nlp, x, y, vals, obj_weight = obj_weight)
+  nls.counters.neval_hess += 1
+  return vals
+end
+
+function NLPModels.hprod!(
+  nls::FeasibilityResidual,
+  x::AbstractVector,
+  y::AbstractVector,
+  v::AbstractVector,
+  Hv::AbstractVector;
+  obj_weight::Real = one(eltype(x)),
+)
+  hprod!(nls.nlp, x, y, v, Hv, obj_weight = obj_weight)
+  nls.counters.neval_hprod += 1
+  return Hv
+end
+
+# Define cons_nln! for FeasibilityResidual since CaNNOLeS needs it
+function NLPModels.cons_nln!(nls::FeasibilityResidual, x::AbstractVector, cx::AbstractVector)
+  cons!(nls.nlp, x, cx)
+  if nls.nlp.meta.ncon > 0
+    cx .-= get_lcon(nls.nlp)
+  end
+  return cx
+end
+
+function NLPModels.jac_nln_coord!(
+  nls::FeasibilityResidual,
+  x::AbstractVector,
+  vals::AbstractVector,
+)
+  jac_coord!(nls.nlp, x, vals)
+  return vals
+end
+
+import NLPModels: get_ucon, AbstractNLSModel, NLSMeta, NLSCounters
