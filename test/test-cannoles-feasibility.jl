@@ -24,5 +24,4 @@ using DCISolver, ADNLPModels, Test, LinearAlgebra, NLPModels
   
   finalize(nlp)
   
-  println("✓ DCI with CaNNOLeS test passed")
 end

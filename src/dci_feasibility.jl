@@ -397,15 +397,15 @@ function feasibility_step_cannoles(
       "F-CaNNOLeS",
       stats.iter,
       neval_obj(nlp) + neval_cons(nlp),
-      Float64,
-      Float64,
-      Float64,
+      NaN,
+      NaN,
+      NaN,
       normcz,
-      Float64,
+      NaN,
       ρ,
       status,
-      Float64,
-      Float64,
+      NaN,
+      NaN,
       el_time,
     ],
   )
@@ -428,27 +428,30 @@ mutable struct FeasibilityResidual{T, S, M <: AbstractNLPModel{T, S}} <: Abstrac
 end
 
 function FeasibilityResidual(nlp::AbstractNLPModel{T, S}, x0::S) where {T, S}
-  ncon = nlp.meta.ncon
   nvar = nlp.meta.nvar
-  
+  ncon = 0  # No constraints in the NLS formulation; all constraints are treated as residuals
+  # lcon and ucon are empty since there are no constraints
   meta = NLPModelMeta(
     nvar,
     x0 = x0,
     ncon = ncon,
-    lcon = get_lcon(nlp),
-    ucon = get_ucon(nlp),
+    lcon = similar(x0, 0),
+    ucon = similar(x0, 0),
     nnzj = nlp.meta.nnzj,
     nnzh = nlp.meta.nnzh,
     minimize = true,
   )
   
   nls_meta = NLSMeta{T, S}(
-    ncon,  # nequ - number of residuals equals number of constraints
+    nlp.meta.ncon,  # nequ - number of residuals equals number of original constraints
     nvar,
     nnzj = nlp.meta.nnzj,
     nnzh = nlp.meta.nnzh,
   )
   
+  # Note: If CaNNOLeS or downstream code requires cons_nln! or other constraint-related fields
+  # to be defined even for unconstrained NLS (ncon=0), this setup ensures clarity that the
+  # problem is unconstrained and all constraints are handled as residuals.
   return FeasibilityResidual(nlp, meta, nls_meta, NLSCounters())
 end
 
@@ -531,8 +534,8 @@ function NLPModels.hess_coord_residual!(
   v::AbstractVector,
   vals::AbstractVector,
 )
-  # For feasibility problems, hessian of residuals is zero since residuals are linear
-  fill!(vals, zero(eltype(vals)))
+  # The Hessian of the residuals is the Hessian of the constraints weighted by v
+  hess_coord!(nls.nlp, x, v, vals)
   nls.counters.neval_hess_residual += 1
   return vals
 end
@@ -568,6 +571,7 @@ function NLPModels.cons_nln!(nls::FeasibilityResidual, x::AbstractVector, cx::Ab
   if nls.nlp.meta.ncon > 0
     cx .-= get_lcon(nls.nlp)
   end
+  nls.counters.neval_cons_nln += 1
   return cx
 end
 
@@ -577,6 +581,7 @@ function NLPModels.jac_nln_coord!(
   vals::AbstractVector,
 )
   jac_coord!(nls.nlp, x, vals)
+  nls.counters.neval_jac_nln += 1
   return vals
 end
 
