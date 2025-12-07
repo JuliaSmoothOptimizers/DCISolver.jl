@@ -1,12 +1,12 @@
 """
-    `comp_λ_cgls(m, n, ::DataType; kwargs...)`
+	`comp_λ_cgls(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `cgls` from `Krylov.jl` used in the computation of the Lagrange multipliers.
 Returns a `comp_λ_cgls` structure.
 """
 struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
   comp_λ_solver::CglsWorkspace{T, T, S}
-  M # =I,
+  M::Any # =I,
   λ::T # =zero(T),
   atol::T # =√eps(T),
   rtol::T # =√eps(T),
@@ -31,14 +31,14 @@ function comp_λ_cgls(
 end
 
 """
-    comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
+	comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
 
 Dictonary of the possible structures for the computation of the Lagrange multipliers.
 """
 const comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
 
 """
-    solver_correspondence = Dict(:ma57 => MA57Struct, :ldlfact => LDLFactorizationStruct)
+	solver_correspondence = Dict(:ma57 => MA57Struct, :ldlfact => LDLFactorizationStruct)
 
 Dictonary of the possible structures for the factorization.
 """
@@ -49,14 +49,14 @@ else
 end
 
 """
-    `TR_lsmr_struct(m, n, ::DataType; kwargs...)`
+	`TR_lsmr_struct(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used in the computation of the trust-region step.
 Returns a `TR_lsmr_struct` structure.
 """
 struct TR_lsmr_struct{T <: AbstractFloat, S <: AbstractVector{T}}
   lsmr_solver::LsmrWorkspace{T, T, S}
-  M # =I,
+  M::Any # =I,
   #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
   λ::T # =zero(T),
@@ -91,7 +91,7 @@ function TR_lsmr_struct(
 end
 
 """
-    `TR_dogleg_struct(m, n, ::DataType; kwargs...)`
+	`TR_dogleg_struct(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used in the computation of the dogleg for the trust-region step.
 Returns a `TR_dogleg_struct` structure.
@@ -106,15 +106,15 @@ function TR_dogleg_struct(m, n, ::Type{S}; kwargs...) where {T, S <: AbstractVec
 end
 
 """
-    TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
+	TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
 Dictonary of the possible structures for the trust-region step.
 """
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
 """
-    MetaDCI(x, y; kwargs...)
-    MetaDCI(nlp::AbstractNLPModel, x = nlp.meta.x0, y = nlp.meta.y0; kwargs...)
+	MetaDCI(x, y; kwargs...)
+	MetaDCI(nlp::AbstractNLPModel, x = nlp.meta.x0, y = nlp.meta.y0; kwargs...)
 
 Structure containing all the parameters used in the [`dci`](@ref) call.
 `x` is an intial guess, and `y` is an initial guess for the Lagrange multiplier.
@@ -136,7 +136,7 @@ The keyword arguments may include:
 - `decrease_γ::T=T(0.1)`: Regularization for the factorization: reduce `γ` if possible, `> √eps(T)`, between tangent steps.
 - `increase_γ::T=T(100.0)`: Regularization for the factorization: up `γ` if possible, `< 1/√eps(T)`, during the factorization.
 - `δmin::T=√eps(T)`: Regularization for the factorization: smallest value of `δ` used for the regularization.
-- `feas_step::Symbol=:feasibility_step`: Normal step.
+- `feas_step::Symbol=:feasibility_step`: Normal step. Options: `:feasibility_step` (default trust-region method) or `:feasibility_step_cannoles` (CaNNOLeS solver).
 - `feas_η₁::T=T(1e-3)`: Feasibility step: decrease the trust-region radius when `Ared/Pred < η₁`.
 - `feas_η₂::T=T(0.66)`: Feasibility step: increase the trust-region radius when `Ared/Pred > η₂`.
 - `feas_σ₁::T=T(0.25)`: Feasibility step: decrease coefficient of the trust-region radius.
@@ -195,7 +195,7 @@ struct MetaDCI{
   δmin::T
 
   # Normal step
-  feas_step::Symbol #:feasibility_step
+  feas_step::Symbol #:feasibility_step or :feasibility_step_cannoles
   ## Feasibility step (called inside the normal step)
   feas_η₁::T
   feas_η₂::T
