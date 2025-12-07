@@ -16,49 +16,49 @@ using Krylov: Krylov, CgWorkspace, CglsWorkspace, LsmrWorkspace, krylov_solve!
 using LDLFactorizations: LDLFactorizations, factorized, ldl_analyze, ldl_factorize!
 using LinearAlgebra: LinearAlgebra, I, Symmetric, convert, ldiv!, mul!, norm, tr
 using NLPModels:
-	NLPModels,
-	AbstractNLPModel,
-	AbstractNLSModel,
-	cons!,
-	equality_constrained,
-	get_lcon,
-	get_ucon,
-	hess_coord!,
-	hess_op,
-	hess_structure!,
-	jac_coord!,
-	jac_op,
-	jac_op!,
-	jac_structure!,
-	neval_cons,
-	neval_obj,
-	unconstrained,
-	NLPModelMeta,
-	NLSMeta,
-	NLSCounters
+  NLPModels,
+  AbstractNLPModel,
+  AbstractNLSModel,
+  cons!,
+  equality_constrained,
+  get_lcon,
+  get_ucon,
+  hess_coord!,
+  hess_op,
+  hess_structure!,
+  jac_coord!,
+  jac_op,
+  jac_op!,
+  jac_structure!,
+  neval_cons,
+  neval_obj,
+  unconstrained,
+  NLPModelMeta,
+  NLSMeta,
+  NLSCounters
 using SolverCore:
-	SolverCore,
-	AbstractOptimizationSolver,
-	GenericExecutionStats,
-	log_header,
-	log_row,
-	set_iter!,
-	set_objective!,
-	set_residuals!,
-	set_solution!,
-	set_solver_specific!,
-	set_status!,
-	set_time!,
-	solve!
+  SolverCore,
+  AbstractOptimizationSolver,
+  GenericExecutionStats,
+  log_header,
+  log_row,
+  set_iter!,
+  set_objective!,
+  set_residuals!,
+  set_solution!,
+  set_solver_specific!,
+  set_status!,
+  set_time!,
+  solve!
 using SolverTools: SolverTools, TrustRegion, aredpred!, dot, grad!, obj, objgrad!
 using SparseArrays: SparseArrays, sparse
 
 function cons_norhs!(nlp, x, cx)
-	cons!(nlp, x, cx)
-	if nlp.meta.ncon > 0
-		cx .-= get_lcon(nlp)
-	end
-	return cx
+  cons!(nlp, x, cx)
+  if nlp.meta.ncon > 0
+    cx .-= get_lcon(nlp)
+  end
+  return cx
 end
 
 export dci
@@ -127,23 +127,23 @@ stats
 ```
 """
 function dci(
-	nlp::AbstractNLPModel,
-	x::AbstractVector{T} = nlp.meta.x0;
-	callback = (args...) -> nothing,
-	kwargs...,
+  nlp::AbstractNLPModel,
+  x::AbstractVector{T} = nlp.meta.x0;
+  callback = (args...) -> nothing,
+  kwargs...,
 ) where {T}
-	meta = MetaDCI(x, nlp.meta.y0; kwargs...)
-	return dci(nlp, meta, x; callback = callback, kwargs...)
+  meta = MetaDCI(x, nlp.meta.y0; kwargs...)
+  return dci(nlp, meta, x; callback = callback, kwargs...)
 end
 function dci(
-	nlp::AbstractNLPModel,
-	meta::MetaDCI{T, In, COO},
-	x::AbstractVector{T};
-	callback = (args...) -> nothing,
-	kwargs...,
+  nlp::AbstractNLPModel,
+  meta::MetaDCI{T, In, COO},
+  x::AbstractVector{T};
+  callback = (args...) -> nothing,
+  kwargs...,
 ) where {T, In, COO}
-	workspace = DCIWorkspace(nlp, meta, x)
-	return SolverCore.solve!(workspace, nlp; callback = callback)
+  workspace = DCIWorkspace(nlp, meta, x)
+  return SolverCore.solve!(workspace, nlp; callback = callback)
 end
 
 """
@@ -152,19 +152,19 @@ end
 Compute `gBg = ∇ℓxλ' * B * ∇ℓxλ`, where `B` is a symmetric sparse matrix whose lower triangular is given in COO-format.
 """
 function compute_gBg(
-	nlp::AbstractNLPModel,
-	rows::AbstractVector,
-	cols::AbstractVector,
-	vals::AbstractVector{T},
-	∇ℓzλ::AbstractVector{T},
+  nlp::AbstractNLPModel,
+  rows::AbstractVector,
+  cols::AbstractVector,
+  vals::AbstractVector{T},
+  ∇ℓzλ::AbstractVector{T},
 ) where {T}
-	gBg = zero(T)
-	for k ∈ 1:(nlp.meta.nnzh) # TODO: use |vals| and remove dependency in nlp
-		i, j, v = rows[k], cols[k], vals[k]
-		#v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
-		gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2)
-	end
-	return gBg
+  gBg = zero(T)
+  for k ∈ 1:(nlp.meta.nnzh) # TODO: use |vals| and remove dependency in nlp
+    i, j, v = rows[k], cols[k], vals[k]
+    #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
+    gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2)
+  end
+  return gBg
 end
 
 """
@@ -173,38 +173,38 @@ end
 Compute the structure for the saddle system `[H + γI  [Jᵀ]; J -δI]` in COO-format `(rows, cols, vals)` in the following order: `H, J, γ, -δ,`.
 """
 function regularized_coo_saddle_system!(
-	nlp::AbstractNLPModel,
-	rows::AbstractVector{S},
-	cols::AbstractVector{S},
-	vals::AbstractVector{T};
-	γ::T = zero(T),
-	δ::T = zero(T),
+  nlp::AbstractNLPModel,
+  rows::AbstractVector{S},
+  cols::AbstractVector{S},
+  vals::AbstractVector{T};
+  γ::T = zero(T),
+  δ::T = zero(T),
 ) where {S <: Int, T <: AbstractFloat}
-	#n = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon
-	#Test length rows, cols, vals
-	#@lencheck n rows cols vals
-	nnzh, nnzj = nlp.meta.nnzh, nlp.meta.nnzj
-	nvar, ncon = nlp.meta.nvar, nlp.meta.ncon
+  #n = nlp.meta.nnzh + nlp.meta.nnzj + nlp.meta.nvar + nlp.meta.ncon
+  #Test length rows, cols, vals
+  #@lencheck n rows cols vals
+  nnzh, nnzj = nlp.meta.nnzh, nlp.meta.nnzj
+  nvar, ncon = nlp.meta.nvar, nlp.meta.ncon
 
-	# H (1:nvar, 1:nvar)
-	nnz_idx = 1:nnzh
-	@views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
-	# J (nvar .+ 1:ncon, 1:nvar)
-	nnz_idx = nnzh .+ (1:nnzj)
-	@views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
-	rows[nnz_idx] .+= nvar
-	# γI (1:nvar, 1:nvar)
-	nnz_idx = nnzh .+ nnzj .+ (1:nvar)
-	rows[nnz_idx] .= 1:nvar
-	cols[nnz_idx] .= 1:nvar
-	vals[nnz_idx] .= γ
-	# -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
-	nnz_idx = nnzh .+ nnzj .+ nvar .+ (1:ncon)
-	rows[nnz_idx] .= nvar .+ (1:ncon)
-	cols[nnz_idx] .= nvar .+ (1:ncon)
-	vals[nnz_idx] .= -δ
+  # H (1:nvar, 1:nvar)
+  nnz_idx = 1:nnzh
+  @views hess_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+  # J (nvar .+ 1:ncon, 1:nvar)
+  nnz_idx = nnzh .+ (1:nnzj)
+  @views jac_structure!(nlp, rows[nnz_idx], cols[nnz_idx])
+  rows[nnz_idx] .+= nvar
+  # γI (1:nvar, 1:nvar)
+  nnz_idx = nnzh .+ nnzj .+ (1:nvar)
+  rows[nnz_idx] .= 1:nvar
+  cols[nnz_idx] .= 1:nvar
+  vals[nnz_idx] .= γ
+  # -δI (nvar .+ 1:ncon, nvar .+ 1:ncon)
+  nnz_idx = nnzh .+ nnzj .+ nvar .+ (1:ncon)
+  rows[nnz_idx] .= nvar .+ (1:ncon)
+  cols[nnz_idx] .= nvar .+ (1:ncon)
+  vals[nnz_idx] .= -δ
 
-	return rows, cols, vals
+  return rows, cols, vals
 end
 
 """
@@ -214,29 +214,29 @@ Compute the solution of `‖Jx' λ - ∇fx‖` using solvers from `Krylov.jl` as
 Return the solution `λ`.
 """
 function compute_lx!(
-	Jx,
-	∇fx::AbstractVector{T},
-	λ::AbstractVector{T},
-	meta::MetaDCI,
+  Jx,
+  ∇fx::AbstractVector{T},
+  λ::AbstractVector{T},
+  meta::MetaDCI,
 ) where {T <: AbstractFloat}
-	l = meta.λ_struct.comp_λ_solver.x
-	stats = meta.λ_struct.comp_λ_solver.stats
-	krylov_solve!(
-		meta.λ_struct.comp_λ_solver,
-		Jx',
-		∇fx,
-		M = meta.λ_struct.M,
-		λ = meta.λ_struct.λ,
-		atol = meta.λ_struct.atol,
-		rtol = meta.λ_struct.rtol,
-		itmax = meta.λ_struct.itmax,
-	)
-	if !stats.solved
-		@warn "Fail computation of Lagrange multiplier: $(stats.status)"
-		#print(stats)
-	end
-	@. λ = -l #Should we really update if !stats.solved?
-	return λ
+  l = meta.λ_struct.comp_λ_solver.x
+  stats = meta.λ_struct.comp_λ_solver.stats
+  krylov_solve!(
+    meta.λ_struct.comp_λ_solver,
+    Jx',
+    ∇fx,
+    M = meta.λ_struct.M,
+    λ = meta.λ_struct.λ,
+    atol = meta.λ_struct.atol,
+    rtol = meta.λ_struct.rtol,
+    itmax = meta.λ_struct.itmax,
+  )
+  if !stats.solved
+    @warn "Fail computation of Lagrange multiplier: $(stats.status)"
+    #print(stats)
+  end
+  @. λ = -l #Should we really update if !stats.solved?
+  return λ
 end
 
 end # end of module

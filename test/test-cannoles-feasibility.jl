@@ -5,7 +5,8 @@ using DCISolver, ADNLPModels, Test, LinearAlgebra, NLPModels
     x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
     [-1.2; 1.0],
     x -> [x[1] * x[2] - 1],
-    [0.0], [0.0],
+    [0.0],
+    [0.0],
   )
 
   stats = dci(
@@ -26,9 +27,8 @@ using DCISolver, ADNLPModels, Test, LinearAlgebra, NLPModels
   c_sol = cons(nlp, x_sol)
   @test norm(c_sol) ≤ 1e-5  # Constraints should be satisfied
   @test norm(x_sol - [1.0; 1.0]) ≤ 1e-4  # Solution should be near optimum
-  
+
   finalize(nlp)
-  
 end
 
 @testset "DCI with CaNNOLeS vs trust-region comparison" begin
@@ -36,7 +36,8 @@ end
     x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
     [-1.2; 1.0],
     x -> [x[1] * x[2] - 1],
-    [0.0], [0.0],
+    [0.0],
+    [0.0],
   )
 
   stats_cannoles = dci(
@@ -49,13 +50,14 @@ end
     max_time = 60.0,
     max_iter = 100,
   )
-  
+
   finalize(nlp)
   nlp = ADNLPModel(
     x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
     [-1.2; 1.0],
     x -> [x[1] * x[2] - 1],
-    [0.0], [0.0],
+    [0.0],
+    [0.0],
   )
 
   stats_default = dci(
@@ -74,6 +76,6 @@ end
 
   @test norm(stats_cannoles.solution - stats_default.solution) ≤ 1e-3
   @test abs(stats_cannoles.objective - stats_default.objective) ≤ 1e-3
-  
+
   finalize(nlp)
 end
