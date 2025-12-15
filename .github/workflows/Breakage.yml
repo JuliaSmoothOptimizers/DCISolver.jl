@@ -118,7 +118,7 @@ jobs:
               end;
             end'
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: breakage-${{ matrix.pkg }}-${{ matrix.pkgversion }}
           path: breakage/breakage-*
