@@ -1,12 +1,12 @@
 """
-	`comp_λ_cgls(m, n, ::DataType; kwargs...)`
+    `comp_λ_cgls(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `cgls` from `Krylov.jl` used in the computation of the Lagrange multipliers.
 Returns a `comp_λ_cgls` structure.
 """
 struct comp_λ_cgls{T <: AbstractFloat, S <: AbstractVector{T}}
   comp_λ_solver::CglsWorkspace{T, T, S}
-  M::Any # =I,
+  M # =I,
   λ::T # =zero(T),
   atol::T # =√eps(T),
   rtol::T # =√eps(T),
@@ -31,14 +31,14 @@ function comp_λ_cgls(
 end
 
 """
-	comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
+    comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
 
 Dictonary of the possible structures for the computation of the Lagrange multipliers.
 """
 const comp_λ_solvers = Dict(:cgls => comp_λ_cgls)
 
 """
-	solver_correspondence = Dict(:ma57 => MA57Struct, :ldlfact => LDLFactorizationStruct)
+    solver_correspondence = Dict(:ma57 => MA57Struct, :ldlfact => LDLFactorizationStruct)
 
 Dictonary of the possible structures for the factorization.
 """
@@ -49,14 +49,14 @@ else
 end
 
 """
-	`TR_lsmr_struct(m, n, ::DataType; kwargs...)`
+    `TR_lsmr_struct(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used in the computation of the trust-region step.
 Returns a `TR_lsmr_struct` structure.
 """
 struct TR_lsmr_struct{T <: AbstractFloat, S <: AbstractVector{T}}
   lsmr_solver::LsmrWorkspace{T, T, S}
-  M::Any # =I,
+  M # =I,
   #N=I, #unnecessary
   #sqd :: Bool=false, #unnecessary
   λ::T # =zero(T),
@@ -91,7 +91,7 @@ function TR_lsmr_struct(
 end
 
 """
-	`TR_dogleg_struct(m, n, ::DataType; kwargs...)`
+    `TR_dogleg_struct(m, n, ::DataType; kwargs...)`
 
 Keyword arguments correspond to input parameters of `lsmr` from `Krylov.jl` used in the computation of the dogleg for the trust-region step.
 Returns a `TR_dogleg_struct` structure.
@@ -106,15 +106,15 @@ function TR_dogleg_struct(m, n, ::Type{S}; kwargs...) where {T, S <: AbstractVec
 end
 
 """
-	TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
+    TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
 Dictonary of the possible structures for the trust-region step.
 """
 const TR_solvers = Dict(:TR_lsmr => TR_lsmr_struct, :TR_dogleg => TR_dogleg_struct)
 
 """
-	MetaDCI(x, y; kwargs...)
-	MetaDCI(nlp::AbstractNLPModel, x = nlp.meta.x0, y = nlp.meta.y0; kwargs...)
+    MetaDCI(x, y; kwargs...)
+    MetaDCI(nlp::AbstractNLPModel, x = nlp.meta.x0, y = nlp.meta.y0; kwargs...)
 
 Structure containing all the parameters used in the [`dci`](@ref) call.
 `x` is an intial guess, and `y` is an initial guess for the Lagrange multiplier.

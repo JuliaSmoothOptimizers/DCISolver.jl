@@ -7,10 +7,7 @@ import SolverCore.solve!
 include("SymCOOSolverInterface/SymCOOSolverInterface.jl")
 
 using LinearAlgebra, SparseArrays
-#JSO packages
-using CaNNOLeS, HSL, Krylov, NLPModels, SolverCore, SolverTools
-
-using CaNNOLeS: CaNNOLeS, cannoles
+using HSL, Krylov, NLPModels, SolverCore, SolverTools
 using HSL: HSL, Ma57, ma57_coord, ma57_factorize!, ma57_solve!, LIBHSL_isfunctional
 using Krylov: Krylov, CgWorkspace, CglsWorkspace, LsmrWorkspace, krylov_solve!
 using LDLFactorizations: LDLFactorizations, factorized, ldl_analyze, ldl_factorize!
@@ -71,9 +68,9 @@ include("dci_tangent.jl")
 include("main.jl")
 
 """
-	dci(nlp; kwargs...)
-	dci(nlp, x; kwargs...)
-	dci(nlp, meta, x)
+    dci(nlp; kwargs...)
+    dci(nlp, x; kwargs...)
+    dci(nlp, meta, x)
 
 Compute a local minimum of an equality-constrained optimization problem using DCI algorithm from Bielschowsky & Gomes (2008).
 
@@ -84,8 +81,8 @@ Compute a local minimum of an equality-constrained optimization problem using DC
 
 For advanced usage, the principal call to the solver uses a [`DCIWorkspace`](@ref).
 
-	solve!(workspace, nlp)
-	solve!(workspace, nlp, stats)
+    solve!(workspace, nlp)
+    solve!(workspace, nlp, stats)
 
 # Output
 The returned value is a `GenericExecutionStats`, see `SolverCore.jl`.
@@ -109,10 +106,10 @@ Notably, you can access, and modify, the following:
 This method implements the Dynamic Control of Infeasibility for
 equality-constrained problems described in
 
-	Dynamic Control of Infeasibility in Equality Constrained Optimization
-	Roberto H. Bielschowsky and Francisco A. M. Gomes
-	SIAM J. Optim., 19(3), 2008, 1299–1325.
-	https://doi.org/10.1137/070679557
+    Dynamic Control of Infeasibility in Equality Constrained Optimization
+    Roberto H. Bielschowsky and Francisco A. M. Gomes
+    SIAM J. Optim., 19(3), 2008, 1299–1325.
+    https://doi.org/10.1137/070679557
 
 # Examples
 ```jldoctest; output = false
@@ -147,7 +144,7 @@ function dci(
 end
 
 """
-	compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
+    compute_gBg(nlp, rows, cols, vals, ∇ℓzλ)
 
 Compute `gBg = ∇ℓxλ' * B * ∇ℓxλ`, where `B` is a symmetric sparse matrix whose lower triangular is given in COO-format.
 """
@@ -159,7 +156,7 @@ function compute_gBg(
   ∇ℓzλ::AbstractVector{T},
 ) where {T}
   gBg = zero(T)
-  for k ∈ 1:(nlp.meta.nnzh) # TODO: use |vals| and remove dependency in nlp
+  for k = 1:(nlp.meta.nnzh) # TODO: use |vals| and remove dependency in nlp
     i, j, v = rows[k], cols[k], vals[k]
     #v * ∇ℓxλ[i] * ∇ℓxλ[j] * (i == j ? 1 : 2)
     gBg += v * ∇ℓzλ[i] * ∇ℓzλ[j] * (i == j ? 1 : 2)
@@ -168,7 +165,7 @@ function compute_gBg(
 end
 
 """
-	regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
+    regularized_coo_saddle_system!(nlp, rows, cols, vals, γ = γ, δ = δ)
 
 Compute the structure for the saddle system `[H + γI  [Jᵀ]; J -δI]` in COO-format `(rows, cols, vals)` in the following order: `H, J, γ, -δ,`.
 """
@@ -208,7 +205,7 @@ function regularized_coo_saddle_system!(
 end
 
 """
-	compute_lx!(Jx, ∇fx, λ, meta)
+    compute_lx!(Jx, ∇fx, λ, meta)
 
 Compute the solution of `‖Jx' λ - ∇fx‖` using solvers from `Krylov.jl` as defined by `meta.λ_struct.comp_λ_solver`.
 Return the solution `λ`.

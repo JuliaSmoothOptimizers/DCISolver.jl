@@ -4,7 +4,6 @@ authors = ["Abel Soares Siqueira <abel.s.siqueira@gmail.com> and Tangi Migot <ta
 version = "0.5.2"
 
 [deps]
-ADNLPModels = "54578032-b7ea-4c30-94aa-7cbd1cce6c9a"
 CaNNOLeS = "5a1c9e79-9c58-5ec0-afc4-3298fdea2875"
 HSL = "34c5aeac-e683-54a6-a0e9-6e0fdc586c50"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
