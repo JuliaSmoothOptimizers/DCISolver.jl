@@ -14,6 +14,12 @@ SolverCore = "ff4d7338-4cf1-434d-91df-b86cb86fb843"
 SolverTools = "b5612192-2639-5dc1-abfe-fbedd65fab29"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
+[weakdeps]
+CaNNOLeS = "5a1c9e79-9c58-5ec0-afc4-3298fdea2875"
+
+[extensions]
+DCISolverCaNNOLeSExt = ["CaNNOLeS"]
+
 [compat]
 HSL = "0.5"
 Krylov = "0.10.1"

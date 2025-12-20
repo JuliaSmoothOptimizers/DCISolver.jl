@@ -17,9 +17,11 @@ using LinearAlgebra: LinearAlgebra, I, Symmetric, convert, ldiv!, mul!, norm, tr
 using NLPModels:
   NLPModels,
   AbstractNLPModel,
+  AbstractNLSModel,
   cons!,
   equality_constrained,
   get_lcon,
+  get_ucon,
   hess_coord!,
   hess_op,
   hess_structure!,
@@ -29,7 +31,10 @@ using NLPModels:
   jac_structure!,
   neval_cons,
   neval_obj,
-  unconstrained
+  unconstrained,
+  NLPModelMeta,
+  NLSMeta,
+  NLSCounters
 using SolverCore:
   SolverCore,
   AbstractOptimizationSolver,

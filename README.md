@@ -21,6 +21,14 @@ In particular, [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels
 It uses [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) by default to compute the factorization in the tangent step. [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl) provides alternative linear solvers if [libHSL](https://licences.stfc.ac.uk/product/libhsl) can be downloaded.
 The feasibility steps are factorization-free and use iterative methods from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl)
 
+## CaNNOLeS extension
+
+CaNNOLeS is optional and loaded through package extensions. Install it in your environment to enable the CaNNOLeS-based feasibility step:
+
+- `using Pkg; Pkg.add("CaNNOLeS")`
+- call `dci(...; feas_step = :feasibility_step_cannoles, cannoles_options = Dict(...))`
+- extra keywords in `cannoles_options` are forwarded directly to `CaNNOLeS.cannoles`; without CaNNOLeS the default trust-region feasibility step is used.
+
 ## References
 
 > Bielschowsky, R. H., & Gomes, F. A.
