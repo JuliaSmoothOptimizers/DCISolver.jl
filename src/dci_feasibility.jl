@@ -319,27 +319,9 @@ end
 """
 	feasibility_step_cannoles(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
 
-This method is provided by the optional CaNNOLeS extension.
-Install and load `CaNNOLeS.jl` to enable it.
+Provided by the optional CaNNOLeS extension. Add `CaNNOLeS.jl` (and `NLPModelsModifiers.jl`) to enable.
 """
-function feasibility_step_cannoles(
-  nlp::AbstractNLPModel,
-  x::AbstractVector{T},
-  cx::AbstractVector{T},
-  normcx::T,
-  Jx,
-  ρ::T,
-  ctol::AbstractFloat,
-  meta::MetaDCI,
-  workspace,
-  verbose::Bool;
-  kwargs...
-) where {T}
-  error(
-    "feasibility_step_cannoles requires optional dependency CaNNOLeS. " *
-    "Add CaNNOLeS to your environment to activate the DCISolver extension."
-  )
-end
+function feasibility_step_cannoles end
 
 """
 	FeasibilityResidual
