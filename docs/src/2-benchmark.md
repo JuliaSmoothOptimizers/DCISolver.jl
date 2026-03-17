@@ -17,7 +17,8 @@ using SolverBenchmark
 
 Let us select equality-constrained problems from CUTEst with a maximum of 100 variables or constraints. After removing problems with fixed variables, examples with a constant objective, and infeasibility residuals.
 
-``` @example ex1
+```@example ex1
+doctest = false
 _pnames = CUTEst.select(
   max_var = 100,
   min_con = 1,
@@ -43,7 +44,8 @@ using DCISolver, NLPModelsIpopt
 
  To make stopping conditions comparable, we set `Ipopt`'s parameters `dual_inf_tol=Inf`, `constr_viol_tol=Inf` and `compl_inf_tol=Inf` to disable additional stopping conditions related to those tolerances, `acceptable_iter=0` to disable the search for an acceptable point.
 
-``` @example ex1
+```@example ex1
+doctest = false
 #Same time limit for all the solvers
 max_time = 1200. #20 minutes
 tol = 1e-5
@@ -78,31 +80,31 @@ stats = bmark_solvers(solvers, cutest_problems)
 
 The function `bmark_solvers` return a `Dict` of `DataFrames` with detailed information on the execution. This output can be saved in a data file.
 
-``` @example ex1
+```@example ex1
+doctest = false
 using JLD2
 @save "ipopt_dcildl_$(string(length(pnames))).jld2" stats
 ```
 
 The result of the benchmark can be explored via tables,
 
-``` @example ex1
+```@example ex1
+doctest = false
 pretty_stats(stats[:dcildl])
 ```
-
-or it can also be used to make performance profiles.
-
-``` @example ex1
+```@example ex1
+doctest = false
 using Plots
 gr()
 
 legend = Dict(
   :neval_obj => "number of f evals",
   :neval_cons => "number of c evals",
-  :neval_grad => "number of ∇f evals",
-  :neval_jac => "number of ∇c evals",
-  :neval_jprod => "number of ∇c*v evals",
-  :neval_jtprod  => "number of ∇cᵀ*v evals",
-  :neval_hess  => "number of ∇²f evals",
+  :neval_grad => "number of f evals",
+  :neval_jac => "number of c evals",
+  :neval_jprod => "number of c*v evals",
+  :neval_jtprod  => "number of c*v evals",
+  :neval_hess  => "number of f evals",
   :elapsed_time => "elapsed time"
 )
 perf_title(col) = "Performance profile on CUTEst w.r.t. $(string(legend[col]))"
@@ -111,28 +113,31 @@ styles = [:solid,:dash,:dot,:dashdot] #[:auto, :solid, :dash, :dot, :dashdot, :d
 
 function print_pp_column(col::Symbol, stats)
 
-  ϵ = minimum(minimum(filter(x -> x > 0, df[!, col])) for df in values(stats))
+  5 = minimum(minimum(filter(x -> x > 0, df[!, col])) for df in values(stats))
   first_order(df) = df.status .== :first_order
   unbounded(df) = df.status .== :unbounded
   solved(df) = first_order(df) .| unbounded(df)
-  cost(df) = (max.(df[!, col], ϵ) + .!solved(df) .* Inf)
+  cost(df) = (max.(df[!, col], 5) + .!solved(df) .* Inf)
 
   p = performance_profile(
-    stats,
-    cost,
-    title=perf_title(col),
-    legend=:bottomright,
-    linestyles=styles
+    [cost(df) for df in values(stats)],
+    styles,
+    legend,
+    perf_title(col),
+    col
   )
+  display(p)
 end
 
-print_pp_column(:elapsed_time, stats) # with respect to time
+print_pp_column(:neval_obj, stats)
+print_pp_column(:neval_cons, stats)
+print_pp_column(:neval_grad, stats)
+print_pp_column(:neval_jac, stats)
+print_pp_column(:neval_jprod, stats)
+print_pp_column(:neval_jtprod, stats)
+print_pp_column(:neval_hess, stats)
+print_pp_column(:elapsed_time, stats)
 ```
-
-``` @example ex1
-print_pp_column(:neval_jac, stats) # with respect to number of jacobian evaluations
-```
-
 ## CUTEst benchmark with Knitro
 
 In this second part, we present the result of a similar benchmark with a maximum of 10000 variables and constraints (82 problems), and including the solver [`KNITRO`](https://link.springer.com/chapter/10.1007/0-387-30065-1_4) (Byrd, R. H., Nocedal, J., & Waltz, R. A. (2006). K nitro: An integrated package for nonlinear optimization. In Large-scale nonlinear optimization (pp. 35-59). Springer, Boston, MA.) via [`NLPModelsKnitro.jl`](https://github.com/JuliaSmoothOptimizers/NLPModelsKnitro.jl). The script is included in [/benchmark/script10000_knitro.jl)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/main/benchmark/script10000_knitro.jl). We report here a performance profile with respect
