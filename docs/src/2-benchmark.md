@@ -17,8 +17,7 @@ using SolverBenchmark
 
 Let us select equality-constrained problems from CUTEst with a maximum of 100 variables or constraints. After removing problems with fixed variables, examples with a constant objective, and infeasibility residuals.
 
-```@example ex1
-doctest = false
+```julia
 _pnames = CUTEst.select(
   max_var = 100,
   min_con = 1,
@@ -44,8 +43,7 @@ using DCISolver, NLPModelsIpopt
 
  To make stopping conditions comparable, we set `Ipopt`'s parameters `dual_inf_tol=Inf`, `constr_viol_tol=Inf` and `compl_inf_tol=Inf` to disable additional stopping conditions related to those tolerances, `acceptable_iter=0` to disable the search for an acceptable point.
 
-```@example ex1
-doctest = false
+```julia
 #Same time limit for all the solvers
 max_time = 1200. #20 minutes
 tol = 1e-5
@@ -80,44 +78,40 @@ stats = bmark_solvers(solvers, cutest_problems)
 
 The function `bmark_solvers` return a `Dict` of `DataFrames` with detailed information on the execution. This output can be saved in a data file.
 
-```@example ex1
-doctest = false
+```julia
 using JLD2
 @save "ipopt_dcildl_$(string(length(pnames))).jld2" stats
 ```
 
 The result of the benchmark can be explored via tables,
 
-```@example ex1
-doctest = false
+```julia
 pretty_stats(stats[:dcildl])
 ```
-```@example ex1
-doctest = false
+```julia
 using Plots
 gr()
 
 legend = Dict(
   :neval_obj => "number of f evals",
   :neval_cons => "number of c evals",
-  :neval_grad => "number of f evals",
-  :neval_jac => "number of c evals",
-  :neval_jprod => "number of c*v evals",
-  :neval_jtprod  => "number of c*v evals",
-  :neval_hess  => "number of f evals",
+  :neval_grad => "number of ∇f evals",
+  :neval_jac => "number of ∇c evals",
+  :neval_jprod => "number of ∇c*v evals",
+  :neval_jtprod  => "number of ∇cᵗ*v evals",
+  :neval_hess  => "number of ∇²f evals",
   :elapsed_time => "elapsed time"
 )
 perf_title(col) = "Performance profile on CUTEst w.r.t. $(string(legend[col]))"
 
-styles = [:solid,:dash,:dot,:dashdot] #[:auto, :solid, :dash, :dot, :dashdot, :dashdotdot]
+styles = [:solid,:dash,:dot,:dashdot]
 
 function print_pp_column(col::Symbol, stats)
-
-  5 = minimum(minimum(filter(x -> x > 0, df[!, col])) for df in values(stats))
+  τ5 = minimum(minimum(filter(x -> x > 0, df[!, col])) for df in values(stats))
   first_order(df) = df.status .== :first_order
   unbounded(df) = df.status .== :unbounded
   solved(df) = first_order(df) .| unbounded(df)
-  cost(df) = (max.(df[!, col], 5) + .!solved(df) .* Inf)
+  cost(df) = (max.(df[!, col], τ5) + .!solved(df) .* Inf)
 
   p = performance_profile(
     [cost(df) for df in values(stats)],
