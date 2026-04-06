@@ -30,20 +30,7 @@ _pnames = CUTEst.select_sif_problems(
 #Remove all the problems ending by NE as Ipopt cannot handle them.
 pnamesNE = _pnames[findall(x->occursin(r"NE\b", x), _pnames)]
 pnames = setdiff(_pnames, pnamesNE)
-
-# Keep docs build quick and avoid problematic models on some platforms.
-preferred = ["HS6", "HS7", "HS8", "HS9", "HS26", "HS27"]
-pnames = intersect(preferred, pnames)
-pnames = isempty(pnames) ? ["HS6"] : pnames
-
-cutest_problems = Any[]
-for p in pnames
-  try
-    push!(cutest_problems, CUTEstModel(p))
-  catch err
-    @warn "Skipping CUTEst problem during docs build" problem = p exception = err
-  end
-end
+cutest_problems = (CUTEstModel(p) for p in pnames)
 
 length(cutest_problems) # number of problems
 ```
@@ -51,14 +38,14 @@ length(cutest_problems) # number of problems
 We compare here DCISolver with [Ipopt](https://link.springer.com/article/10.1007/s10107-004-0559-y) (Wächter, A., & Biegler, L. T. (2006). On the implementation of an interior-point filter line-search algorithm for large-scale nonlinear programming. Mathematical programming, 106(1), 25-57.), via the [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) thin wrapper, with DCISolver on a subset of CUTEst problems.
 
 ``` @example ex1
-using DCISolver, NLPModelsIpopt, ADNLPModels
+using DCISolver, NLPModelsIpopt
 ```
 
  To make stopping conditions comparable, we set `Ipopt`'s parameters `dual_inf_tol=Inf`, `constr_viol_tol=Inf` and `compl_inf_tol=Inf` to disable additional stopping conditions related to those tolerances, `acceptable_iter=0` to disable the search for an acceptable point.
 
 ``` @example ex1
 #Same time limit for all the solvers
-max_time = 5.0 # Keep docs execution time bounded.
+max_time = 1200. #20 minutes
 tol = 1e-5
 
 solvers = Dict(
@@ -86,21 +73,7 @@ solvers = Dict(
   ),
 )
 
-# Fallback for environments where CUTEst decoding fails.
-benchmark_problems = cutest_problems
-if isempty(benchmark_problems)
-  benchmark_problems = [
-    ADNLPModel(
-      x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
-      [-1.2; 1.0],
-      x -> [x[1] * x[2] - 1],
-      [0.0], [0.0],
-      name = "toy-constrained"
-    ),
-  ]
-end
-
-stats = bmark_solvers(solvers, benchmark_problems)
+stats = bmark_solvers(solvers, cutest_problems)
 ```
 
 The function `bmark_solvers` return a `Dict` of `DataFrames` with detailed information on the execution. This output can be saved in a data file.
