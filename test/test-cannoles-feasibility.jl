@@ -1,9 +1,6 @@
-@static if Base.find_package("CaNNOLeS") === nothing
-  @info "Skipping CaNNOLeS feasibility tests: CaNNOLeS not installed"
-else
-  using CaNNOLeS
+using CaNNOLeS
 
-  @testset "DCI with CaNNOLeS option" begin
+@testset "DCI with CaNNOLeS option" begin
     nlp = ADNLPModel(
       x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
       [-1.2; 1.0],

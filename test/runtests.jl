@@ -1,7 +1,7 @@
 # stdlib
 using LinearAlgebra, Logging, Test
 # JSO
-using ADNLPModels, Krylov, NLPModels, SolverCore, SolverTest
+using ADNLPModels, CaNNOLeS, Krylov, NLPModels, SolverCore, SolverTest
 # This package
 using DCISolver
 
@@ -25,12 +25,4 @@ for (root, dirs, files) in walkdir(@__DIR__)
       include(file)
     end
   end
-end
-
-if Base.find_package("CaNNOLeS") !== nothing
-  @testset "Cannoles Feasibility" begin
-    include("test-cannoles-feasibility.jl")
-  end
-else
-  @info "Skipping CaNNOLeS feasibility tests: CaNNOLeS not installed"
 end

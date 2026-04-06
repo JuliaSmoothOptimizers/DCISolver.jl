@@ -1,9 +1,10 @@
 module DCISolverCaNNOLeSExt
 
 import DCISolver
-using DCISolver: MetaDCI, cons_norhs!, FeasibilityResidual
+using DCISolver: MetaDCI, cons_norhs!
 using CaNNOLeS: cannoles
 using LinearAlgebra: norm
+using NLPModelsModifiers: FeasibilityResidual
 using NLPModels: AbstractNLPModel, jac_op!, neval_obj, neval_cons
 using SolverCore: log_row
 
@@ -23,7 +24,7 @@ function DCISolver.feasibility_step_cannoles(
   max_iter::Int = typemax(Int64),
   cannoles_options = Dict{Symbol, Any}(),
 ) where {T}
-  nls = FeasibilityResidual(nlp, x)
+  nls = FeasibilityResidual(nlp)
 
   default_options = Dict{Symbol, Any}(
     :atol => ctol,

@@ -23,7 +23,7 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 
 ## CaNNOLeS extension
 
-CaNNOLeS is optional and loaded through package extensions. Install it in your environment to enable the CaNNOLeS-based feasibility step:
+[CaNNOLeS.jl](https://github.com/JuliaSmoothOptimizers/CaNNOLeS.jl) is optional and loaded through package extensions. Install it in your environment to enable the CaNNOLeS-based feasibility step:
 
 - `using Pkg; Pkg.add("CaNNOLeS")`
 - call `dci(...; feas_step = :feasibility_step_cannoles, cannoles_options = Dict(...))`
