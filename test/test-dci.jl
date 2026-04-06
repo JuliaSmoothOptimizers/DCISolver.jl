@@ -83,7 +83,7 @@ end
 end
 
 @testset "Unconstrained tests" begin
-  unconstrained_nlp(nlp -> dci(nlp, atol = 1e-6, rtol = 1e-6))
+  unconstrained_nlp((nlp; kwargs...) -> dci(nlp; kwargs...))
 end
 
 #The first four were used in Percival.jl
