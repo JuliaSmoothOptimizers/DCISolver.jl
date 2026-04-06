@@ -55,7 +55,7 @@ function cons_norhs!(nlp, x, cx)
   return cx
 end
 
-export dci, feasibility_step
+export dci
 
 include("param_struct.jl")
 include("workspace.jl")
