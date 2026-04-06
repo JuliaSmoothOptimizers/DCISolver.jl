@@ -27,8 +27,6 @@ using CaNNOLeS
     c_sol = cons(nlp, x_sol)
     @test norm(c_sol) ≤ 1e-5  # Constraints should be satisfied
     @test norm(x_sol - [1.0; 1.0]) ≤ 1e-4  # Solution should be near optimum
-
-    finalize(nlp)
   end
 
   @testset "DCI with CaNNOLeS vs trust-region comparison" begin
@@ -50,8 +48,6 @@ using CaNNOLeS
       max_time = 60.0,
       max_iter = 100,
     )
-
-    finalize(nlp)
     nlp = ADNLPModel(
       x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
       [-1.2; 1.0],
@@ -76,7 +72,5 @@ using CaNNOLeS
 
     @test norm(stats_cannoles.solution - stats_default.solution) ≤ 1e-3
     @test abs(stats_cannoles.objective - stats_default.objective) ≤ 1e-3
-
-    finalize(nlp)
   end
 end

@@ -17,9 +17,6 @@ for (root, dirs, files) in walkdir(@__DIR__)
     if isnothing(match(r"^test-.*\.jl$", file))
       continue
     end
-    if file == "test-cannoles-feasibility.jl"
-      continue
-    end
     title = titlecase(replace(splitext(file[6:end])[1], "-" => " "))
     @testset "$title" begin
       include(file)
