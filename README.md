@@ -39,7 +39,7 @@ If you use DCISolver.jl in your work, please cite using the reference given in [
 
 ## Contributing
 
-If you want to make contributions of any kind, please first that a look into our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://JuliaSmoothOptimizers.github.io/DCISolver.jl/dev/90-contributing/)
+If you want to make contributions of any kind, please first take a look at our [contributing guide directly on GitHub](docs/src/90-contributing.md).
 
 ---
 

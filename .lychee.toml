@@ -3,7 +3,9 @@ exclude = [
   "@cite",
   "^https://github.com/.*/releases/tag/v.*$",
   "^https://doi.org/FIXME$",
+  "^https://doi.org/10.1137/070679557$",
   "^https://JuliaSmoothOptimizers.github.io/DCISolver.jl/stable$",
+  "^https://blog.esciencecenter.nl/the-utopic-git-history-d44b81c09593$",
   "zenodo.org/badge/DOI/FIXME$"
 ]
 

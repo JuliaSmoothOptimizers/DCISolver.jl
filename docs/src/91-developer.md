@@ -111,7 +111,7 @@ We try to keep a linear history in this repo, so it is important to keep your br
 ### Before creating a pull request
 
 !!! tip "Atomic git commits"
-    Try to create "atomic git commits" (recommended reading: [The Utopic Git History](https://blog.esciencecenter.nl/the-utopic-git-history-d44b81c09593)).
+   Try to create "atomic git commits" (recommended reading: [The Utopic Git History](https://medium.com/the-teleport/the-utopic-git-history-d44b81c09593)).
 
 - Make sure the tests pass.
 - Make sure the pre-commit tests pass.
