@@ -35,7 +35,7 @@ cutest_problems = (CUTEstModel(p) for p in pnames)
 length(cutest_problems) # number of problems
 ```
 
-We compare here DCISolver with [Ipopt](https://link.springer.com/article/10.1007/s10107-004-0559-y) (Wächter, A., & Biegler, L. T. (2006). On the implementation of an interior-point filter line-search algorithm for large-scale nonlinear programming. Mathematical programming, 106(1), 25-57.), via the [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) thin wrapper, with DCISolver on a subset of CUTEst problems.
+We compare here DCISolver with [Ipopt](https://doi.org/10.1007/s10107-004-0559-y) (Wächter, A., & Biegler, L. T. (2006). On the implementation of an interior-point filter line-search algorithm for large-scale nonlinear programming. Mathematical programming, 106(1), 25-57.), via the [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) thin wrapper, with DCISolver on a subset of CUTEst problems.
 
 ``` @example ex1
 using DCISolver, NLPModelsIpopt
@@ -135,7 +135,7 @@ print_pp_column(:neval_jac, stats) # with respect to number of jacobian evaluati
 
 ## CUTEst benchmark with Knitro
 
-In this second part, we present the result of a similar benchmark with a maximum of 10000 variables and constraints (82 problems), and including the solver [`KNITRO`](https://link.springer.com/chapter/10.1007/0-387-30065-1_4) (Byrd, R. H., Nocedal, J., & Waltz, R. A. (2006). K nitro: An integrated package for nonlinear optimization. In Large-scale nonlinear optimization (pp. 35-59). Springer, Boston, MA.) via [`NLPModelsKnitro.jl`](https://github.com/JuliaSmoothOptimizers/NLPModelsKnitro.jl). The script is included in [/benchmark/script10000_knitro.jl)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/main/benchmark/script10000_knitro.jl). We report here a performance profile with respect
+In this second part, we present the result of a similar benchmark with a maximum of 10000 variables and constraints (82 problems), and including the solver [`KNITRO`](https://doi.org/10.1007/0-387-30065-1_4) (Byrd, R. H., Nocedal, J., & Waltz, R. A. (2006). K nitro: An integrated package for nonlinear optimization. In Large-scale nonlinear optimization (pp. 35-59). Springer, Boston, MA.) via [`NLPModelsKnitro.jl`](https://github.com/JuliaSmoothOptimizers/NLPModelsKnitro.jl). The script is included in [/benchmark/script10000_knitro.jl)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/main/benchmark/script10000_knitro.jl). We report here a performance profile with respect
 to the elapsed time to solve the problems and to the sum of evaluations of objective and constraint functions, see [/benchmark/figures.jl](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/blob/main/benchmark/figures.jl) for the code generating the profile wall.
 
 ![Benchmark](./assets/ipopt_knitro_dcildl_82.png)
