@@ -315,3 +315,10 @@ function TR_lsmr(
 
   return d, Jd, infeasible, solved
 end
+
+"""
+	feasibility_step_cannoles(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
+
+Provided by the optional CaNNOLeS extension. Add `CaNNOLeS.jl` (and `NLPModelsModifiers.jl`) to enable.
+"""
+function feasibility_step_cannoles end
