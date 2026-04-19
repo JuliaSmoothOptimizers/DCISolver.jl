@@ -65,12 +65,13 @@ function feasibility_step(
     d, Jd, infeasible, solved =
       eval(meta.TR_compute_step)(cz, Jz, ctol, Δ, normcz, Jd, meta.TR_compute_step_struct)
 
-    nd = norm(d)
-    nczJd = zero(T)
     if meta.TR_compute_step == :TR_lsmr
       lsmr_stats = meta.TR_compute_step_struct.lsmr_solver.stats
       nd = lsmr_stats.xNorm
       nczJd = lsmr_stats.residual
+    else
+      nd = norm(d)
+      nczJd = zero(T)
     end
 
     if infeasible #the direction is too small
@@ -322,6 +323,7 @@ function TR_lsmr(
 
   infeasible = stats.xNorm < ctol * min(normcz, one(T))
   @. d = -d
+  Jd .= Jz * d
 
   return d, Jd, infeasible, solved
 end
