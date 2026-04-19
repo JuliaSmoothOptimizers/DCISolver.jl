@@ -65,6 +65,14 @@ function feasibility_step(
     d, Jd, infeasible, solved =
       eval(meta.TR_compute_step)(cz, Jz, ctol, Δ, normcz, Jd, meta.TR_compute_step_struct)
 
+    nd = norm(d)
+    nczJd = zero(T)
+    if meta.TR_compute_step == :TR_lsmr
+      lsmr_stats = meta.TR_compute_step_struct.lsmr_solver.stats
+      nd = lsmr_stats.xNorm
+      nczJd = lsmr_stats.residual
+    end
+
     if infeasible #the direction is too small
       failed_step_comp = true #too small step
       status = :too_small
@@ -73,8 +81,11 @@ function feasibility_step(
       cons_norhs!(nlp, zp, czp)
       normczp = norm(czp)
 
-      Jd .+= cz
-      Pred = T(0.5) * (normcz^2 - norm(Jd)^2) # T(0.5) * (normcz^2 - norm(Jd + cz)^2)
+      if meta.TR_compute_step != :TR_lsmr
+        Jd .+= cz
+        nczJd = norm(Jd)
+      end
+      Pred = T(0.5) * (normcz^2 - nczJd^2)
       Ared = T(0.5) * (normcz^2 - normczp^2)
 
       if Ared / Pred < η₁
@@ -91,7 +102,7 @@ function feasibility_step(
         end
         normcz = normczp
         status = :success
-        if Ared / Pred > η₂ && norm(d) >= T(0.99) * Δ
+        if Ared / Pred > η₂ && nd >= T(0.99) * Δ
           Δ *= σ₂
         end
       end
@@ -109,7 +120,7 @@ function feasibility_step(
         Float64,
         ρ,
         status,
-        norm(d),
+        nd,
         Δ,
         time() - start_time,
       ],
@@ -304,14 +315,13 @@ function TR_lsmr(
     itmax = meta.itmax,
   )
 
-  infeasible = norm(d) < ctol * min(normcz, one(T))
   solved = stats.solved
   if !solved
     @warn "Fail lsmr in TR_lsmr: $(stats.status)"
   end
 
+  infeasible = stats.xNorm < ctol * min(normcz, one(T))
   @. d = -d
-  mul!(Jd, Jz, d) #lsmr doesn't return this information
 
   return d, Jd, infeasible, solved
 end
