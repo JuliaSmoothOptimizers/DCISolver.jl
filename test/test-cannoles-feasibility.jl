@@ -40,21 +40,27 @@ end
     [0.0],
   )
 
-  # Define a spy wrapper inside the DCISolver module so we don't reassign
-  # an existing constant binding. The spy sets an internal flag and then
-  # delegates to the original implementation.
-  @eval DCISolver begin
-    const __spy_called_for_test = Ref(false)
-    const __orig_feas_cb_for_test = feasibility_step_cannoles
-    function __spy_feasibility_step_for_test(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
-      __spy_called_for_test[] = true
-      return __orig_feas_cb_for_test(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
-    end
-  end
-
-  stats = dci(nlp, nlp.meta.x0, feas_step = :__spy_feasibility_step_for_test, max_iter = 10, max_time = 5.0)
-  @test DCISolver.__spy_called_for_test[] == true
-end
+   # Define a spy wrapper inside the DCISolver module in a rerunnable way.
+   # The spy sets an internal flag and then delegates to the original
+   # implementation, while avoiding const redefinition on repeated test runs.
+   @eval DCISolver begin
+    if !isdefined(DCISolver, :__spy_called_for_test)
+       const __spy_called_for_test = Ref(false)
+     end
+     if !isdefined(DCISolver, :__orig_feas_cb_for_test)
+       const __orig_feas_cb_for_test = feasibility_step_cannoles
+     end
+     if !isdefined(DCISolver, :__spy_feasibility_step_for_test)
+       function __spy_feasibility_step_for_test(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
+         __spy_called_for_test[] = true
+         return __orig_feas_cb_for_test(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
+       end
+     end
+   end
+   DCISolver.__spy_called_for_test[] = false
+   stats = dci(nlp, nlp.meta.x0, feas_step = :__spy_feasibility_step_for_test, max_iter = 10, max_time = 5.0)
+   @test DCISolver.__spy_called_for_test[] == true
+ end
 
 @testset "DCI with CaNNOLeS vs trust-region comparison" begin
   nlp_cannoles = ADNLPModel(
