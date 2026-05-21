@@ -22,6 +22,7 @@ NLPModelsModifiers = "e01155f1-5c6f-4375-a9d8-616dd036575f"
 DCISolverCaNNOLeSExt = ["CaNNOLeS", "NLPModelsModifiers"]
 
 [compat]
+CaNNOLeS = "0.8"
 HSL = "0.5"
 Krylov = "0.10.1"
 LDLFactorizations = "0.10"

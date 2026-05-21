@@ -39,6 +39,12 @@ function DCISolver.feasibility_step_cannoles(
 
   options = merge(default_options, cannoles_options)
 
+  # Ensure the CaNNOLeS solver starts from the current iterate `x` unless
+  # the caller explicitly provided a starting point.
+  if !haskey(options, :x)
+    options = merge(Dict(:x => x), options)
+  end
+
   start_time = time()
   stats = cannoles(nls; options...)
   el_time = time() - start_time
