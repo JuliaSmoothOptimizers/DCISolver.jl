@@ -23,11 +23,11 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 
 ## CaNNOLeS extension
 
-[CaNNOLeS.jl](https://github.com/JuliaSmoothOptimizers/CaNNOLeS.jl) is optional and loaded through package extensions. Install it in your environment to enable the CaNNOLeS-based feasibility step:
+[CaNNOLeS.jl](https://github.com/JuliaSmoothOptimizers/CaNNOLeS.jl) is optional and loaded through package extensions. To enable the CaNNOLeS-based feasibility step, install the packages required by that extension in your environment:
 
-- `using Pkg; Pkg.add("CaNNOLeS")`
+- `using Pkg; Pkg.add(["CaNNOLeS", "NLPModelsModifiers"])`
 - call `dci(...; feas_step = :feasibility_step_cannoles)`
-- if you select `feas_step = :feasibility_step_cannoles`, CaNNOLeS must be installed. The default trust-region feasibility step is used when `feas_step = :feasibility_step` or when the default setting is left unchanged.
+- if you select `feas_step = :feasibility_step_cannoles`, both `CaNNOLeS` and `NLPModelsModifiers` must be installed/loaded so the extension methods are available. The default trust-region feasibility step is used when `feas_step = :feasibility_step` or when the default setting is left unchanged.
 
 ## References
 

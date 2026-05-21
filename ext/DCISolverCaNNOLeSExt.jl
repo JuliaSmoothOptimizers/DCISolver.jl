@@ -26,13 +26,26 @@ function DCISolver.feasibility_step_cannoles(
 ) where {T}
   nls = FeasibilityResidual(nlp)
 
+  current_eval = neval_obj(nlp) + neval_cons(nlp)
+  remaining_eval = max(0, max_eval - current_eval)
+
+  outer_start_time = hasproperty(meta, :start_time) ? getproperty(meta, :start_time) : time()
+  outer_elapsed_time = time() - outer_start_time
+  remaining_time = max(0.0, max_time - outer_elapsed_time)
+
+  if remaining_eval ≤ 0
+    return x, cx, normcx, Jx, :max_eval
+  elseif remaining_time ≤ 0
+    return x, cx, normcx, Jx, :max_time
+  end
+
   default_options = Dict{Symbol, Any}(
     :atol => ctol,
     :rtol => ctol,
     :Fatol => ctol,
     :Frtol => ctol,
-    :max_eval => max_eval,
-    :max_time => max_time,
+    :max_eval => remaining_eval,
+    :max_time => remaining_time,
     :max_iter => max_iter,
     :verbose => verbose ? 1 : 0,
   )
