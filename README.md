@@ -27,7 +27,7 @@ The feasibility steps are factorization-free and use iterative methods from [Kry
 
 - `using Pkg; Pkg.add("CaNNOLeS")`
 - call `dci(...; feas_step = :feasibility_step_cannoles, cannoles_options = Dict(...))`
-- extra keywords in `cannoles_options` are forwarded directly to `CaNNOLeS.cannoles`; without CaNNOLeS the default trust-region feasibility step is used.
+ - extra keywords in `cannoles_options` are forwarded directly to `CaNNOLeS.cannoles`; if you select `feas_step = :feasibility_step_cannoles`, CaNNOLeS must be installed. The default trust-region feasibility step is used when `feas_step = :feasibility_step` or when the default setting is left unchanged.
 
 ## References
 
