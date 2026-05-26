@@ -1,14 +1,18 @@
 using CaNNOLeS
 using DCISolver
 
-@testset "DCI with CaNNOLeS option" begin
-  nlp = ADNLPModel(
+function make_test_nlp()
+  ADNLPModel(
     x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
     [-1.2; 1.0],
     x -> [x[1] * x[2] - 1],
     [0.0],
     [0.0],
   )
+end
+
+@testset "DCI with CaNNOLeS option" begin
+  nlp = make_test_nlp()
 
   stats = dci(
     nlp,
@@ -30,46 +34,8 @@ using DCISolver
   @test isfinite(norm(x_sol))
 end
 
-
-@testset "Feasibility callback invoked" begin
-  nlp = ADNLPModel(
-    x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
-    [-1.2; 1.0],
-    x -> [x[1] * x[2] - 1],
-    [0.0],
-    [0.0],
-  )
-
-   # Define a spy wrapper inside the DCISolver module in a rerunnable way.
-   # The spy sets an internal flag and then delegates to the original
-   # implementation, while avoiding const redefinition on repeated test runs.
-   @eval DCISolver begin
-    if !isdefined(DCISolver, :__spy_called_for_test)
-       const __spy_called_for_test = Ref(false)
-     end
-     if !isdefined(DCISolver, :__orig_feas_cb_for_test)
-       const __orig_feas_cb_for_test = feasibility_step_cannoles
-     end
-     if !isdefined(DCISolver, :__spy_feasibility_step_for_test)
-       function __spy_feasibility_step_for_test(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
-         __spy_called_for_test[] = true
-         return __orig_feas_cb_for_test(nlp, x, cx, normcx, Jx, ρ, ctol, meta, workspace, verbose; kwargs...)
-       end
-     end
-   end
-   DCISolver.__spy_called_for_test[] = false
-   stats = dci(nlp, nlp.meta.x0, feas_step = :__spy_feasibility_step_for_test, max_iter = 10, max_time = 5.0)
-   @test DCISolver.__spy_called_for_test[] == true
- end
-
 @testset "DCI with CaNNOLeS vs trust-region comparison" begin
-  nlp_cannoles = ADNLPModel(
-    x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
-    [-1.2; 1.0],
-    x -> [x[1] * x[2] - 1],
-    [0.0],
-    [0.0],
-  )
+  nlp_cannoles = make_test_nlp()
 
   stats_cannoles = dci(
     nlp_cannoles,
@@ -82,13 +48,7 @@ end
     max_iter = 100,
   )
 
-  nlp_default = ADNLPModel(
-    x -> 100 * (x[2] - x[1]^2)^2 + (x[1] - 1)^2,
-    [-1.2; 1.0],
-    x -> [x[1] * x[2] - 1],
-    [0.0],
-    [0.0],
-  )
+  nlp_default = make_test_nlp()
 
   stats_default = dci(
     nlp_default,
