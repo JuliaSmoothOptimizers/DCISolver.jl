@@ -276,9 +276,25 @@ function _compute_step_length(norm2dn::T, dotdndcp::T, norm2dcp::T, Δ::T) where
   q₁ = 2 * (dotdndcp - norm2dn) / scal
   q₂ = one(T)
   # q₀, q₁, q₂ = [q₀, q₁, q₂] / q₂ #so the first coefficient is 1.
-  roots = Krylov.roots_quadratic(q₂, q₁, q₀)
+  roots = _real_roots_quadratic(q₂, q₁, q₀)
   τ = length(roots) == 0 ? one(T) : min(one(T), roots...)
   return τ
+end
+
+function _real_roots_quadratic(a::T, b::T, c::T) where {T <: AbstractFloat}
+  if iszero(a)
+    return iszero(b) ? T[] : T[-c / b]
+  end
+
+  Δq = b^2 - 4 * a * c
+  if Δq < zero(T)
+    return T[]
+  elseif iszero(Δq)
+    return T[-b / (2 * a)]
+  end
+
+  sΔq = sqrt(Δq)
+  return T[(-b - sΔq) / (2 * a), (-b + sΔq) / (2 * a)]
 end
 
 include("factorization.jl")
