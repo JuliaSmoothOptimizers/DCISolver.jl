@@ -18,7 +18,7 @@ optimization problems of the form
 
 It uses other JuliaSmoothOptimizers packages for development.
 In particular, [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) is used for defining the problem, and [SolverCore](https://github.com/JuliaSmoothOptimizers/SolverCore.jl) for the output.
-It uses [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) by default to compute the factorization in the tangent step. [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl) provides alternative linear solvers if [libHSL](https://licences.stfc.ac.uk/product/libhsl) can be downloaded.
+It uses [LDLFactorizations.jl](https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl) by default to compute the factorization in the tangent step. [HSL.jl](https://github.com/JuliaSmoothOptimizers/HSL.jl) provides alternative linear solvers if libHSL can be downloaded.
 The feasibility steps are factorization-free and use iterative methods from [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl)
 
 ## References
@@ -39,7 +39,7 @@ If you use DCISolver.jl in your work, please cite using the reference given in [
 
 ## Contributing
 
-If you want to make contributions of any kind, please first that a look into our [contributing guide directly on GitHub](docs/src/90-contributing.md) or the [contributing page on the website](https://JuliaSmoothOptimizers.github.io/DCISolver.jl/dev/90-contributing/)
+If you want to make contributions of any kind, please first take a look at our [contributing guide directly on GitHub](docs/src/90-contributing.md).
 
 ---
 
