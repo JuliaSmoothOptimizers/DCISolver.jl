@@ -136,7 +136,7 @@ The keyword arguments may include:
 - `decrease_γ::T=T(0.1)`: Regularization for the factorization: reduce `γ` if possible, `> √eps(T)`, between tangent steps.
 - `increase_γ::T=T(100.0)`: Regularization for the factorization: up `γ` if possible, `< 1/√eps(T)`, during the factorization.
 - `δmin::T=√eps(T)`: Regularization for the factorization: smallest value of `δ` used for the regularization.
-- `feas_step::Symbol=:feasibility_step`: Normal step.
+- `feas_step::Symbol=:feasibility_step`: Normal step. Options: `:feasibility_step` (default trust-region method) or `:feasibility_step_cannoles` (CaNNOLeS solver).
 - `feas_η₁::T=T(1e-3)`: Feasibility step: decrease the trust-region radius when `Ared/Pred < η₁`.
 - `feas_η₂::T=T(0.66)`: Feasibility step: increase the trust-region radius when `Ared/Pred > η₂`.
 - `feas_σ₁::T=T(0.25)`: Feasibility step: decrease coefficient of the trust-region radius.
@@ -195,7 +195,7 @@ struct MetaDCI{
   δmin::T
 
   # Normal step
-  feas_step::Symbol #:feasibility_step
+  feas_step::Symbol #:feasibility_step or :feasibility_step_cannoles
   ## Feasibility step (called inside the normal step)
   feas_η₁::T
   feas_η₂::T
