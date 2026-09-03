@@ -18,7 +18,7 @@ using SolverBenchmark
 Let us select equality-constrained problems from CUTEst with a maximum of 100 variables or constraints. After removing problems with fixed variables, examples with a constant objective, and infeasibility residuals.
 
 ``` @example ex1
-_pnames = CUTEst.select(
+_pnames = CUTEst.select_sif_problems(
   max_var = 100,
   min_con = 1,
   max_con = 100,
