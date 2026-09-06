@@ -27,7 +27,7 @@ jobs:
     env:
       pkg: ${{ github.event.repository.name }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: 1
@@ -56,7 +56,7 @@ jobs:
       matrix: ${{ fromJSON(needs.setup_matrix.outputs.matrix) }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Install Julia
       - uses: julia-actions/setup-julia@v3
@@ -127,7 +127,7 @@ jobs:
     needs: break
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v8
         with:
