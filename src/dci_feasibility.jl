@@ -66,12 +66,14 @@ function feasibility_step(
       eval(meta.TR_compute_step)(cz, Jz, ctol, Δ, normcz, Jd, meta.TR_compute_step_struct)
 
     if meta.TR_compute_step == :TR_lsmr
+      # `xNorm` is computed by Krylov.jl from the (possibly trust-region-clipped) iterate,
+      # so it is safe to reuse. `residual`, however, is only an estimate of the unconstrained
+      # LSMR residual and does not account for the trust-region clipping, so it cannot be
+      # reused for `Pred` when the trust-region boundary is active.
       lsmr_stats = meta.TR_compute_step_struct.lsmr_solver.stats
       nd = lsmr_stats.xNorm
-      nczJd = lsmr_stats.residual
     else
       nd = norm(d)
-      nczJd = zero(T)
     end
 
     if infeasible #the direction is too small
@@ -82,10 +84,8 @@ function feasibility_step(
       cons_norhs!(nlp, zp, czp)
       normczp = norm(czp)
 
-      if meta.TR_compute_step != :TR_lsmr
-        Jd .+= cz
-        nczJd = norm(Jd)
-      end
+      Jd .+= cz
+      nczJd = norm(Jd)
       Pred = T(0.5) * (normcz^2 - nczJd^2)
       Ared = T(0.5) * (normcz^2 - normczp^2)
 
@@ -323,7 +323,7 @@ function TR_lsmr(
 
   infeasible = stats.xNorm < ctol * min(normcz, one(T))
   @. d = -d
-  Jd .= Jz * d
+  mul!(Jd, Jz, d) # needed for the exact Pred computation in feasibility_step
 
   return d, Jd, infeasible, solved
 end
