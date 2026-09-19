@@ -65,6 +65,17 @@ function feasibility_step(
     d, Jd, infeasible, solved =
       eval(meta.TR_compute_step)(cz, Jz, ctol, Δ, normcz, Jd, meta.TR_compute_step_struct)
 
+    if meta.TR_compute_step == :TR_lsmr
+      # `xNorm` is computed by Krylov.jl from the (possibly trust-region-clipped) iterate,
+      # so it is safe to reuse. `residual`, however, is only an estimate of the unconstrained
+      # LSMR residual and does not account for the trust-region clipping, so it cannot be
+      # reused for `Pred` when the trust-region boundary is active.
+      lsmr_stats = meta.TR_compute_step_struct.lsmr_solver.stats
+      nd = lsmr_stats.xNorm
+    else
+      nd = norm(d)
+    end
+
     if infeasible #the direction is too small
       failed_step_comp = true #too small step
       status = :too_small
@@ -74,7 +85,8 @@ function feasibility_step(
       normczp = norm(czp)
 
       Jd .+= cz
-      Pred = T(0.5) * (normcz^2 - norm(Jd)^2) # T(0.5) * (normcz^2 - norm(Jd + cz)^2)
+      nczJd = norm(Jd)
+      Pred = T(0.5) * (normcz^2 - nczJd^2)
       Ared = T(0.5) * (normcz^2 - normczp^2)
 
       if Ared / Pred < η₁
@@ -91,7 +103,7 @@ function feasibility_step(
         end
         normcz = normczp
         status = :success
-        if Ared / Pred > η₂ && norm(d) >= T(0.99) * Δ
+        if Ared / Pred > η₂ && nd >= T(0.99) * Δ
           Δ *= σ₂
         end
       end
@@ -109,7 +121,7 @@ function feasibility_step(
         Float64,
         ρ,
         status,
-        norm(d),
+        nd,
         Δ,
         time() - start_time,
       ],
@@ -304,14 +316,14 @@ function TR_lsmr(
     itmax = meta.itmax,
   )
 
-  infeasible = norm(d) < ctol * min(normcz, one(T))
   solved = stats.solved
   if !solved
     @warn "Fail lsmr in TR_lsmr: $(stats.status)"
   end
 
+  infeasible = stats.xNorm < ctol * min(normcz, one(T))
   @. d = -d
-  mul!(Jd, Jz, d) #lsmr doesn't return this information
+  mul!(Jd, Jz, d) # needed for the exact Pred computation in feasibility_step
 
   return d, Jd, infeasible, solved
 end
